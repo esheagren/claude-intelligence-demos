@@ -294,6 +294,90 @@
                 gap: 30px;
             }
         }
+
+        .upvote-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .upvote-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .upvote-btn:hover {
+            background: rgba(129, 199, 132, 0.15);
+            border-color: rgba(129, 199, 132, 0.4);
+            color: #81c784;
+        }
+
+        .upvote-btn.upvoted {
+            background: rgba(129, 199, 132, 0.2);
+            border-color: rgba(129, 199, 132, 0.5);
+            color: #81c784;
+        }
+
+        .upvote-btn .arrow {
+            font-size: 14px;
+            transition: transform 0.2s ease;
+        }
+
+        .upvote-btn:hover .arrow {
+            transform: translateY(-2px);
+        }
+
+        .vote-count {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.5);
+            min-width: 60px;
+        }
+
+        .sort-controls {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .sort-btn {
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .sort-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .sort-btn.active {
+            background: rgba(100, 181, 246, 0.15);
+            border-color: rgba(100, 181, 246, 0.4);
+            color: #64b5f6;
+        }
     </style>
 </head>
 <body>
@@ -338,7 +422,12 @@
 
         <div class="section-title">Interactive Experiences</div>
 
-        <div class="projects-grid">
+        <div class="sort-controls">
+            <button class="sort-btn active" data-sort="default">Default</button>
+            <button class="sort-btn" data-sort="votes">Most Upvoted</button>
+        </div>
+
+        <div class="projects-grid" id="projects-grid">
             <a href="emergent_intelligence.html" class="project-card" style="--accent-1: #4caf50; --accent-2: #8bc34a;">
                 <div class="project-icon">🧬</div>
                 <div class="category">Artificial Life</div>
@@ -2207,6 +2296,136 @@
 
         createStars();
 
+        // Vote management
+        const VOTES_KEY = 'claude-demos-votes';
+        const SORT_KEY = 'claude-demos-sort';
+
+        function getVotes() {
+            try {
+                return JSON.parse(localStorage.getItem(VOTES_KEY)) || {};
+            } catch {
+                return {};
+            }
+        }
+
+        function saveVotes(votes) {
+            localStorage.setItem(VOTES_KEY, JSON.stringify(votes));
+        }
+
+        function getVoteCount(projectId) {
+            const votes = getVotes();
+            return votes[projectId] || 0;
+        }
+
+        function hasVoted(projectId) {
+            const votes = getVotes();
+            return votes[projectId] !== undefined && votes[projectId] > 0;
+        }
+
+        function toggleVote(projectId) {
+            const votes = getVotes();
+            if (votes[projectId]) {
+                votes[projectId] = 0;
+            } else {
+                votes[projectId] = 1;
+            }
+            saveVotes(votes);
+            return votes[projectId];
+        }
+
+        function getCurrentSort() {
+            return localStorage.getItem(SORT_KEY) || 'default';
+        }
+
+        function saveSort(sortType) {
+            localStorage.setItem(SORT_KEY, sortType);
+        }
+
+        // Store original order
+        const grid = document.getElementById('projects-grid');
+        const cards = Array.from(grid.querySelectorAll('.project-card'));
+        const originalOrder = cards.map(card => card.getAttribute('href'));
+
+        // Add upvote buttons to all cards
+        cards.forEach(card => {
+            const projectId = card.getAttribute('href');
+            const voteCount = getVoteCount(projectId);
+            const voted = hasVoted(projectId);
+
+            const upvoteContainer = document.createElement('div');
+            upvoteContainer.className = 'upvote-container';
+            upvoteContainer.innerHTML = `
+                <button class="upvote-btn ${voted ? 'upvoted' : ''}" data-project="${projectId}">
+                    <span class="arrow">▲</span>
+                    <span>Upvote</span>
+                </button>
+                <span class="vote-count">${voteCount} vote${voteCount !== 1 ? 's' : ''}</span>
+            `;
+
+            card.appendChild(upvoteContainer);
+
+            // Handle upvote click
+            const btn = upvoteContainer.querySelector('.upvote-btn');
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const newCount = toggleVote(projectId);
+                btn.classList.toggle('upvoted', newCount > 0);
+                upvoteContainer.querySelector('.vote-count').textContent =
+                    `${newCount} vote${newCount !== 1 ? 's' : ''}`;
+
+                // Re-sort if currently sorted by votes
+                if (getCurrentSort() === 'votes') {
+                    sortCards('votes');
+                }
+            });
+        });
+
+        // Sorting functionality
+        function sortCards(sortType) {
+            const votes = getVotes();
+
+            let sortedCards;
+            if (sortType === 'votes') {
+                sortedCards = [...cards].sort((a, b) => {
+                    const aVotes = votes[a.getAttribute('href')] || 0;
+                    const bVotes = votes[b.getAttribute('href')] || 0;
+                    return bVotes - aVotes;
+                });
+            } else {
+                sortedCards = [...cards].sort((a, b) => {
+                    return originalOrder.indexOf(a.getAttribute('href')) -
+                           originalOrder.indexOf(b.getAttribute('href'));
+                });
+            }
+
+            // Re-append in new order
+            sortedCards.forEach(card => grid.appendChild(card));
+
+            // Update button states
+            document.querySelectorAll('.sort-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.sort === sortType);
+            });
+
+            saveSort(sortType);
+        }
+
+        // Sort button handlers
+        document.querySelectorAll('.sort-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                sortCards(btn.dataset.sort);
+            });
+        });
+
+        // Apply initial sort from localStorage
+        const initialSort = getCurrentSort();
+        if (initialSort !== 'default') {
+            sortCards(initialSort);
+            document.querySelector(`[data-sort="${initialSort}"]`)?.classList.add('active');
+            document.querySelector('[data-sort="default"]')?.classList.remove('active');
+        }
+
         // Animate stats on scroll
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
@@ -2220,7 +2439,7 @@
         document.querySelectorAll('.project-card').forEach((card, i) => {
             card.style.opacity = '0';
             card.style.transform = 'translateY(30px)';
-            card.style.transition = `opacity 0.6s ease ${i * 0.1}s, transform 0.6s ease ${i * 0.1}s`;
+            card.style.transition = `opacity 0.6s ease ${i * 0.05}s, transform 0.6s ease ${i * 0.05}s`;
             observer.observe(card);
         });
     </script>
