@@ -1,7 +1,8 @@
-import { kv } from '@vercel/kv';
+import { Redis } from '@upstash/redis';
+
+const redis = Redis.fromEnv();
 
 export default async function handler(req, res) {
-  // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -21,8 +22,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'projectId is required' });
     }
 
-    // Get current vote count
-    const currentVotes = await kv.hget('votes', projectId) || 0;
+    const currentVotes = await redis.hget('votes', projectId) || 0;
 
     let newVotes;
     if (action === 'upvote') {
@@ -33,8 +33,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'action must be "upvote" or "downvote"' });
     }
 
-    // Save updated vote count
-    await kv.hset('votes', { [projectId]: newVotes });
+    await redis.hset('votes', { [projectId]: newVotes });
 
     return res.status(200).json({ projectId, votes: newVotes });
   } catch (error) {

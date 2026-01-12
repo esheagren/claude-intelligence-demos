@@ -1,7 +1,8 @@
-import { kv } from '@vercel/kv';
+import { Redis } from '@upstash/redis';
+
+const redis = Redis.fromEnv();
 
 export default async function handler(req, res) {
-  // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -15,8 +16,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Get all votes from KV store
-    const votes = await kv.hgetall('votes') || {};
+    const votes = await redis.hgetall('votes') || {};
     return res.status(200).json(votes);
   } catch (error) {
     console.error('Error fetching votes:', error);
