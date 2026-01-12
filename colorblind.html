@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Vision Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 42px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #ff6b6b, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 20px;
+            text-align: center;
+            max-width: 500px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            max-width: 400px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #48dbfb, #00ff88);
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+
+        .plate-container {
+            position: relative;
+            margin-bottom: 25px;
+        }
+
+        #plateCanvas {
+            border-radius: 50%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .question {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .question h2 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .question .plate-num {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 14px;
+        }
+
+        .options {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 25px;
+            max-width: 400px;
+        }
+
+        .option-btn {
+            padding: 15px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 20px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .option-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+
+        .option-btn.correct {
+            background: rgba(0, 255, 136, 0.3);
+            border-color: #00ff88;
+        }
+
+        .option-btn.incorrect {
+            background: rgba(255, 107, 107, 0.3);
+            border-color: #ff6b6b;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .result-panel {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 500px;
+        }
+
+        .result-panel.hidden {
+            display: none;
+        }
+
+        .result-panel h2 {
+            font-size: 32px;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #48dbfb, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .score-display {
+            font-size: 64px;
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 20px;
+        }
+
+        .score-display span {
+            color: #48dbfb;
+        }
+
+        .result-message {
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .breakdown {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .breakdown-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .breakdown-label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .breakdown-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        .breakdown-value.good { color: #00ff88; }
+        .breakdown-value.warning { color: #feca57; }
+        .breakdown-value.poor { color: #ff6b6b; }
+
+        .test-container.hidden {
+            display: none;
+        }
+
+        .info-text {
+            background: rgba(72, 219, 251, 0.1);
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            max-width: 500px;
+            text-align: center;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.6);
+            line-height: 1.5;
+        }
+
+        @media (max-width: 500px) {
+            #plateCanvas {
+                width: 280px;
+                height: 280px;
+            }
+
+            .options {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Color Vision Test</h1>
+    <p class="subtitle">Ishihara-style plates to test color perception</p>
+
+    <div class="info-text">
+        This is a screening tool only, not a diagnostic test. For accurate results, consult an eye care professional.
+    </div>
+
+    <div class="test-container" id="testContainer">
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+        </div>
+
+        <div class="question">
+            <h2>What number do you see?</h2>
+            <div class="plate-num" id="plateNum">Plate 1 of 12</div>
+        </div>
+
+        <div class="plate-container">
+            <canvas id="plateCanvas" width="320" height="320"></canvas>
+        </div>
+
+        <div class="options" id="options"></div>
+
+        <div class="controls">
+            <button id="skipBtn">Can't See Number</button>
+        </div>
+    </div>
+
+    <div class="result-panel hidden" id="resultPanel">
+        <h2>Test Complete</h2>
+        <div class="score-display">
+            <span id="correctCount">0</span> / <span id="totalCount">12</span>
+        </div>
+        <div class="result-message" id="resultMessage"></div>
+        <div class="breakdown">
+            <div class="breakdown-item">
+                <div class="breakdown-label">Red-Green</div>
+                <div class="breakdown-value" id="rgScore">-</div>
+            </div>
+            <div class="breakdown-item">
+                <div class="breakdown-label">Blue-Yellow</div>
+                <div class="breakdown-value" id="byScore">-</div>
+            </div>
+            <div class="breakdown-item">
+                <div class="breakdown-label">Overall</div>
+                <div class="breakdown-value" id="overallScore">-</div>
+            </div>
+        </div>
+        <button id="retakeBtn">Take Test Again</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('plateCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Test plates with number and color configurations
+        const plates = [
+            { number: '12', type: 'demo', bgColors: ['#e8a478', '#c4846a'], numColors: ['#7a9b5e', '#5d7a4a'] },
+            { number: '8', type: 'rg', bgColors: ['#8fbc8f', '#6b8f6b'], numColors: ['#cd5c5c', '#b84545'] },
+            { number: '6', type: 'rg', bgColors: ['#f4a460', '#d4844a'], numColors: ['#6b8e6b', '#4a7a4a'] },
+            { number: '29', type: 'rg', bgColors: ['#bc8f8f', '#9c6f6f'], numColors: ['#6b9f6b', '#4b7f4b'] },
+            { number: '57', type: 'rg', bgColors: ['#9acd32', '#7ab022'], numColors: ['#dc143c', '#bc0030'] },
+            { number: '45', type: 'rg', bgColors: ['#f5deb3', '#d5bea3'], numColors: ['#8b4513', '#6b3500'] },
+            { number: '5', type: 'rg', bgColors: ['#deb887', '#be9867'], numColors: ['#228b22', '#006b00'] },
+            { number: '3', type: 'rg', bgColors: ['#fa8072', '#da6062'], numColors: ['#556b2f', '#354b1f'] },
+            { number: '15', type: 'rg', bgColors: ['#f08080', '#d06060'], numColors: ['#808000', '#606000'] },
+            { number: '74', type: 'rg', bgColors: ['#90ee90', '#70ce70'], numColors: ['#ff4500', '#df2500'] },
+            { number: '2', type: 'by', bgColors: ['#87ceeb', '#67aecb'], numColors: ['#daa520', '#ba8500'] },
+            { number: '42', type: 'by', bgColors: ['#add8e6', '#8db8c6'], numColors: ['#b8860b', '#986600'] }
+        ];
+
+        let currentPlate = 0;
+        let answers = [];
+        let rgCorrect = 0;
+        let byCorrect = 0;
+
+        function drawPlate(plate) {
+            const radius = canvas.width / 2;
+            const dotRadius = { min: 6, max: 14 };
+
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Create circular clip
+            ctx.beginPath();
+            ctx.arc(radius, radius, radius - 2, 0, Math.PI * 2);
+            ctx.clip();
+
+            // Draw background dots
+            const dots = [];
+            for (let i = 0; i < 800; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const dist = Math.random() * (radius - 10);
+                const x = radius + Math.cos(angle) * dist;
+                const y = radius + Math.sin(angle) * dist;
+                const r = dotRadius.min + Math.random() * (dotRadius.max - dotRadius.min);
+
+                // Check overlap
+                let overlap = false;
+                for (const dot of dots) {
+                    const dx = dot.x - x;
+                    const dy = dot.y - y;
+                    if (Math.sqrt(dx*dx + dy*dy) < (dot.r + r) * 0.9) {
+                        overlap = true;
+                        break;
+                    }
+                }
+
+                if (!overlap) {
+                    dots.push({ x, y, r });
+                }
+            }
+
+            // Draw number pattern
+            const numberDots = getNumberDots(plate.number, radius);
+
+            // Draw all dots
+            dots.forEach(dot => {
+                const isNumber = numberDots.some(nd =>
+                    Math.sqrt((nd.x - dot.x)**2 + (nd.y - dot.y)**2) < 25
+                );
+
+                const colors = isNumber ? plate.numColors : plate.bgColors;
+                const color = colors[Math.floor(Math.random() * colors.length)];
+
+                // Add slight color variation
+                ctx.fillStyle = varyColor(color, 15);
+                ctx.beginPath();
+                ctx.arc(dot.x, dot.y, dot.r, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        function getNumberDots(num, radius) {
+            const digits = num.split('');
+            const dots = [];
+            const centerY = radius;
+
+            digits.forEach((digit, i) => {
+                const offsetX = radius + (i - (digits.length - 1) / 2) * 50;
+                const digitDots = getDigitDots(digit, offsetX, centerY);
+                dots.push(...digitDots);
+            });
+
+            return dots;
+        }
+
+        function getDigitDots(digit, centerX, centerY) {
+            const patterns = {
+                '0': [[0,-40],[0,40],[-20,-30],[-20,0],[-20,30],[20,-30],[20,0],[20,30]],
+                '1': [[0,-40],[0,-20],[0,0],[0,20],[0,40],[-10,-30]],
+                '2': [[-20,-40],[0,-40],[20,-40],[20,-20],[0,0],[-20,20],[-20,40],[0,40],[20,40]],
+                '3': [[-20,-40],[0,-40],[20,-40],[20,-20],[0,0],[20,20],[-20,40],[0,40],[20,40]],
+                '4': [[-20,-40],[-20,-20],[-20,0],[0,0],[20,-40],[20,-20],[20,0],[20,20],[20,40]],
+                '5': [[20,-40],[0,-40],[-20,-40],[-20,-20],[0,0],[20,0],[20,20],[20,40],[0,40],[-20,40]],
+                '6': [[0,-40],[-20,-20],[-20,0],[-20,20],[0,0],[20,0],[20,20],[0,40]],
+                '7': [[-20,-40],[0,-40],[20,-40],[20,-20],[0,0],[0,20],[0,40]],
+                '8': [[0,-40],[-20,-20],[20,-20],[0,0],[-20,20],[20,20],[0,40]],
+                '9': [[0,-40],[-20,-20],[20,-20],[0,0],[20,0],[20,20],[0,40]]
+            };
+
+            const pattern = patterns[digit] || [];
+            return pattern.map(([dx, dy]) => ({
+                x: centerX + dx,
+                y: centerY + dy
+            }));
+        }
+
+        function varyColor(hex, amount) {
+            const r = parseInt(hex.slice(1, 3), 16);
+            const g = parseInt(hex.slice(3, 5), 16);
+            const b = parseInt(hex.slice(5, 7), 16);
+
+            const vary = () => Math.floor((Math.random() - 0.5) * amount * 2);
+
+            const nr = Math.max(0, Math.min(255, r + vary()));
+            const ng = Math.max(0, Math.min(255, g + vary()));
+            const nb = Math.max(0, Math.min(255, b + vary()));
+
+            return `rgb(${nr}, ${ng}, ${nb})`;
+        }
+
+        function showPlate() {
+            if (currentPlate >= plates.length) {
+                showResults();
+                return;
+            }
+
+            const plate = plates[currentPlate];
+            drawPlate(plate);
+
+            document.getElementById('plateNum').textContent =
+                `Plate ${currentPlate + 1} of ${plates.length}`;
+            document.getElementById('progressFill').style.width =
+                `${(currentPlate / plates.length) * 100}%`;
+
+            // Generate options
+            const options = document.getElementById('options');
+            options.innerHTML = '';
+
+            const correctNum = parseInt(plate.number);
+            let choices = [correctNum];
+
+            // Add wrong options
+            while (choices.length < 4) {
+                const wrong = Math.floor(Math.random() * 90) + 10;
+                if (!choices.includes(wrong) && wrong !== correctNum) {
+                    choices.push(wrong);
+                }
+            }
+
+            // Shuffle
+            choices.sort(() => Math.random() - 0.5);
+
+            choices.forEach(num => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.textContent = num;
+                btn.addEventListener('click', () => answer(num.toString()));
+                options.appendChild(btn);
+            });
+        }
+
+        function answer(selected) {
+            const plate = plates[currentPlate];
+            const correct = selected === plate.number;
+
+            answers.push({ plate: currentPlate, correct, type: plate.type });
+
+            if (correct) {
+                if (plate.type === 'rg') rgCorrect++;
+                if (plate.type === 'by') byCorrect++;
+            }
+
+            // Highlight buttons
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                if (btn.textContent === plate.number) {
+                    btn.classList.add('correct');
+                } else if (btn.textContent === selected && !correct) {
+                    btn.classList.add('incorrect');
+                }
+                btn.style.pointerEvents = 'none';
+            });
+
+            setTimeout(() => {
+                currentPlate++;
+                showPlate();
+            }, 1000);
+        }
+
+        function skip() {
+            const plate = plates[currentPlate];
+            answers.push({ plate: currentPlate, correct: false, type: plate.type, skipped: true });
+            currentPlate++;
+            showPlate();
+        }
+
+        function showResults() {
+            document.getElementById('testContainer').classList.add('hidden');
+            document.getElementById('resultPanel').classList.remove('hidden');
+
+            const totalCorrect = answers.filter(a => a.correct).length;
+            const totalRG = answers.filter(a => a.type === 'rg').length;
+            const totalBY = answers.filter(a => a.type === 'by').length;
+
+            document.getElementById('correctCount').textContent = totalCorrect;
+            document.getElementById('totalCount').textContent = plates.length;
+
+            // Calculate scores
+            const rgPercent = Math.round((rgCorrect / totalRG) * 100);
+            const byPercent = Math.round((byCorrect / totalBY) * 100);
+            const overallPercent = Math.round((totalCorrect / plates.length) * 100);
+
+            const rgEl = document.getElementById('rgScore');
+            rgEl.textContent = rgPercent + '%';
+            rgEl.className = 'breakdown-value ' + getScoreClass(rgPercent);
+
+            const byEl = document.getElementById('byScore');
+            byEl.textContent = byPercent + '%';
+            byEl.className = 'breakdown-value ' + getScoreClass(byPercent);
+
+            const overallEl = document.getElementById('overallScore');
+            overallEl.textContent = overallPercent + '%';
+            overallEl.className = 'breakdown-value ' + getScoreClass(overallPercent);
+
+            // Result message
+            let message;
+            if (overallPercent >= 90) {
+                message = 'Excellent! Your color vision appears to be normal. You correctly identified most or all of the numbers.';
+            } else if (overallPercent >= 70) {
+                message = 'Good results. You may have mild difficulty distinguishing certain colors. Consider a professional evaluation if concerned.';
+            } else if (overallPercent >= 50) {
+                message = 'You may have some form of color vision deficiency. We recommend consulting an eye care professional for a thorough examination.';
+            } else {
+                message = 'Your results suggest possible color vision deficiency. Please consult an eye care professional for proper diagnosis and guidance.';
+            }
+
+            document.getElementById('resultMessage').textContent = message;
+        }
+
+        function getScoreClass(percent) {
+            if (percent >= 80) return 'good';
+            if (percent >= 50) return 'warning';
+            return 'poor';
+        }
+
+        function resetTest() {
+            currentPlate = 0;
+            answers = [];
+            rgCorrect = 0;
+            byCorrect = 0;
+
+            document.getElementById('testContainer').classList.remove('hidden');
+            document.getElementById('resultPanel').classList.add('hidden');
+
+            showPlate();
+        }
+
+        // Event listeners
+        document.getElementById('skipBtn').addEventListener('click', skip);
+        document.getElementById('retakeBtn').addEventListener('click', resetTest);
+
+        // Initialize
+        showPlate();
+    </script>
+</body>
+</html>

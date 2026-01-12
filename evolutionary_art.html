@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evolutionary Art Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #1a0a0a 0%, #2a1a0a 50%, #1a1a0a 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #ff6600, #ffaa00, #ff0066);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 30px;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .controls button {
+            padding: 12px 25px;
+            background: linear-gradient(90deg, #ff6600, #ff0066);
+            border: none;
+            border-radius: 25px;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        .controls button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(255, 100, 0, 0.5);
+        }
+
+        .controls button.secondary {
+            background: linear-gradient(90deg, #444, #666);
+        }
+
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5em;
+            color: #ffaa00;
+        }
+
+        .stat-label {
+            font-size: 0.8em;
+            color: #888;
+        }
+
+        .population-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .organism {
+            background: rgba(20, 20, 20, 0.8);
+            border: 2px solid #333;
+            border-radius: 10px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .organism:hover {
+            border-color: #ff6600;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(255, 100, 0, 0.2);
+        }
+
+        .organism.selected {
+            border-color: #ffaa00;
+            box-shadow: 0 0 20px rgba(255, 170, 0, 0.4);
+        }
+
+        .organism canvas {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 5px;
+        }
+
+        .organism-info {
+            margin-top: 10px;
+            font-size: 0.8em;
+            color: #aaa;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .fitness-bar {
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .fitness-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff0066, #ff6600, #ffaa00);
+            transition: width 0.3s;
+        }
+
+        .champion-display {
+            background: rgba(20, 20, 20, 0.8);
+            border: 2px solid #ffaa00;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .champion-display h2 {
+            color: #ffaa00;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .champion-canvas-container {
+            display: flex;
+            justify-content: center;
+        }
+
+        #championCanvas {
+            max-width: 400px;
+            max-height: 400px;
+            border-radius: 10px;
+            border: 2px solid #333;
+        }
+
+        .genome-display {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            font-size: 0.75em;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .gene {
+            display: inline-block;
+            padding: 3px 8px;
+            margin: 2px;
+            background: rgba(255, 100, 0, 0.2);
+            border-radius: 3px;
+        }
+
+        .settings-panel {
+            background: rgba(20, 20, 20, 0.8);
+            border: 1px solid #333;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .settings-panel h3 {
+            color: #ff6600;
+            margin-bottom: 15px;
+        }
+
+        .setting-row {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+
+        .setting-row label {
+            flex: 0 0 150px;
+            color: #aaa;
+        }
+
+        .setting-row input, .setting-row select {
+            flex: 1;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid #444;
+            border-radius: 5px;
+            color: #fff;
+            font-family: inherit;
+        }
+
+        .setting-row input[type="range"] {
+            cursor: pointer;
+        }
+
+        .art-style-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        .style-btn {
+            padding: 8px 15px;
+            background: rgba(100, 100, 100, 0.3);
+            border: 1px solid #444;
+            border-radius: 5px;
+            color: #aaa;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .style-btn.active {
+            background: rgba(255, 100, 0, 0.3);
+            border-color: #ff6600;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Evolutionary Art Generator</h1>
+        <p class="subtitle">Genetic Algorithms | Aesthetic Evolution | Interactive Selection</p>
+
+        <div class="controls">
+            <button onclick="startEvolution()">Start Evolution</button>
+            <button onclick="stopEvolution()" class="secondary">Pause</button>
+            <button onclick="nextGeneration()">Next Generation</button>
+            <button onclick="randomize()">Randomize Population</button>
+            <button onclick="exportChampion()">Export Champion</button>
+        </div>
+
+        <div class="stats-bar">
+            <div class="stat">
+                <div class="stat-value" id="generation">0</div>
+                <div class="stat-label">Generation</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="avgFitness">0.00</div>
+                <div class="stat-label">Avg Fitness</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="maxFitness">0.00</div>
+                <div class="stat-label">Max Fitness</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="diversity">100%</div>
+                <div class="stat-label">Diversity</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="mutations">0</div>
+                <div class="stat-label">Mutations</div>
+            </div>
+        </div>
+
+        <div class="settings-panel">
+            <h3>Evolution Settings</h3>
+            <div class="art-style-buttons">
+                <button class="style-btn active" data-style="abstract">Abstract</button>
+                <button class="style-btn" data-style="geometric">Geometric</button>
+                <button class="style-btn" data-style="organic">Organic</button>
+                <button class="style-btn" data-style="fractal">Fractal</button>
+                <button class="style-btn" data-style="gradient">Gradient</button>
+            </div>
+            <div class="setting-row">
+                <label>Population Size:</label>
+                <input type="range" id="popSize" min="6" max="24" value="12">
+                <span id="popSizeValue">12</span>
+            </div>
+            <div class="setting-row">
+                <label>Mutation Rate:</label>
+                <input type="range" id="mutationRate" min="1" max="50" value="15">
+                <span id="mutationRateValue">15%</span>
+            </div>
+            <div class="setting-row">
+                <label>Elitism:</label>
+                <input type="range" id="elitism" min="0" max="4" value="2">
+                <span id="elitismValue">2</span>
+            </div>
+        </div>
+
+        <div class="champion-display">
+            <h2>Champion Organism</h2>
+            <div class="champion-canvas-container">
+                <canvas id="championCanvas" width="400" height="400"></canvas>
+            </div>
+            <div class="genome-display" id="championGenome"></div>
+        </div>
+
+        <p style="text-align: center; color: #888; margin-bottom: 15px;">
+            Click organisms to select parents for the next generation. Selected organisms have higher breeding probability.
+        </p>
+
+        <div class="population-grid" id="populationGrid"></div>
+    </div>
+
+    <script>
+        let population = [];
+        let generation = 0;
+        let totalMutations = 0;
+        let isRunning = false;
+        let evolutionInterval = null;
+        let artStyle = 'abstract';
+        let selectedOrganisms = new Set();
+
+        const CANVAS_SIZE = 200;
+
+        // Gene types for different art styles
+        const geneTemplates = {
+            abstract: {
+                shapes: ['circle', 'rect', 'triangle', 'ellipse', 'arc', 'bezier'],
+                params: ['x', 'y', 'size', 'rotation', 'hue', 'saturation', 'lightness', 'alpha']
+            },
+            geometric: {
+                shapes: ['rect', 'triangle', 'polygon', 'line', 'grid'],
+                params: ['x', 'y', 'size', 'rotation', 'sides', 'hue', 'alpha']
+            },
+            organic: {
+                shapes: ['blob', 'tendril', 'cell', 'branch', 'wave'],
+                params: ['x', 'y', 'size', 'complexity', 'hue', 'saturation', 'alpha']
+            },
+            fractal: {
+                shapes: ['sierpinski', 'koch', 'tree', 'spiral', 'julia'],
+                params: ['x', 'y', 'depth', 'angle', 'scale', 'hue', 'iterations']
+            },
+            gradient: {
+                shapes: ['radial', 'linear', 'conic', 'noise', 'blend'],
+                params: ['x', 'y', 'radius', 'angle', 'hue1', 'hue2', 'stops']
+            }
+        };
+
+        class Genome {
+            constructor() {
+                this.genes = [];
+                this.fitness = 0;
+                this.complexity = 0;
+            }
+
+            randomize(style) {
+                const template = geneTemplates[style];
+                const numGenes = 5 + Math.floor(Math.random() * 15);
+                this.genes = [];
+
+                for (let i = 0; i < numGenes; i++) {
+                    const gene = {
+                        shape: template.shapes[Math.floor(Math.random() * template.shapes.length)],
+                        params: {}
+                    };
+
+                    for (const param of template.params) {
+                        gene.params[param] = Math.random();
+                    }
+
+                    this.genes.push(gene);
+                }
+
+                this.complexity = numGenes;
+            }
+
+            mutate(rate) {
+                let mutated = false;
+
+                for (const gene of this.genes) {
+                    for (const param in gene.params) {
+                        if (Math.random() < rate) {
+                            gene.params[param] += (Math.random() - 0.5) * 0.3;
+                            gene.params[param] = Math.max(0, Math.min(1, gene.params[param]));
+                            mutated = true;
+                        }
+                    }
+
+                    // Occasionally mutate shape type
+                    if (Math.random() < rate * 0.1) {
+                        const template = geneTemplates[artStyle];
+                        gene.shape = template.shapes[Math.floor(Math.random() * template.shapes.length)];
+                        mutated = true;
+                    }
+                }
+
+                // Occasionally add or remove genes
+                if (Math.random() < rate * 0.2) {
+                    if (Math.random() < 0.5 && this.genes.length > 3) {
+                        this.genes.splice(Math.floor(Math.random() * this.genes.length), 1);
+                    } else if (this.genes.length < 25) {
+                        const template = geneTemplates[artStyle];
+                        const newGene = {
+                            shape: template.shapes[Math.floor(Math.random() * template.shapes.length)],
+                            params: {}
+                        };
+                        for (const param of template.params) {
+                            newGene.params[param] = Math.random();
+                        }
+                        this.genes.push(newGene);
+                    }
+                    mutated = true;
+                }
+
+                if (mutated) totalMutations++;
+                return mutated;
+            }
+
+            crossover(other) {
+                const child = new Genome();
+                const crossPoint = Math.floor(Math.random() * Math.min(this.genes.length, other.genes.length));
+
+                child.genes = [
+                    ...this.genes.slice(0, crossPoint).map(g => JSON.parse(JSON.stringify(g))),
+                    ...other.genes.slice(crossPoint).map(g => JSON.parse(JSON.stringify(g)))
+                ];
+
+                child.complexity = child.genes.length;
+                return child;
+            }
+
+            clone() {
+                const clone = new Genome();
+                clone.genes = JSON.parse(JSON.stringify(this.genes));
+                clone.fitness = this.fitness;
+                clone.complexity = this.complexity;
+                return clone;
+            }
+        }
+
+        class Organism {
+            constructor() {
+                this.genome = new Genome();
+                this.canvas = null;
+                this.ctx = null;
+            }
+
+            render(canvas) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                const ctx = this.ctx;
+                const w = canvas.width;
+                const h = canvas.height;
+
+                // Background
+                ctx.fillStyle = '#111';
+                ctx.fillRect(0, 0, w, h);
+
+                for (const gene of this.genome.genes) {
+                    this.renderGene(gene, w, h);
+                }
+            }
+
+            renderGene(gene, w, h) {
+                const ctx = this.ctx;
+                const p = gene.params;
+
+                const x = (p.x || 0.5) * w;
+                const y = (p.y || 0.5) * h;
+                const size = (p.size || 0.2) * Math.min(w, h) * 0.5;
+                const hue = Math.floor((p.hue || 0) * 360);
+                const sat = Math.floor((p.saturation || 0.7) * 100);
+                const light = Math.floor((p.lightness || 0.5) * 60 + 20);
+                const alpha = (p.alpha || 0.7) * 0.8 + 0.1;
+                const rotation = (p.rotation || 0) * Math.PI * 2;
+
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(rotation);
+
+                ctx.fillStyle = `hsla(${hue}, ${sat}%, ${light}%, ${alpha})`;
+                ctx.strokeStyle = `hsla(${hue}, ${sat}%, ${Math.min(light + 20, 90)}%, ${alpha})`;
+                ctx.lineWidth = 2;
+
+                switch (gene.shape) {
+                    case 'circle':
+                        ctx.beginPath();
+                        ctx.arc(0, 0, size, 0, Math.PI * 2);
+                        ctx.fill();
+                        break;
+
+                    case 'rect':
+                        ctx.fillRect(-size, -size, size * 2, size * 2);
+                        break;
+
+                    case 'triangle':
+                        ctx.beginPath();
+                        ctx.moveTo(0, -size);
+                        ctx.lineTo(size, size);
+                        ctx.lineTo(-size, size);
+                        ctx.closePath();
+                        ctx.fill();
+                        break;
+
+                    case 'ellipse':
+                        ctx.beginPath();
+                        ctx.ellipse(0, 0, size, size * 0.6, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                        break;
+
+                    case 'arc':
+                        ctx.beginPath();
+                        ctx.arc(0, 0, size, 0, Math.PI * (p.complexity || 1.5));
+                        ctx.stroke();
+                        break;
+
+                    case 'bezier':
+                        ctx.beginPath();
+                        ctx.moveTo(-size, 0);
+                        ctx.bezierCurveTo(
+                            -size * 0.5, -size * (p.complexity || 0.5) * 2,
+                            size * 0.5, size * (p.complexity || 0.5) * 2,
+                            size, 0
+                        );
+                        ctx.stroke();
+                        break;
+
+                    case 'polygon':
+                        const sides = Math.floor((p.sides || 0.5) * 6) + 3;
+                        ctx.beginPath();
+                        for (let i = 0; i < sides; i++) {
+                            const angle = (i / sides) * Math.PI * 2 - Math.PI / 2;
+                            const px = Math.cos(angle) * size;
+                            const py = Math.sin(angle) * size;
+                            if (i === 0) ctx.moveTo(px, py);
+                            else ctx.lineTo(px, py);
+                        }
+                        ctx.closePath();
+                        ctx.fill();
+                        break;
+
+                    case 'line':
+                        ctx.beginPath();
+                        ctx.moveTo(-size, -size);
+                        ctx.lineTo(size, size);
+                        ctx.stroke();
+                        break;
+
+                    case 'grid':
+                        const gridSize = Math.floor((p.sides || 0.3) * 5) + 2;
+                        const cellSize = size * 2 / gridSize;
+                        for (let i = 0; i < gridSize; i++) {
+                            for (let j = 0; j < gridSize; j++) {
+                                if ((i + j) % 2 === 0) {
+                                    ctx.fillRect(
+                                        -size + i * cellSize,
+                                        -size + j * cellSize,
+                                        cellSize * 0.9,
+                                        cellSize * 0.9
+                                    );
+                                }
+                            }
+                        }
+                        break;
+
+                    case 'blob':
+                        ctx.beginPath();
+                        const points = 8;
+                        for (let i = 0; i <= points; i++) {
+                            const angle = (i / points) * Math.PI * 2;
+                            const r = size * (0.7 + 0.3 * Math.sin(angle * 3 + p.complexity * 10));
+                            const bx = Math.cos(angle) * r;
+                            const by = Math.sin(angle) * r;
+                            if (i === 0) ctx.moveTo(bx, by);
+                            else ctx.lineTo(bx, by);
+                        }
+                        ctx.fill();
+                        break;
+
+                    case 'tendril':
+                        ctx.beginPath();
+                        const segments = 20;
+                        let tx = 0, ty = 0;
+                        ctx.moveTo(tx, ty);
+                        for (let i = 0; i < segments; i++) {
+                            const angle = (p.complexity || 0.5) * Math.PI * 2 + i * 0.3;
+                            tx += Math.cos(angle) * (size / segments) * 2;
+                            ty += Math.sin(angle) * (size / segments) * 2;
+                            ctx.lineTo(tx, ty);
+                        }
+                        ctx.stroke();
+                        break;
+
+                    case 'cell':
+                        // Outer membrane
+                        ctx.beginPath();
+                        ctx.arc(0, 0, size, 0, Math.PI * 2);
+                        ctx.fill();
+                        // Nucleus
+                        ctx.fillStyle = `hsla(${(hue + 180) % 360}, ${sat}%, ${light}%, ${alpha})`;
+                        ctx.beginPath();
+                        ctx.arc(size * 0.2, size * 0.1, size * 0.3, 0, Math.PI * 2);
+                        ctx.fill();
+                        break;
+
+                    case 'wave':
+                        ctx.beginPath();
+                        for (let i = -size; i <= size; i += 2) {
+                            const wy = Math.sin(i * 0.1 * (p.complexity || 1) * 10) * size * 0.3;
+                            if (i === -size) ctx.moveTo(i, wy);
+                            else ctx.lineTo(i, wy);
+                        }
+                        ctx.stroke();
+                        break;
+
+                    case 'spiral':
+                        ctx.beginPath();
+                        for (let i = 0; i < 100; i++) {
+                            const angle = i * 0.2;
+                            const r = (i / 100) * size;
+                            const sx = Math.cos(angle) * r;
+                            const sy = Math.sin(angle) * r;
+                            if (i === 0) ctx.moveTo(sx, sy);
+                            else ctx.lineTo(sx, sy);
+                        }
+                        ctx.stroke();
+                        break;
+
+                    case 'tree':
+                        this.drawBranch(ctx, 0, 0, -size, p.depth || 0.5, p.angle || 0.3, hue, sat, light, alpha);
+                        break;
+
+                    case 'radial':
+                        const radGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, size);
+                        radGrad.addColorStop(0, `hsla(${hue}, ${sat}%, ${light}%, ${alpha})`);
+                        radGrad.addColorStop(1, `hsla(${(hue + (p.hue2 || 0.5) * 180) % 360}, ${sat}%, ${light * 0.5}%, 0)`);
+                        ctx.fillStyle = radGrad;
+                        ctx.beginPath();
+                        ctx.arc(0, 0, size, 0, Math.PI * 2);
+                        ctx.fill();
+                        break;
+
+                    case 'linear':
+                        const linGrad = ctx.createLinearGradient(-size, -size, size, size);
+                        linGrad.addColorStop(0, `hsla(${hue}, ${sat}%, ${light}%, ${alpha})`);
+                        linGrad.addColorStop(1, `hsla(${(hue + (p.hue2 || 0.5) * 180) % 360}, ${sat}%, ${light}%, ${alpha})`);
+                        ctx.fillStyle = linGrad;
+                        ctx.fillRect(-size, -size, size * 2, size * 2);
+                        break;
+
+                    default:
+                        ctx.beginPath();
+                        ctx.arc(0, 0, size, 0, Math.PI * 2);
+                        ctx.fill();
+                }
+
+                ctx.restore();
+            }
+
+            drawBranch(ctx, x, y, length, depth, angleVar, hue, sat, light, alpha) {
+                if (depth < 0.1 || Math.abs(length) < 5) return;
+
+                const endX = x;
+                const endY = y + length;
+
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(endX, endY);
+                ctx.strokeStyle = `hsla(${hue}, ${sat}%, ${light}%, ${alpha * depth})`;
+                ctx.lineWidth = depth * 3;
+                ctx.stroke();
+
+                const newLength = length * 0.7;
+                const angle1 = -Math.PI / 2 - angleVar * Math.PI;
+                const angle2 = -Math.PI / 2 + angleVar * Math.PI;
+
+                this.drawBranch(ctx, endX, endY, newLength * Math.sin(angle1 + Math.PI/2), depth * 0.7, angleVar, hue, sat, light, alpha);
+                this.drawBranch(ctx, endX, endY, newLength * Math.sin(angle2 + Math.PI/2), depth * 0.7, angleVar, hue, sat, light, alpha);
+            }
+
+            calculateFitness() {
+                // Aesthetic fitness heuristics
+                let fitness = 0;
+
+                // Reward complexity within bounds
+                const complexity = this.genome.genes.length;
+                fitness += Math.min(complexity / 15, 1) * 0.3;
+
+                // Reward color variety
+                const hues = this.genome.genes.map(g => g.params.hue || 0);
+                const hueVariety = new Set(hues.map(h => Math.floor(h * 10))).size / 10;
+                fitness += hueVariety * 0.2;
+
+                // Reward spatial distribution
+                const positions = this.genome.genes.map(g => ({
+                    x: g.params.x || 0.5,
+                    y: g.params.y || 0.5
+                }));
+                let distribution = 0;
+                for (let i = 0; i < positions.length; i++) {
+                    for (let j = i + 1; j < positions.length; j++) {
+                        const dx = positions[i].x - positions[j].x;
+                        const dy = positions[i].y - positions[j].y;
+                        distribution += Math.sqrt(dx * dx + dy * dy);
+                    }
+                }
+                distribution /= Math.max(1, positions.length * (positions.length - 1) / 2);
+                fitness += distribution * 0.3;
+
+                // Reward moderate alpha values (not too transparent or opaque)
+                const alphas = this.genome.genes.map(g => g.params.alpha || 0.5);
+                const avgAlpha = alphas.reduce((a, b) => a + b, 0) / alphas.length;
+                fitness += (1 - Math.abs(avgAlpha - 0.6)) * 0.2;
+
+                this.genome.fitness = fitness;
+                return fitness;
+            }
+        }
+
+        function initializePopulation() {
+            const popSize = parseInt(document.getElementById('popSize').value);
+            population = [];
+            selectedOrganisms.clear();
+
+            for (let i = 0; i < popSize; i++) {
+                const organism = new Organism();
+                organism.genome.randomize(artStyle);
+                organism.calculateFitness();
+                population.push(organism);
+            }
+
+            renderPopulation();
+            updateChampion();
+            updateStats();
+        }
+
+        function renderPopulation() {
+            const grid = document.getElementById('populationGrid');
+            grid.innerHTML = '';
+
+            for (let i = 0; i < population.length; i++) {
+                const organism = population[i];
+                const div = document.createElement('div');
+                div.className = 'organism' + (selectedOrganisms.has(i) ? ' selected' : '');
+                div.onclick = () => toggleSelection(i);
+
+                const canvas = document.createElement('canvas');
+                canvas.width = CANVAS_SIZE;
+                canvas.height = CANVAS_SIZE;
+                organism.render(canvas);
+
+                const info = document.createElement('div');
+                info.className = 'organism-info';
+                info.innerHTML = `
+                    <span>Genes: ${organism.genome.genes.length}</span>
+                    <span>Fitness: ${organism.genome.fitness.toFixed(2)}</span>
+                `;
+
+                const fitnessBar = document.createElement('div');
+                fitnessBar.className = 'fitness-bar';
+                fitnessBar.innerHTML = `<div class="fitness-fill" style="width: ${organism.genome.fitness * 100}%"></div>`;
+
+                div.appendChild(canvas);
+                div.appendChild(info);
+                div.appendChild(fitnessBar);
+                grid.appendChild(div);
+            }
+        }
+
+        function toggleSelection(index) {
+            if (selectedOrganisms.has(index)) {
+                selectedOrganisms.delete(index);
+            } else {
+                selectedOrganisms.add(index);
+            }
+            renderPopulation();
+        }
+
+        function updateChampion() {
+            if (population.length === 0) return;
+
+            const champion = population.reduce((best, org) =>
+                org.genome.fitness > best.genome.fitness ? org : best
+            );
+
+            const canvas = document.getElementById('championCanvas');
+            champion.render(canvas);
+
+            const genomeDiv = document.getElementById('championGenome');
+            genomeDiv.innerHTML = champion.genome.genes.map((gene, i) =>
+                `<span class="gene">${gene.shape}: ${Object.entries(gene.params)
+                    .map(([k, v]) => `${k}=${v.toFixed(2)}`)
+                    .join(', ')}</span>`
+            ).join(' ');
+        }
+
+        function updateStats() {
+            document.getElementById('generation').textContent = generation;
+
+            const fitnesses = population.map(o => o.genome.fitness);
+            const avgFitness = fitnesses.reduce((a, b) => a + b, 0) / fitnesses.length;
+            const maxFitness = Math.max(...fitnesses);
+
+            document.getElementById('avgFitness').textContent = avgFitness.toFixed(2);
+            document.getElementById('maxFitness').textContent = maxFitness.toFixed(2);
+            document.getElementById('mutations').textContent = totalMutations;
+
+            // Calculate genetic diversity
+            const allGenes = population.flatMap(o => o.genome.genes.map(g => g.shape));
+            const uniqueGenes = new Set(allGenes).size;
+            const diversity = Math.min(100, Math.round((uniqueGenes / Math.max(1, allGenes.length / population.length)) * 100));
+            document.getElementById('diversity').textContent = diversity + '%';
+        }
+
+        function selectParent() {
+            // Tournament selection with bias towards selected organisms
+            const tournamentSize = 3;
+            const candidates = [];
+
+            for (let i = 0; i < tournamentSize; i++) {
+                const idx = Math.floor(Math.random() * population.length);
+                candidates.push({ index: idx, organism: population[idx] });
+            }
+
+            // Boost fitness for selected organisms
+            candidates.forEach(c => {
+                if (selectedOrganisms.has(c.index)) {
+                    c.organism = { genome: { fitness: c.organism.genome.fitness * 2 }, original: c.organism };
+                }
+            });
+
+            const winner = candidates.reduce((best, c) =>
+                (c.organism.genome?.fitness || c.organism.original?.genome.fitness) >
+                (best.organism.genome?.fitness || best.organism.original?.genome.fitness) ? c : best
+            );
+
+            return winner.organism.original || population[winner.index];
+        }
+
+        function nextGeneration() {
+            const mutationRate = parseInt(document.getElementById('mutationRate').value) / 100;
+            const elitism = parseInt(document.getElementById('elitism').value);
+            const popSize = parseInt(document.getElementById('popSize').value);
+
+            // Sort by fitness
+            population.sort((a, b) => b.genome.fitness - a.genome.fitness);
+
+            const newPopulation = [];
+
+            // Elitism - keep best individuals
+            for (let i = 0; i < elitism && i < population.length; i++) {
+                newPopulation.push(population[i]);
+            }
+
+            // Generate rest through crossover and mutation
+            while (newPopulation.length < popSize) {
+                const parent1 = selectParent();
+                const parent2 = selectParent();
+
+                const child = new Organism();
+                child.genome = parent1.genome.crossover(parent2.genome);
+                child.genome.mutate(mutationRate);
+                child.calculateFitness();
+
+                newPopulation.push(child);
+            }
+
+            population = newPopulation;
+            generation++;
+            selectedOrganisms.clear();
+
+            renderPopulation();
+            updateChampion();
+            updateStats();
+        }
+
+        function startEvolution() {
+            if (isRunning) return;
+            isRunning = true;
+            evolutionInterval = setInterval(nextGeneration, 500);
+        }
+
+        function stopEvolution() {
+            isRunning = false;
+            if (evolutionInterval) {
+                clearInterval(evolutionInterval);
+                evolutionInterval = null;
+            }
+        }
+
+        function randomize() {
+            generation = 0;
+            totalMutations = 0;
+            initializePopulation();
+        }
+
+        function exportChampion() {
+            const canvas = document.getElementById('championCanvas');
+            const link = document.createElement('a');
+            link.download = `evolved-art-gen${generation}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        // Event listeners
+        document.querySelectorAll('.style-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.style-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                artStyle = btn.dataset.style;
+                randomize();
+            });
+        });
+
+        document.getElementById('popSize').addEventListener('input', (e) => {
+            document.getElementById('popSizeValue').textContent = e.target.value;
+        });
+
+        document.getElementById('mutationRate').addEventListener('input', (e) => {
+            document.getElementById('mutationRateValue').textContent = e.target.value + '%';
+        });
+
+        document.getElementById('elitism').addEventListener('input', (e) => {
+            document.getElementById('elitismValue').textContent = e.target.value;
+        });
+
+        // Initialize
+        initializePopulation();
+    </script>
+</body>
+</html>

@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matrix Rain</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000;
+            min-height: 100vh;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        #canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+        }
+
+        .controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 20, 0, 0.9);
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            padding: 20px;
+            border-radius: 10px;
+            z-index: 100;
+            color: #00ff00;
+            min-width: 250px;
+        }
+
+        h1 {
+            font-size: 1.3em;
+            margin-bottom: 5px;
+            color: #00ff00;
+            text-shadow: 0 0 10px #00ff00;
+        }
+
+        .subtitle {
+            font-size: 0.75em;
+            color: #008800;
+            margin-bottom: 20px;
+        }
+
+        .section {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(0, 255, 0, 0.2);
+        }
+
+        .section h3 {
+            font-size: 0.8em;
+            color: #008800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .control-group {
+            margin-bottom: 12px;
+        }
+
+        .control-group label {
+            display: block;
+            font-size: 0.75em;
+            color: #00aa00;
+            margin-bottom: 5px;
+        }
+
+        .control-group input[type="range"] {
+            width: 100%;
+            height: 5px;
+            border-radius: 3px;
+            background: rgba(0, 255, 0, 0.2);
+            -webkit-appearance: none;
+        }
+
+        .control-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #00ff00;
+            cursor: pointer;
+            box-shadow: 0 0 10px #00ff00;
+        }
+
+        .value-display {
+            font-size: 0.7em;
+            color: #00ff00;
+            float: right;
+        }
+
+        .preset-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .preset-btn {
+            padding: 10px 8px;
+            background: rgba(0, 255, 0, 0.1);
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            color: #00ff00;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.75em;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .preset-btn:hover {
+            background: rgba(0, 255, 0, 0.2);
+            border-color: #00ff00;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+        }
+
+        .preset-btn.active {
+            background: rgba(0, 255, 0, 0.3);
+            border-color: #00ff00;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8em;
+            margin-bottom: 8px;
+            color: #00aa00;
+        }
+
+        .checkbox-item input {
+            width: 16px;
+            height: 16px;
+            accent-color: #00ff00;
+        }
+
+        .color-options {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .color-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .color-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .color-btn.active {
+            border-color: #fff;
+        }
+
+        .message-input {
+            width: 100%;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            border-radius: 6px;
+            color: #00ff00;
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .message-input:focus {
+            outline: none;
+            border-color: #00ff00;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+        }
+
+        .help-text {
+            font-size: 0.7em;
+            color: #006600;
+            margin-top: 15px;
+            line-height: 1.4;
+        }
+
+        .toggle-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            background: rgba(0, 20, 0, 0.9);
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            color: #00ff00;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85em;
+            z-index: 100;
+        }
+
+        .toggle-btn:hover {
+            background: rgba(0, 255, 0, 0.2);
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+
+    <div class="controls" id="controls">
+        <h1>Matrix Rain</h1>
+        <p class="subtitle">Digital Rain Simulation</p>
+
+        <div class="section">
+            <h3>Character Set</h3>
+            <div class="preset-grid">
+                <button class="preset-btn active" data-charset="katakana">Katakana</button>
+                <button class="preset-btn" data-charset="binary">Binary</button>
+                <button class="preset-btn" data-charset="hex">Hexadecimal</button>
+                <button class="preset-btn" data-charset="ascii">ASCII</button>
+                <button class="preset-btn" data-charset="numbers">Numbers</button>
+                <button class="preset-btn" data-charset="symbols">Symbols</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>Settings</h3>
+            <div class="control-group">
+                <label>Speed <span class="value-display" id="speedVal">1.0x</span></label>
+                <input type="range" id="speed" min="1" max="30" value="10">
+            </div>
+            <div class="control-group">
+                <label>Density <span class="value-display" id="densityVal">100%</span></label>
+                <input type="range" id="density" min="10" max="200" value="100">
+            </div>
+            <div class="control-group">
+                <label>Font Size <span class="value-display" id="sizeVal">16px</span></label>
+                <input type="range" id="fontSize" min="8" max="32" value="16">
+            </div>
+            <div class="control-group">
+                <label>Trail Length <span class="value-display" id="trailVal">20</span></label>
+                <input type="range" id="trailLength" min="5" max="50" value="20">
+            </div>
+            <div class="control-group">
+                <label>Glow Intensity <span class="value-display" id="glowVal">1.0</span></label>
+                <input type="range" id="glow" min="0" max="30" value="10">
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>Color</h3>
+            <div class="color-options">
+                <div class="color-btn active" style="background: linear-gradient(180deg, #fff, #00ff00);" data-color="green"></div>
+                <div class="color-btn" style="background: linear-gradient(180deg, #fff, #00d4ff);" data-color="cyan"></div>
+                <div class="color-btn" style="background: linear-gradient(180deg, #fff, #ff6b6b);" data-color="red"></div>
+                <div class="color-btn" style="background: linear-gradient(180deg, #fff, #ffd700);" data-color="gold"></div>
+                <div class="color-btn" style="background: linear-gradient(180deg, #fff, #a29bfe);" data-color="purple"></div>
+                <div class="color-btn" style="background: linear-gradient(180deg, #fff, #fff);" data-color="white"></div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>Effects</h3>
+            <label class="checkbox-item">
+                <input type="checkbox" id="randomChars" checked>
+                Random Character Changes
+            </label>
+            <label class="checkbox-item">
+                <input type="checkbox" id="mouseInteract">
+                Mouse Interaction
+            </label>
+            <label class="checkbox-item">
+                <input type="checkbox" id="showMessage">
+                Show Hidden Message
+            </label>
+            <input type="text" class="message-input" id="messageInput" placeholder="Enter hidden message..." value="WAKE UP" style="margin-top: 8px;">
+        </div>
+
+        <div class="help-text">
+            Press H to toggle controls<br>
+            Press F for fullscreen<br>
+            Press Space to pause
+        </div>
+    </div>
+
+    <button class="toggle-btn" id="toggleBtn">Hide Controls</button>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let columns = [];
+        let isPaused = false;
+        let mouseX = -1000;
+        let mouseY = -1000;
+
+        // Settings
+        let speed = 1.0;
+        let density = 1.0;
+        let fontSize = 16;
+        let trailLength = 20;
+        let glowIntensity = 1.0;
+        let randomChars = true;
+        let mouseInteract = false;
+        let showMessage = false;
+        let hiddenMessage = 'WAKE UP';
+
+        // Character sets
+        const charsets = {
+            katakana: 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン',
+            binary: '01',
+            hex: '0123456789ABCDEF',
+            ascii: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*',
+            numbers: '0123456789',
+            symbols: '!@#$%^&*(){}[]<>?/\\|~`+-=_'
+        };
+
+        let currentCharset = charsets.katakana;
+
+        // Colors
+        const colors = {
+            green: { head: '#fff', body: '#00ff00', tail: '#003300', glow: '#00ff00' },
+            cyan: { head: '#fff', body: '#00d4ff', tail: '#002233', glow: '#00d4ff' },
+            red: { head: '#fff', body: '#ff6b6b', tail: '#330000', glow: '#ff6b6b' },
+            gold: { head: '#fff', body: '#ffd700', tail: '#332200', glow: '#ffd700' },
+            purple: { head: '#fff', body: '#a29bfe', tail: '#220033', glow: '#a29bfe' },
+            white: { head: '#fff', body: '#cccccc', tail: '#222222', glow: '#ffffff' }
+        };
+
+        let currentColor = colors.green;
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            initColumns();
+        }
+
+        function initColumns() {
+            const columnCount = Math.floor(canvas.width / fontSize * density);
+            columns = [];
+
+            for (let i = 0; i < columnCount; i++) {
+                columns.push({
+                    x: (i / columnCount) * canvas.width,
+                    y: Math.random() * canvas.height,
+                    speed: 0.5 + Math.random() * 1.5,
+                    chars: [],
+                    charChangeCounter: 0
+                });
+
+                // Initialize characters for this column
+                for (let j = 0; j < trailLength; j++) {
+                    columns[i].chars.push(getRandomChar());
+                }
+            }
+        }
+
+        function getRandomChar() {
+            return currentCharset[Math.floor(Math.random() * currentCharset.length)];
+        }
+
+        function draw() {
+            // Fade background
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.font = `${fontSize}px monospace`;
+
+            // Draw hidden message if enabled
+            if (showMessage && hiddenMessage) {
+                const messageChars = hiddenMessage.split('');
+                const messageWidth = messageChars.length * fontSize * 0.8;
+                const startX = (canvas.width - messageWidth) / 2;
+                const messageY = canvas.height / 2;
+
+                ctx.save();
+                ctx.globalAlpha = 0.1;
+                ctx.fillStyle = currentColor.body;
+                ctx.font = `bold ${fontSize * 2}px monospace`;
+
+                messageChars.forEach((char, i) => {
+                    ctx.fillText(char, startX + i * fontSize * 1.2, messageY);
+                });
+                ctx.restore();
+            }
+
+            columns.forEach((column, colIndex) => {
+                // Mouse interaction
+                let mouseEffect = 1;
+                if (mouseInteract) {
+                    const dist = Math.sqrt(
+                        Math.pow(column.x - mouseX, 2) +
+                        Math.pow(column.y - mouseY, 2)
+                    );
+                    if (dist < 100) {
+                        mouseEffect = 1 + (100 - dist) / 50;
+                    }
+                }
+
+                // Draw characters
+                for (let i = 0; i < column.chars.length; i++) {
+                    const charY = column.y - i * fontSize;
+
+                    if (charY < 0 || charY > canvas.height) continue;
+
+                    const progress = i / column.chars.length;
+
+                    // Calculate color
+                    let color;
+                    if (i === 0) {
+                        color = currentColor.head;
+                        ctx.shadowColor = currentColor.glow;
+                        ctx.shadowBlur = 15 * glowIntensity;
+                    } else if (i < column.chars.length / 3) {
+                        color = currentColor.body;
+                        ctx.shadowColor = currentColor.glow;
+                        ctx.shadowBlur = 5 * glowIntensity;
+                    } else {
+                        const fadeProgress = (i - column.chars.length / 3) / (column.chars.length * 2 / 3);
+                        color = lerpColor(currentColor.body, currentColor.tail, fadeProgress);
+                        ctx.shadowBlur = 0;
+                    }
+
+                    ctx.fillStyle = color;
+                    ctx.globalAlpha = 1 - progress * 0.5;
+
+                    ctx.fillText(column.chars[i], column.x, charY);
+                }
+
+                ctx.shadowBlur = 0;
+                ctx.globalAlpha = 1;
+
+                // Update column
+                if (!isPaused) {
+                    column.y += column.speed * speed * fontSize * 0.5 * mouseEffect;
+
+                    // Reset column when it goes off screen
+                    if (column.y - column.chars.length * fontSize > canvas.height) {
+                        column.y = 0;
+                        column.speed = 0.5 + Math.random() * 1.5;
+                    }
+
+                    // Randomly change characters
+                    if (randomChars) {
+                        column.charChangeCounter++;
+                        if (column.charChangeCounter > 5) {
+                            const changeIndex = Math.floor(Math.random() * column.chars.length);
+                            column.chars[changeIndex] = getRandomChar();
+                            column.charChangeCounter = 0;
+                        }
+                    }
+                }
+            });
+
+            requestAnimationFrame(draw);
+        }
+
+        function lerpColor(color1, color2, t) {
+            const c1 = hexToRgb(color1);
+            const c2 = hexToRgb(color2);
+
+            const r = Math.round(c1.r + (c2.r - c1.r) * t);
+            const g = Math.round(c1.g + (c2.g - c1.g) * t);
+            const b = Math.round(c1.b + (c2.b - c1.b) * t);
+
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : { r: 0, g: 0, b: 0 };
+        }
+
+        // Event listeners
+        document.querySelectorAll('.preset-btn[data-charset]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.preset-btn[data-charset]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentCharset = charsets[btn.dataset.charset];
+
+                // Regenerate characters
+                columns.forEach(column => {
+                    column.chars = column.chars.map(() => getRandomChar());
+                });
+            });
+        });
+
+        document.querySelectorAll('.color-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentColor = colors[btn.dataset.color];
+            });
+        });
+
+        document.getElementById('speed').addEventListener('input', (e) => {
+            speed = e.target.value / 10;
+            document.getElementById('speedVal').textContent = speed.toFixed(1) + 'x';
+        });
+
+        document.getElementById('density').addEventListener('input', (e) => {
+            density = e.target.value / 100;
+            document.getElementById('densityVal').textContent = e.target.value + '%';
+            initColumns();
+        });
+
+        document.getElementById('fontSize').addEventListener('input', (e) => {
+            fontSize = parseInt(e.target.value);
+            document.getElementById('sizeVal').textContent = fontSize + 'px';
+            initColumns();
+        });
+
+        document.getElementById('trailLength').addEventListener('input', (e) => {
+            trailLength = parseInt(e.target.value);
+            document.getElementById('trailVal').textContent = trailLength;
+            initColumns();
+        });
+
+        document.getElementById('glow').addEventListener('input', (e) => {
+            glowIntensity = e.target.value / 10;
+            document.getElementById('glowVal').textContent = glowIntensity.toFixed(1);
+        });
+
+        document.getElementById('randomChars').addEventListener('change', (e) => {
+            randomChars = e.target.checked;
+        });
+
+        document.getElementById('mouseInteract').addEventListener('change', (e) => {
+            mouseInteract = e.target.checked;
+        });
+
+        document.getElementById('showMessage').addEventListener('change', (e) => {
+            showMessage = e.target.checked;
+        });
+
+        document.getElementById('messageInput').addEventListener('input', (e) => {
+            hiddenMessage = e.target.value.toUpperCase();
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            mouseX = -1000;
+            mouseY = -1000;
+        });
+
+        document.getElementById('toggleBtn').addEventListener('click', () => {
+            const controls = document.getElementById('controls');
+            const btn = document.getElementById('toggleBtn');
+            controls.classList.toggle('hidden');
+            btn.textContent = controls.classList.contains('hidden') ? 'Show Controls' : 'Hide Controls';
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'h' || e.key === 'H') {
+                const controls = document.getElementById('controls');
+                const btn = document.getElementById('toggleBtn');
+                controls.classList.toggle('hidden');
+                btn.textContent = controls.classList.contains('hidden') ? 'Show Controls' : 'Hide Controls';
+            } else if (e.key === 'f' || e.key === 'F') {
+                if (document.fullscreenElement) {
+                    document.exitFullscreen();
+                } else {
+                    document.documentElement.requestFullscreen();
+                }
+            } else if (e.key === ' ') {
+                e.preventDefault();
+                isPaused = !isPaused;
+            }
+        });
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // Initialize
+        resizeCanvas();
+        draw();
+    </script>
+</body>
+</html>

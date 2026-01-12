@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Binary Tree Visualizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            background: linear-gradient(135deg, #4ade80 0%, #22d3ee 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 1.1em;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+        }
+
+        .controls {
+            background: rgba(20, 20, 35, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .control-section {
+            margin-bottom: 25px;
+        }
+
+        .control-section h3 {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #4ade80;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .tree-type-btns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .tree-type-btn {
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 12px;
+        }
+
+        .tree-type-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .tree-type-btn.active {
+            background: linear-gradient(135deg, rgba(74, 222, 128, 0.3), rgba(34, 211, 238, 0.3));
+            border-color: #4ade80;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        input[type="number"], input[type="text"] {
+            flex: 1;
+            padding: 10px 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 6px;
+            color: #fff;
+            font-size: 14px;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #4ade80;
+        }
+
+        button {
+            padding: 10px 16px;
+            background: linear-gradient(135deg, #4ade80, #22d3ee);
+            border: none;
+            border-radius: 6px;
+            color: #000;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(74, 222, 128, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: none;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444, #f97316);
+        }
+
+        .action-btns {
+            display: grid;
+            gap: 8px;
+        }
+
+        .action-btns button {
+            width: 100%;
+        }
+
+        .traversal-btns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .preset-btns {
+            display: grid;
+            gap: 8px;
+        }
+
+        .canvas-container {
+            background: rgba(20, 20, 35, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 600px;
+        }
+
+        .info-panel {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 13px;
+            min-width: 180px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .info-label {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .info-value {
+            color: #4ade80;
+            font-weight: 600;
+        }
+
+        .traversal-output {
+            position: absolute;
+            bottom: 15px;
+            left: 15px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 14px;
+            max-height: 100px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .traversal-output.visible {
+            display: block;
+        }
+
+        .traversal-title {
+            color: #22d3ee;
+            margin-bottom: 8px;
+        }
+
+        .traversal-values {
+            color: #4ade80;
+            word-wrap: break-word;
+        }
+
+        .legend {
+            margin-top: 15px;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            font-size: 11px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+        }
+
+        .speed-control {
+            margin-top: 15px;
+        }
+
+        .speed-control label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #4ade80;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        @media (max-width: 900px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Binary Tree Visualizer</h1>
+            <p class="subtitle">Interactive visualization of BST, AVL, and Red-Black tree operations</p>
+        </header>
+
+        <div class="main-content">
+            <div class="controls">
+                <div class="control-section">
+                    <h3>Tree Type</h3>
+                    <div class="tree-type-btns">
+                        <button class="tree-type-btn active" data-type="bst">BST</button>
+                        <button class="tree-type-btn" data-type="avl">AVL</button>
+                        <button class="tree-type-btn" data-type="rbt">Red-Black</button>
+                        <button class="tree-type-btn" data-type="heap">Max Heap</button>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h3>Operations</h3>
+                    <div class="input-group">
+                        <input type="number" id="valueInput" placeholder="Value">
+                        <button onclick="insertValue()">Insert</button>
+                    </div>
+                    <div class="input-group">
+                        <input type="number" id="deleteInput" placeholder="Value">
+                        <button onclick="deleteValue()" class="btn-danger">Delete</button>
+                    </div>
+                    <div class="input-group">
+                        <input type="number" id="searchInput" placeholder="Value">
+                        <button onclick="searchValue()" class="btn-secondary">Search</button>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h3>Traversals</h3>
+                    <div class="traversal-btns">
+                        <button onclick="traverse('inorder')" class="btn-secondary">In-Order</button>
+                        <button onclick="traverse('preorder')" class="btn-secondary">Pre-Order</button>
+                        <button onclick="traverse('postorder')" class="btn-secondary">Post-Order</button>
+                        <button onclick="traverse('levelorder')" class="btn-secondary">Level-Order</button>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h3>Presets</h3>
+                    <div class="preset-btns">
+                        <button onclick="loadPreset('balanced')" class="btn-secondary">Balanced Tree</button>
+                        <button onclick="loadPreset('skewed')" class="btn-secondary">Skewed Tree</button>
+                        <button onclick="loadPreset('random')" class="btn-secondary">Random Tree</button>
+                        <button onclick="loadPreset('complete')" class="btn-secondary">Complete Tree</button>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h3>Actions</h3>
+                    <div class="action-btns">
+                        <button onclick="clearTree()" class="btn-danger">Clear Tree</button>
+                        <button onclick="balanceTree()" class="btn-secondary">Balance (DSW)</button>
+                    </div>
+                </div>
+
+                <div class="speed-control">
+                    <label>Animation Speed: <span id="speedValue">500</span>ms</label>
+                    <input type="range" id="speedSlider" min="50" max="1000" value="500" oninput="updateSpeed()">
+                </div>
+
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #4ade80;"></div>
+                        <span>Normal Node</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #22d3ee;"></div>
+                        <span>Current / Found</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #ef4444;"></div>
+                        <span>Red (RBT) / Visited</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #fbbf24;"></div>
+                        <span>Inserting / Rotating</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="canvas-container">
+                <canvas id="treeCanvas"></canvas>
+                <div class="info-panel">
+                    <div class="info-row">
+                        <span class="info-label">Nodes:</span>
+                        <span class="info-value" id="nodeCount">0</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Height:</span>
+                        <span class="info-value" id="treeHeight">0</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Balance:</span>
+                        <span class="info-value" id="balanceFactor">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Type:</span>
+                        <span class="info-value" id="treeType">BST</span>
+                    </div>
+                </div>
+                <div class="traversal-output" id="traversalOutput">
+                    <div class="traversal-title" id="traversalTitle">In-Order Traversal</div>
+                    <div class="traversal-values" id="traversalValues"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('treeCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let animationSpeed = 500;
+        let currentTreeType = 'bst';
+        let isAnimating = false;
+
+        // Node colors
+        const COLORS = {
+            normal: '#4ade80',
+            current: '#22d3ee',
+            red: '#ef4444',
+            visited: '#ef4444',
+            inserting: '#fbbf24',
+            black: '#1a1a2e',
+            edge: 'rgba(255, 255, 255, 0.3)'
+        };
+
+        // Tree Node class
+        class TreeNode {
+            constructor(value) {
+                this.value = value;
+                this.left = null;
+                this.right = null;
+                this.parent = null;
+                this.height = 1; // For AVL
+                this.color = 'red'; // For Red-Black
+                this.x = 0;
+                this.y = 0;
+                this.targetX = 0;
+                this.targetY = 0;
+                this.highlightColor = null;
+            }
+        }
+
+        // Binary Search Tree
+        class BST {
+            constructor() {
+                this.root = null;
+            }
+
+            insert(value) {
+                const newNode = new TreeNode(value);
+                if (!this.root) {
+                    this.root = newNode;
+                    return [{ type: 'insert', node: newNode }];
+                }
+
+                const steps = [];
+                let current = this.root;
+
+                while (true) {
+                    steps.push({ type: 'visit', node: current });
+
+                    if (value < current.value) {
+                        if (!current.left) {
+                            current.left = newNode;
+                            newNode.parent = current;
+                            steps.push({ type: 'insert', node: newNode });
+                            break;
+                        }
+                        current = current.left;
+                    } else {
+                        if (!current.right) {
+                            current.right = newNode;
+                            newNode.parent = current;
+                            steps.push({ type: 'insert', node: newNode });
+                            break;
+                        }
+                        current = current.right;
+                    }
+                }
+
+                return steps;
+            }
+
+            search(value) {
+                const steps = [];
+                let current = this.root;
+
+                while (current) {
+                    steps.push({ type: 'visit', node: current });
+
+                    if (value === current.value) {
+                        steps.push({ type: 'found', node: current });
+                        return steps;
+                    }
+
+                    current = value < current.value ? current.left : current.right;
+                }
+
+                steps.push({ type: 'notfound' });
+                return steps;
+            }
+
+            delete(value) {
+                const steps = [];
+                this.root = this._deleteNode(this.root, value, steps);
+                return steps;
+            }
+
+            _deleteNode(node, value, steps) {
+                if (!node) return null;
+
+                steps.push({ type: 'visit', node });
+
+                if (value < node.value) {
+                    node.left = this._deleteNode(node.left, value, steps);
+                } else if (value > node.value) {
+                    node.right = this._deleteNode(node.right, value, steps);
+                } else {
+                    steps.push({ type: 'delete', node });
+
+                    if (!node.left) {
+                        return node.right;
+                    } else if (!node.right) {
+                        return node.left;
+                    }
+
+                    // Find inorder successor
+                    let successor = node.right;
+                    while (successor.left) {
+                        successor = successor.left;
+                    }
+
+                    steps.push({ type: 'successor', node: successor });
+                    node.value = successor.value;
+                    node.right = this._deleteNode(node.right, successor.value, steps);
+                }
+
+                return node;
+            }
+
+            inorder(node = this.root, result = []) {
+                if (node) {
+                    this.inorder(node.left, result);
+                    result.push({ node, value: node.value });
+                    this.inorder(node.right, result);
+                }
+                return result;
+            }
+
+            preorder(node = this.root, result = []) {
+                if (node) {
+                    result.push({ node, value: node.value });
+                    this.preorder(node.left, result);
+                    this.preorder(node.right, result);
+                }
+                return result;
+            }
+
+            postorder(node = this.root, result = []) {
+                if (node) {
+                    this.postorder(node.left, result);
+                    this.postorder(node.right, result);
+                    result.push({ node, value: node.value });
+                }
+                return result;
+            }
+
+            levelorder() {
+                const result = [];
+                if (!this.root) return result;
+
+                const queue = [this.root];
+                while (queue.length > 0) {
+                    const node = queue.shift();
+                    result.push({ node, value: node.value });
+                    if (node.left) queue.push(node.left);
+                    if (node.right) queue.push(node.right);
+                }
+                return result;
+            }
+
+            getHeight(node = this.root) {
+                if (!node) return 0;
+                return 1 + Math.max(this.getHeight(node.left), this.getHeight(node.right));
+            }
+
+            getNodeCount(node = this.root) {
+                if (!node) return 0;
+                return 1 + this.getNodeCount(node.left) + this.getNodeCount(node.right);
+            }
+
+            getBalanceFactor(node = this.root) {
+                if (!node) return 0;
+                return this.getHeight(node.left) - this.getHeight(node.right);
+            }
+
+            isBalanced(node = this.root) {
+                if (!node) return true;
+                const bf = this.getBalanceFactor(node);
+                return Math.abs(bf) <= 1 && this.isBalanced(node.left) && this.isBalanced(node.right);
+            }
+        }
+
+        // AVL Tree
+        class AVLTree extends BST {
+            _height(node) {
+                return node ? node.height : 0;
+            }
+
+            _updateHeight(node) {
+                if (node) {
+                    node.height = 1 + Math.max(this._height(node.left), this._height(node.right));
+                }
+            }
+
+            _getBalance(node) {
+                return node ? this._height(node.left) - this._height(node.right) : 0;
+            }
+
+            _rotateRight(y, steps) {
+                steps.push({ type: 'rotate', node: y, direction: 'right' });
+                const x = y.left;
+                const T2 = x.right;
+
+                x.right = y;
+                y.left = T2;
+
+                this._updateHeight(y);
+                this._updateHeight(x);
+
+                return x;
+            }
+
+            _rotateLeft(x, steps) {
+                steps.push({ type: 'rotate', node: x, direction: 'left' });
+                const y = x.right;
+                const T2 = y.left;
+
+                y.left = x;
+                x.right = T2;
+
+                this._updateHeight(x);
+                this._updateHeight(y);
+
+                return y;
+            }
+
+            insert(value) {
+                const steps = [];
+                this.root = this._insertAVL(this.root, value, steps);
+                return steps;
+            }
+
+            _insertAVL(node, value, steps) {
+                if (!node) {
+                    const newNode = new TreeNode(value);
+                    steps.push({ type: 'insert', node: newNode });
+                    return newNode;
+                }
+
+                steps.push({ type: 'visit', node });
+
+                if (value < node.value) {
+                    node.left = this._insertAVL(node.left, value, steps);
+                } else if (value > node.value) {
+                    node.right = this._insertAVL(node.right, value, steps);
+                } else {
+                    return node;
+                }
+
+                this._updateHeight(node);
+                const balance = this._getBalance(node);
+
+                // Left Left
+                if (balance > 1 && value < node.left.value) {
+                    steps.push({ type: 'rebalance', node, case: 'LL' });
+                    return this._rotateRight(node, steps);
+                }
+
+                // Right Right
+                if (balance < -1 && value > node.right.value) {
+                    steps.push({ type: 'rebalance', node, case: 'RR' });
+                    return this._rotateLeft(node, steps);
+                }
+
+                // Left Right
+                if (balance > 1 && value > node.left.value) {
+                    steps.push({ type: 'rebalance', node, case: 'LR' });
+                    node.left = this._rotateLeft(node.left, steps);
+                    return this._rotateRight(node, steps);
+                }
+
+                // Right Left
+                if (balance < -1 && value < node.right.value) {
+                    steps.push({ type: 'rebalance', node, case: 'RL' });
+                    node.right = this._rotateRight(node.right, steps);
+                    return this._rotateLeft(node, steps);
+                }
+
+                return node;
+            }
+        }
+
+        // Red-Black Tree
+        class RedBlackTree extends BST {
+            insert(value) {
+                const steps = [];
+                const newNode = new TreeNode(value);
+                newNode.color = 'red';
+
+                if (!this.root) {
+                    this.root = newNode;
+                    newNode.color = 'black';
+                    steps.push({ type: 'insert', node: newNode });
+                    return steps;
+                }
+
+                // Standard BST insert
+                let current = this.root;
+                let parent = null;
+
+                while (current) {
+                    steps.push({ type: 'visit', node: current });
+                    parent = current;
+                    if (value < current.value) {
+                        current = current.left;
+                    } else {
+                        current = current.right;
+                    }
+                }
+
+                newNode.parent = parent;
+                if (value < parent.value) {
+                    parent.left = newNode;
+                } else {
+                    parent.right = newNode;
+                }
+
+                steps.push({ type: 'insert', node: newNode });
+
+                // Fix Red-Black properties
+                this._fixInsert(newNode, steps);
+
+                return steps;
+            }
+
+            _fixInsert(node, steps) {
+                while (node.parent && node.parent.color === 'red') {
+                    let uncle;
+                    if (node.parent === node.parent.parent?.left) {
+                        uncle = node.parent.parent?.right;
+
+                        if (uncle && uncle.color === 'red') {
+                            // Case 1: Uncle is red
+                            steps.push({ type: 'recolor', nodes: [node.parent, uncle, node.parent.parent] });
+                            node.parent.color = 'black';
+                            uncle.color = 'black';
+                            node.parent.parent.color = 'red';
+                            node = node.parent.parent;
+                        } else {
+                            if (node === node.parent.right) {
+                                // Case 2: Left rotate
+                                node = node.parent;
+                                this._rotateLeft(node, steps);
+                            }
+                            // Case 3: Right rotate
+                            steps.push({ type: 'recolor', nodes: [node.parent, node.parent.parent] });
+                            node.parent.color = 'black';
+                            node.parent.parent.color = 'red';
+                            this._rotateRight(node.parent.parent, steps);
+                        }
+                    } else {
+                        uncle = node.parent.parent?.left;
+
+                        if (uncle && uncle.color === 'red') {
+                            steps.push({ type: 'recolor', nodes: [node.parent, uncle, node.parent.parent] });
+                            node.parent.color = 'black';
+                            uncle.color = 'black';
+                            node.parent.parent.color = 'red';
+                            node = node.parent.parent;
+                        } else {
+                            if (node === node.parent.left) {
+                                node = node.parent;
+                                this._rotateRight(node, steps);
+                            }
+                            steps.push({ type: 'recolor', nodes: [node.parent, node.parent.parent] });
+                            node.parent.color = 'black';
+                            node.parent.parent.color = 'red';
+                            this._rotateLeft(node.parent.parent, steps);
+                        }
+                    }
+                }
+                this.root.color = 'black';
+            }
+
+            _rotateLeft(x, steps) {
+                steps.push({ type: 'rotate', node: x, direction: 'left' });
+                const y = x.right;
+                x.right = y.left;
+
+                if (y.left) y.left.parent = x;
+                y.parent = x.parent;
+
+                if (!x.parent) {
+                    this.root = y;
+                } else if (x === x.parent.left) {
+                    x.parent.left = y;
+                } else {
+                    x.parent.right = y;
+                }
+
+                y.left = x;
+                x.parent = y;
+            }
+
+            _rotateRight(y, steps) {
+                steps.push({ type: 'rotate', node: y, direction: 'right' });
+                const x = y.left;
+                y.left = x.right;
+
+                if (x.right) x.right.parent = y;
+                x.parent = y.parent;
+
+                if (!y.parent) {
+                    this.root = x;
+                } else if (y === y.parent.right) {
+                    y.parent.right = x;
+                } else {
+                    y.parent.left = x;
+                }
+
+                x.right = y;
+                y.parent = x;
+            }
+        }
+
+        // Max Heap (array-based, but visualized as tree)
+        class MaxHeap {
+            constructor() {
+                this.heap = [];
+                this.root = null;
+            }
+
+            insert(value) {
+                const steps = [];
+                this.heap.push(value);
+                steps.push({ type: 'insert', value, index: this.heap.length - 1 });
+
+                this._heapifyUp(this.heap.length - 1, steps);
+                this._buildTree();
+
+                return steps;
+            }
+
+            _heapifyUp(index, steps) {
+                while (index > 0) {
+                    const parentIndex = Math.floor((index - 1) / 2);
+
+                    steps.push({ type: 'compare', indices: [index, parentIndex] });
+
+                    if (this.heap[index] > this.heap[parentIndex]) {
+                        steps.push({ type: 'swap', indices: [index, parentIndex] });
+                        [this.heap[index], this.heap[parentIndex]] = [this.heap[parentIndex], this.heap[index]];
+                        index = parentIndex;
+                    } else {
+                        break;
+                    }
+                }
+            }
+
+            delete(value) {
+                const steps = [];
+                const index = this.heap.indexOf(value);
+                if (index === -1) {
+                    steps.push({ type: 'notfound' });
+                    return steps;
+                }
+
+                steps.push({ type: 'delete', index });
+                this.heap[index] = this.heap[this.heap.length - 1];
+                this.heap.pop();
+
+                if (index < this.heap.length) {
+                    this._heapifyDown(index, steps);
+                }
+
+                this._buildTree();
+                return steps;
+            }
+
+            _heapifyDown(index, steps) {
+                while (true) {
+                    const leftChild = 2 * index + 1;
+                    const rightChild = 2 * index + 2;
+                    let largest = index;
+
+                    if (leftChild < this.heap.length && this.heap[leftChild] > this.heap[largest]) {
+                        largest = leftChild;
+                    }
+                    if (rightChild < this.heap.length && this.heap[rightChild] > this.heap[largest]) {
+                        largest = rightChild;
+                    }
+
+                    if (largest !== index) {
+                        steps.push({ type: 'swap', indices: [index, largest] });
+                        [this.heap[index], this.heap[largest]] = [this.heap[largest], this.heap[index]];
+                        index = largest;
+                    } else {
+                        break;
+                    }
+                }
+            }
+
+            _buildTree() {
+                if (this.heap.length === 0) {
+                    this.root = null;
+                    return;
+                }
+
+                const nodes = this.heap.map(v => new TreeNode(v));
+
+                for (let i = 0; i < nodes.length; i++) {
+                    const leftIndex = 2 * i + 1;
+                    const rightIndex = 2 * i + 2;
+
+                    if (leftIndex < nodes.length) {
+                        nodes[i].left = nodes[leftIndex];
+                    }
+                    if (rightIndex < nodes.length) {
+                        nodes[i].right = nodes[rightIndex];
+                    }
+                }
+
+                this.root = nodes[0];
+            }
+
+            search(value) {
+                const steps = [];
+                const index = this.heap.indexOf(value);
+
+                for (let i = 0; i <= Math.min(index, this.heap.length - 1); i++) {
+                    steps.push({ type: 'visit', index: i });
+                }
+
+                if (index !== -1) {
+                    steps.push({ type: 'found', index });
+                } else {
+                    steps.push({ type: 'notfound' });
+                }
+
+                return steps;
+            }
+
+            getHeight() {
+                return Math.floor(Math.log2(this.heap.length)) + 1;
+            }
+
+            getNodeCount() {
+                return this.heap.length;
+            }
+
+            getBalanceFactor() {
+                return 0; // Heaps are always complete
+            }
+
+            inorder(node = this.root, result = []) {
+                if (node) {
+                    this.inorder(node.left, result);
+                    result.push({ node, value: node.value });
+                    this.inorder(node.right, result);
+                }
+                return result;
+            }
+
+            preorder(node = this.root, result = []) {
+                if (node) {
+                    result.push({ node, value: node.value });
+                    this.preorder(node.left, result);
+                    this.preorder(node.right, result);
+                }
+                return result;
+            }
+
+            postorder(node = this.root, result = []) {
+                if (node) {
+                    this.postorder(node.left, result);
+                    this.postorder(node.right, result);
+                    result.push({ node, value: node.value });
+                }
+                return result;
+            }
+
+            levelorder() {
+                const result = [];
+                if (!this.root) return result;
+
+                const queue = [this.root];
+                while (queue.length > 0) {
+                    const node = queue.shift();
+                    result.push({ node, value: node.value });
+                    if (node.left) queue.push(node.left);
+                    if (node.right) queue.push(node.right);
+                }
+                return result;
+            }
+        }
+
+        // Current tree instance
+        let tree = new BST();
+
+        // Setup canvas
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+            canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            draw();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Calculate node positions
+        function calculatePositions(node, x, y, level, spacing) {
+            if (!node) return;
+
+            node.targetX = x;
+            node.targetY = y;
+
+            if (node.x === 0 && node.y === 0) {
+                node.x = x;
+                node.y = y;
+            }
+
+            const nextSpacing = spacing * 0.55;
+            const nextY = y + 70;
+
+            if (node.left) {
+                calculatePositions(node.left, x - spacing, nextY, level + 1, nextSpacing);
+            }
+            if (node.right) {
+                calculatePositions(node.right, x + spacing, nextY, level + 1, nextSpacing);
+            }
+        }
+
+        // Animate node positions
+        function animatePositions() {
+            let needsAnimation = false;
+
+            function updateNode(node) {
+                if (!node) return;
+
+                const dx = node.targetX - node.x;
+                const dy = node.targetY - node.y;
+
+                if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
+                    node.x += dx * 0.1;
+                    node.y += dy * 0.1;
+                    needsAnimation = true;
+                } else {
+                    node.x = node.targetX;
+                    node.y = node.targetY;
+                }
+
+                updateNode(node.left);
+                updateNode(node.right);
+            }
+
+            updateNode(tree.root);
+
+            if (needsAnimation) {
+                draw();
+                requestAnimationFrame(animatePositions);
+            }
+        }
+
+        // Draw tree
+        function draw() {
+            const width = canvas.offsetWidth;
+            const height = canvas.offsetHeight;
+
+            ctx.clearRect(0, 0, width, height);
+
+            if (!tree.root) {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.font = '18px Segoe UI';
+                ctx.textAlign = 'center';
+                ctx.fillText('Tree is empty. Insert values to begin.', width / 2, height / 2);
+                return;
+            }
+
+            // Calculate positions
+            const startX = width / 2;
+            const startY = 60;
+            const spacing = Math.min(width / 4, 200);
+
+            calculatePositions(tree.root, startX, startY, 0, spacing);
+
+            // Draw edges first
+            drawEdges(tree.root);
+
+            // Draw nodes
+            drawNodes(tree.root);
+
+            // Update info panel
+            updateInfoPanel();
+        }
+
+        function drawEdges(node) {
+            if (!node) return;
+
+            if (node.left) {
+                ctx.beginPath();
+                ctx.moveTo(node.x, node.y);
+                ctx.lineTo(node.left.x, node.left.y);
+                ctx.strokeStyle = COLORS.edge;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                drawEdges(node.left);
+            }
+
+            if (node.right) {
+                ctx.beginPath();
+                ctx.moveTo(node.x, node.y);
+                ctx.lineTo(node.right.x, node.right.y);
+                ctx.strokeStyle = COLORS.edge;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                drawEdges(node.right);
+            }
+        }
+
+        function drawNodes(node) {
+            if (!node) return;
+
+            const radius = 22;
+
+            // Draw node circle
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
+
+            // Determine color
+            let fillColor = COLORS.normal;
+
+            if (node.highlightColor) {
+                fillColor = node.highlightColor;
+            } else if (currentTreeType === 'rbt') {
+                fillColor = node.color === 'red' ? COLORS.red : '#333';
+            }
+
+            ctx.fillStyle = fillColor;
+            ctx.fill();
+
+            // Draw border
+            ctx.strokeStyle = currentTreeType === 'rbt' && node.color === 'black' ? '#666' : 'rgba(255, 255, 255, 0.3)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Draw value
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 14px Segoe UI';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(node.value, node.x, node.y);
+
+            // Draw height for AVL
+            if (currentTreeType === 'avl') {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.font = '10px Segoe UI';
+                ctx.fillText(`h:${node.height || 1}`, node.x, node.y + radius + 12);
+            }
+
+            drawNodes(node.left);
+            drawNodes(node.right);
+        }
+
+        function updateInfoPanel() {
+            document.getElementById('nodeCount').textContent = tree.getNodeCount ? tree.getNodeCount() : 0;
+            document.getElementById('treeHeight').textContent = tree.getHeight ? tree.getHeight() : 0;
+
+            const bf = tree.getBalanceFactor ? tree.getBalanceFactor() : 0;
+            document.getElementById('balanceFactor').textContent = bf;
+
+            const typeNames = { bst: 'BST', avl: 'AVL', rbt: 'Red-Black', heap: 'Max Heap' };
+            document.getElementById('treeType').textContent = typeNames[currentTreeType];
+        }
+
+        // Operations
+        async function insertValue() {
+            if (isAnimating) return;
+
+            const input = document.getElementById('valueInput');
+            const value = parseInt(input.value);
+
+            if (isNaN(value)) return;
+
+            isAnimating = true;
+            const steps = tree.insert(value);
+            await animateSteps(steps);
+            input.value = '';
+            isAnimating = false;
+
+            draw();
+            animatePositions();
+        }
+
+        async function deleteValue() {
+            if (isAnimating) return;
+
+            const input = document.getElementById('deleteInput');
+            const value = parseInt(input.value);
+
+            if (isNaN(value)) return;
+
+            isAnimating = true;
+            const steps = tree.delete(value);
+            await animateSteps(steps);
+            input.value = '';
+            isAnimating = false;
+
+            draw();
+            animatePositions();
+        }
+
+        async function searchValue() {
+            if (isAnimating) return;
+
+            const input = document.getElementById('searchInput');
+            const value = parseInt(input.value);
+
+            if (isNaN(value)) return;
+
+            isAnimating = true;
+            const steps = tree.search(value);
+            await animateSteps(steps);
+            input.value = '';
+            isAnimating = false;
+
+            // Clear highlights after delay
+            setTimeout(() => {
+                clearHighlights(tree.root);
+                draw();
+            }, 1000);
+        }
+
+        async function animateSteps(steps) {
+            for (const step of steps) {
+                if (step.node) {
+                    if (step.type === 'visit') {
+                        step.node.highlightColor = COLORS.current;
+                    } else if (step.type === 'insert') {
+                        step.node.highlightColor = COLORS.inserting;
+                    } else if (step.type === 'found') {
+                        step.node.highlightColor = COLORS.current;
+                    } else if (step.type === 'delete') {
+                        step.node.highlightColor = COLORS.red;
+                    } else if (step.type === 'rotate') {
+                        step.node.highlightColor = COLORS.inserting;
+                    }
+                }
+
+                draw();
+                animatePositions();
+                await sleep(animationSpeed);
+
+                // Clear highlight for visit
+                if (step.type === 'visit' && step.node) {
+                    step.node.highlightColor = null;
+                }
+            }
+
+            clearHighlights(tree.root);
+        }
+
+        function clearHighlights(node) {
+            if (!node) return;
+            node.highlightColor = null;
+            clearHighlights(node.left);
+            clearHighlights(node.right);
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // Traversals
+        async function traverse(type) {
+            if (isAnimating || !tree.root) return;
+
+            isAnimating = true;
+
+            let result;
+            switch (type) {
+                case 'inorder': result = tree.inorder(); break;
+                case 'preorder': result = tree.preorder(); break;
+                case 'postorder': result = tree.postorder(); break;
+                case 'levelorder': result = tree.levelorder(); break;
+            }
+
+            const values = [];
+
+            for (const item of result) {
+                item.node.highlightColor = COLORS.current;
+                values.push(item.value);
+
+                showTraversalOutput(type, values);
+                draw();
+                await sleep(animationSpeed);
+
+                item.node.highlightColor = COLORS.visited;
+            }
+
+            await sleep(500);
+            clearHighlights(tree.root);
+            draw();
+
+            isAnimating = false;
+        }
+
+        function showTraversalOutput(type, values) {
+            const output = document.getElementById('traversalOutput');
+            const title = document.getElementById('traversalTitle');
+            const valuesDiv = document.getElementById('traversalValues');
+
+            const typeNames = {
+                inorder: 'In-Order Traversal',
+                preorder: 'Pre-Order Traversal',
+                postorder: 'Post-Order Traversal',
+                levelorder: 'Level-Order Traversal'
+            };
+
+            title.textContent = typeNames[type];
+            valuesDiv.textContent = values.join(' -> ');
+            output.classList.add('visible');
+        }
+
+        // Presets
+        function loadPreset(preset) {
+            clearTree();
+
+            let values = [];
+
+            switch (preset) {
+                case 'balanced':
+                    values = [50, 25, 75, 12, 37, 62, 87, 6, 18, 31, 43];
+                    break;
+                case 'skewed':
+                    values = [10, 20, 30, 40, 50, 60, 70];
+                    break;
+                case 'random':
+                    for (let i = 0; i < 10; i++) {
+                        values.push(Math.floor(Math.random() * 100) + 1);
+                    }
+                    break;
+                case 'complete':
+                    values = [50, 30, 70, 20, 40, 60, 80, 10, 25, 35, 45, 55, 65, 75, 85];
+                    break;
+            }
+
+            values.forEach((v, i) => {
+                setTimeout(() => {
+                    tree.insert(v);
+                    draw();
+                    animatePositions();
+                }, i * 100);
+            });
+        }
+
+        function clearTree() {
+            switch (currentTreeType) {
+                case 'bst': tree = new BST(); break;
+                case 'avl': tree = new AVLTree(); break;
+                case 'rbt': tree = new RedBlackTree(); break;
+                case 'heap': tree = new MaxHeap(); break;
+            }
+
+            document.getElementById('traversalOutput').classList.remove('visible');
+            draw();
+        }
+
+        function balanceTree() {
+            if (!tree.root || currentTreeType !== 'bst') return;
+
+            // DSW algorithm - Day-Stout-Warren
+            // First, create a vine (right-skewed tree)
+            const values = tree.inorder().map(item => item.value);
+
+            clearTree();
+
+            // Build balanced tree from sorted values
+            function buildBalanced(arr, start, end) {
+                if (start > end) return;
+
+                const mid = Math.floor((start + end) / 2);
+                tree.insert(arr[mid]);
+
+                buildBalanced(arr, start, mid - 1);
+                buildBalanced(arr, mid + 1, end);
+            }
+
+            buildBalanced(values, 0, values.length - 1);
+            draw();
+            animatePositions();
+        }
+
+        // Tree type buttons
+        document.querySelectorAll('.tree-type-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tree-type-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                currentTreeType = btn.dataset.type;
+                clearTree();
+            });
+        });
+
+        // Speed control
+        function updateSpeed() {
+            animationSpeed = parseInt(document.getElementById('speedSlider').value);
+            document.getElementById('speedValue').textContent = animationSpeed;
+        }
+
+        // Enter key handlers
+        document.getElementById('valueInput').addEventListener('keypress', e => {
+            if (e.key === 'Enter') insertValue();
+        });
+
+        document.getElementById('deleteInput').addEventListener('keypress', e => {
+            if (e.key === 'Enter') deleteValue();
+        });
+
+        document.getElementById('searchInput').addEventListener('keypress', e => {
+            if (e.key === 'Enter') searchValue();
+        });
+
+        // Initial draw
+        draw();
+    </script>
+</body>
+</html>

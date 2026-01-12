@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lorenz Attractor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #000;
+            min-height: 100vh;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            height: 100vh;
+        }
+
+        .controls {
+            background: rgba(10, 10, 20, 0.95);
+            padding: 20px;
+            overflow-y: auto;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            background: linear-gradient(135deg, #ff6b6b, #feca57, #48dbfb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 0.85rem;
+        }
+
+        .section {
+            margin-bottom: 20px;
+        }
+
+        .section h3 {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #ff6b6b;
+            margin-bottom: 12px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid rgba(255, 107, 107, 0.3);
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.85rem;
+        }
+
+        .slider-name {
+            color: #aaa;
+        }
+
+        .slider-value {
+            color: #feca57;
+            font-weight: 600;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: linear-gradient(135deg, #ff6b6b, #feca57);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-bottom: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #ff6b6b, #feca57);
+            color: #000;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 107, 107, 0.2);
+            color: #ff6b6b;
+            border: 1px solid rgba(255, 107, 107, 0.3);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+        }
+
+        .btn-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .color-schemes {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+        }
+
+        .color-btn {
+            height: 30px;
+            border-radius: 4px;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .color-btn:hover, .color-btn.active {
+            border-color: #fff;
+            transform: scale(1.05);
+        }
+
+        .canvas-container {
+            position: relative;
+            background: #000;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        .info-panel {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-family: monospace;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            margin-bottom: 5px;
+        }
+
+        .info-label {
+            color: #888;
+        }
+
+        .info-value {
+            color: #48dbfb;
+        }
+
+        .equation {
+            font-size: 0.8rem;
+            color: #666;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            font-family: monospace;
+            line-height: 1.6;
+            margin-top: 15px;
+        }
+
+        .instructions {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            color: #888;
+        }
+
+        select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 6px;
+            background: rgba(0, 0, 0, 0.3);
+            color: #fff;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #ff6b6b;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .checkbox-group input {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        .checkbox-group label {
+            color: #aaa;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="controls">
+            <div class="header">
+                <h1>Lorenz Attractor</h1>
+                <p class="subtitle">Chaos in Three Dimensions</p>
+            </div>
+
+            <div class="section">
+                <h3>Parameters (σ, ρ, β)</h3>
+                <div class="control-group">
+                    <div class="slider-label">
+                        <span class="slider-name">σ (sigma)</span>
+                        <span class="slider-value" id="sigmaValue">10</span>
+                    </div>
+                    <input type="range" id="sigma" min="0" max="30" step="0.1" value="10">
+                </div>
+                <div class="control-group">
+                    <div class="slider-label">
+                        <span class="slider-name">ρ (rho)</span>
+                        <span class="slider-value" id="rhoValue">28</span>
+                    </div>
+                    <input type="range" id="rho" min="0" max="50" step="0.1" value="28">
+                </div>
+                <div class="control-group">
+                    <div class="slider-label">
+                        <span class="slider-name">β (beta)</span>
+                        <span class="slider-value" id="betaValue">2.67</span>
+                    </div>
+                    <input type="range" id="beta" min="0" max="10" step="0.01" value="2.67">
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>Simulation</h3>
+                <div class="control-group">
+                    <div class="slider-label">
+                        <span class="slider-name">Time Step (dt)</span>
+                        <span class="slider-value" id="dtValue">0.01</span>
+                    </div>
+                    <input type="range" id="dt" min="0.001" max="0.03" step="0.001" value="0.01">
+                </div>
+                <div class="control-group">
+                    <div class="slider-label">
+                        <span class="slider-name">Trail Length</span>
+                        <span class="slider-value" id="trailValue">5000</span>
+                    </div>
+                    <input type="range" id="trail" min="500" max="15000" step="500" value="5000">
+                </div>
+                <div class="control-group">
+                    <div class="slider-label">
+                        <span class="slider-name">Line Width</span>
+                        <span class="slider-value" id="lineWidthValue">1.5</span>
+                    </div>
+                    <input type="range" id="lineWidth" min="0.5" max="4" step="0.1" value="1.5">
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>View</h3>
+                <div class="control-group">
+                    <div class="slider-label">
+                        <span class="slider-name">Rotation Speed</span>
+                        <span class="slider-value" id="rotSpeedValue">0.3</span>
+                    </div>
+                    <input type="range" id="rotSpeed" min="0" max="2" step="0.1" value="0.3">
+                </div>
+                <div class="control-group">
+                    <div class="slider-label">
+                        <span class="slider-name">Scale</span>
+                        <span class="slider-value" id="scaleValue">8</span>
+                    </div>
+                    <input type="range" id="scale" min="2" max="20" step="0.5" value="8">
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="autoRotate" checked>
+                    <label for="autoRotate">Auto Rotate</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="showAxes">
+                    <label for="showAxes">Show Axes</label>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>Color Scheme</h3>
+                <div class="color-schemes">
+                    <button class="color-btn active" data-scheme="fire" style="background: linear-gradient(135deg, #ff6b6b, #feca57);"></button>
+                    <button class="color-btn" data-scheme="rainbow" style="background: linear-gradient(135deg, #ff0000, #00ff00, #0000ff);"></button>
+                    <button class="color-btn" data-scheme="ocean" style="background: linear-gradient(135deg, #00d4ff, #0066ff);"></button>
+                    <button class="color-btn" data-scheme="neon" style="background: linear-gradient(135deg, #ff00ff, #00ffff);"></button>
+                    <button class="color-btn" data-scheme="sunset" style="background: linear-gradient(135deg, #ff4e50, #f9d423);"></button>
+                    <button class="color-btn" data-scheme="forest" style="background: linear-gradient(135deg, #134e5e, #71b280);"></button>
+                    <button class="color-btn" data-scheme="plasma" style="background: linear-gradient(135deg, #833ab4, #fd1d1d);"></button>
+                    <button class="color-btn" data-scheme="mono" style="background: linear-gradient(135deg, #fff, #666);"></button>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>Other Attractors</h3>
+                <select id="attractorType">
+                    <option value="lorenz">Lorenz Attractor</option>
+                    <option value="rossler">Rössler Attractor</option>
+                    <option value="chen">Chen Attractor</option>
+                    <option value="aizawa">Aizawa Attractor</option>
+                    <option value="thomas">Thomas Attractor</option>
+                    <option value="halvorsen">Halvorsen Attractor</option>
+                </select>
+            </div>
+
+            <div class="section">
+                <button class="btn-primary" onclick="resetAttractor()">Reset</button>
+                <div class="btn-group">
+                    <button class="btn-secondary" onclick="togglePause()">Pause/Play</button>
+                    <button class="btn-secondary" onclick="addTrajectory()">Add Trajectory</button>
+                </div>
+            </div>
+
+            <div class="equation">
+                <div>dx/dt = σ(y - x)</div>
+                <div>dy/dt = x(ρ - z) - y</div>
+                <div>dz/dt = xy - βz</div>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="canvas"></canvas>
+            <div class="info-panel">
+                <div class="info-row">
+                    <span class="info-label">x:</span>
+                    <span class="info-value" id="infoX">0.00</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">y:</span>
+                    <span class="info-value" id="infoY">0.00</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">z:</span>
+                    <span class="info-value" id="infoZ">0.00</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Points:</span>
+                    <span class="info-value" id="infoPoints">0</span>
+                </div>
+            </div>
+            <div class="instructions">Drag to rotate • Scroll to zoom</div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Parameters
+        let sigma = 10;
+        let rho = 28;
+        let beta = 8/3;
+        let dt = 0.01;
+        let trailLength = 5000;
+        let lineWidth = 1.5;
+        let scale = 8;
+        let rotationSpeed = 0.3;
+        let autoRotate = true;
+        let showAxes = false;
+        let isPaused = false;
+        let colorScheme = 'fire';
+        let attractorType = 'lorenz';
+
+        // Trajectories
+        let trajectories = [];
+
+        // View
+        let rotX = 0.4;
+        let rotY = 0;
+        let mouseDown = false;
+        let lastMouse = { x: 0, y: 0 };
+
+        // Color schemes
+        const colorSchemes = {
+            fire: (t) => {
+                const r = Math.min(255, t * 3);
+                const g = Math.max(0, Math.min(255, (t - 0.33) * 3 * 255));
+                const b = Math.max(0, (t - 0.66) * 3 * 255);
+                return `rgb(${r},${g},${b})`;
+            },
+            rainbow: (t) => `hsl(${t * 360}, 100%, 50%)`,
+            ocean: (t) => `hsl(${200 + t * 40}, 80%, ${40 + t * 30}%)`,
+            neon: (t) => `hsl(${280 + t * 100}, 100%, 60%)`,
+            sunset: (t) => `hsl(${t * 50}, 90%, ${50 + t * 20}%)`,
+            forest: (t) => `hsl(${120 + t * 60}, 50%, ${30 + t * 30}%)`,
+            plasma: (t) => `hsl(${270 + t * 90}, 80%, 50%)`,
+            mono: (t) => `rgb(${180 + t * 75},${180 + t * 75},${180 + t * 75})`
+        };
+
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class Trajectory {
+            constructor(x, y, z, color = null) {
+                this.x = x;
+                this.y = y;
+                this.z = z;
+                this.points = [{ x, y, z }];
+                this.color = color;
+            }
+
+            update() {
+                const { dx, dy, dz } = getDerivatives(this.x, this.y, this.z);
+                this.x += dx * dt;
+                this.y += dy * dt;
+                this.z += dz * dt;
+
+                this.points.push({ x: this.x, y: this.y, z: this.z });
+
+                if (this.points.length > trailLength) {
+                    this.points.shift();
+                }
+            }
+        }
+
+        function getDerivatives(x, y, z) {
+            switch (attractorType) {
+                case 'rossler':
+                    return {
+                        dx: -y - z,
+                        dy: x + 0.2 * y,
+                        dz: 0.2 + z * (x - 5.7)
+                    };
+                case 'chen':
+                    const a = 40, b = 3, c = 28;
+                    return {
+                        dx: a * (y - x),
+                        dy: (c - a) * x - x * z + c * y,
+                        dz: x * y - b * z
+                    };
+                case 'aizawa':
+                    const alpha = 0.95, beta2 = 0.7, gamma = 0.6;
+                    const delta = 3.5, epsilon = 0.25, zeta = 0.1;
+                    return {
+                        dx: (z - beta2) * x - delta * y,
+                        dy: delta * x + (z - beta2) * y,
+                        dz: gamma + alpha * z - z * z * z / 3 - (x * x + y * y) * (1 + epsilon * z) + zeta * z * x * x * x
+                    };
+                case 'thomas':
+                    const b3 = 0.208186;
+                    return {
+                        dx: Math.sin(y) - b3 * x,
+                        dy: Math.sin(z) - b3 * y,
+                        dz: Math.sin(x) - b3 * z
+                    };
+                case 'halvorsen':
+                    const a4 = 1.89;
+                    return {
+                        dx: -a4 * x - 4 * y - 4 * z - y * y,
+                        dy: -a4 * y - 4 * z - 4 * x - z * z,
+                        dz: -a4 * z - 4 * x - 4 * y - x * x
+                    };
+                default: // lorenz
+                    return {
+                        dx: sigma * (y - x),
+                        dy: x * (rho - z) - y,
+                        dz: x * y - beta * z
+                    };
+            }
+        }
+
+        function project(x, y, z) {
+            // Apply rotations
+            let rx = x, ry = y, rz = z;
+
+            // Rotate around Y axis
+            const cosY = Math.cos(rotY);
+            const sinY = Math.sin(rotY);
+            const tempX = rx * cosY - rz * sinY;
+            const tempZ = rx * sinY + rz * cosY;
+            rx = tempX;
+            rz = tempZ;
+
+            // Rotate around X axis
+            const cosX = Math.cos(rotX);
+            const sinX = Math.sin(rotX);
+            const tempY = ry * cosX - rz * sinX;
+            rz = ry * sinX + rz * cosX;
+            ry = tempY;
+
+            // Project to 2D with perspective
+            const fov = 400;
+            const distance = fov + rz * scale;
+            const px = canvas.width / 2 + (rx * scale * fov) / distance;
+            const py = canvas.height / 2 - (ry * scale * fov) / distance;
+
+            return { x: px, y: py, z: rz };
+        }
+
+        function draw() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw axes
+            if (showAxes) {
+                drawAxes();
+            }
+
+            // Draw trajectories
+            trajectories.forEach((traj, trajIndex) => {
+                const points = traj.points;
+                if (points.length < 2) return;
+
+                ctx.lineWidth = lineWidth;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+
+                for (let i = 1; i < points.length; i++) {
+                    const t = i / points.length;
+                    const p1 = project(points[i - 1].x, points[i - 1].y, points[i - 1].z);
+                    const p2 = project(points[i].x, points[i].y, points[i].z);
+
+                    ctx.beginPath();
+                    ctx.moveTo(p1.x, p1.y);
+                    ctx.lineTo(p2.x, p2.y);
+
+                    if (traj.color) {
+                        ctx.strokeStyle = traj.color;
+                    } else {
+                        ctx.strokeStyle = colorSchemes[colorScheme](t);
+                    }
+
+                    ctx.globalAlpha = Math.min(1, t * 2);
+                    ctx.stroke();
+                }
+
+                // Draw current point
+                const current = project(traj.x, traj.y, traj.z);
+                ctx.beginPath();
+                ctx.arc(current.x, current.y, 3, 0, Math.PI * 2);
+                ctx.fillStyle = '#fff';
+                ctx.globalAlpha = 1;
+                ctx.fill();
+            });
+
+            // Update info
+            if (trajectories.length > 0) {
+                const t = trajectories[0];
+                document.getElementById('infoX').textContent = t.x.toFixed(2);
+                document.getElementById('infoY').textContent = t.y.toFixed(2);
+                document.getElementById('infoZ').textContent = t.z.toFixed(2);
+                document.getElementById('infoPoints').textContent = t.points.length;
+            }
+        }
+
+        function drawAxes() {
+            const axisLength = 30;
+            const origin = project(0, 0, 0);
+
+            const axes = [
+                { end: project(axisLength, 0, 0), color: '#ff6b6b', label: 'X' },
+                { end: project(0, axisLength, 0), color: '#4ade80', label: 'Y' },
+                { end: project(0, 0, axisLength), color: '#60a5fa', label: 'Z' }
+            ];
+
+            axes.forEach(axis => {
+                ctx.beginPath();
+                ctx.moveTo(origin.x, origin.y);
+                ctx.lineTo(axis.end.x, axis.end.y);
+                ctx.strokeStyle = axis.color;
+                ctx.lineWidth = 2;
+                ctx.globalAlpha = 0.7;
+                ctx.stroke();
+
+                ctx.fillStyle = axis.color;
+                ctx.font = '12px monospace';
+                ctx.fillText(axis.label, axis.end.x + 5, axis.end.y);
+            });
+        }
+
+        function update() {
+            if (!isPaused) {
+                trajectories.forEach(traj => traj.update());
+
+                if (autoRotate) {
+                    rotY += rotationSpeed * 0.01;
+                }
+            }
+
+            draw();
+            requestAnimationFrame(update);
+        }
+
+        function resetAttractor() {
+            trajectories = [];
+
+            // Initial conditions based on attractor type
+            let x, y, z;
+            switch (attractorType) {
+                case 'rossler':
+                    x = 0.1; y = 0; z = 0;
+                    scale = 15;
+                    break;
+                case 'chen':
+                    x = -0.1; y = 0.5; z = -0.6;
+                    scale = 6;
+                    break;
+                case 'aizawa':
+                    x = 0.1; y = 0; z = 0;
+                    scale = 100;
+                    break;
+                case 'thomas':
+                    x = 1.1; y = 1.1; z = -0.01;
+                    scale = 60;
+                    break;
+                case 'halvorsen':
+                    x = -1.48; y = -1.51; z = 2.04;
+                    scale = 20;
+                    break;
+                default:
+                    x = 0.1; y = 0; z = 0;
+                    scale = 8;
+            }
+
+            trajectories.push(new Trajectory(x, y, z));
+            document.getElementById('scale').value = scale;
+            document.getElementById('scaleValue').textContent = scale;
+        }
+
+        function togglePause() {
+            isPaused = !isPaused;
+        }
+
+        function addTrajectory() {
+            const colors = ['#ff6b6b', '#4ade80', '#60a5fa', '#f472b6', '#fbbf24', '#a78bfa'];
+            const color = colors[trajectories.length % colors.length];
+
+            // Slightly different initial conditions
+            const offset = (Math.random() - 0.5) * 2;
+            let x, y, z;
+
+            switch (attractorType) {
+                case 'rossler':
+                    x = 0.1 + offset; y = offset; z = offset;
+                    break;
+                case 'chen':
+                    x = -0.1 + offset; y = 0.5 + offset; z = -0.6 + offset;
+                    break;
+                default:
+                    x = 0.1 + offset; y = offset; z = offset;
+            }
+
+            trajectories.push(new Trajectory(x, y, z, color));
+        }
+
+        // Event listeners
+        canvas.addEventListener('mousedown', e => {
+            mouseDown = true;
+            lastMouse = { x: e.clientX, y: e.clientY };
+        });
+
+        canvas.addEventListener('mousemove', e => {
+            if (mouseDown) {
+                const dx = e.clientX - lastMouse.x;
+                const dy = e.clientY - lastMouse.y;
+                rotY += dx * 0.01;
+                rotX += dy * 0.01;
+                lastMouse = { x: e.clientX, y: e.clientY };
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => mouseDown = false);
+        canvas.addEventListener('mouseleave', () => mouseDown = false);
+
+        canvas.addEventListener('wheel', e => {
+            e.preventDefault();
+            scale *= e.deltaY > 0 ? 0.95 : 1.05;
+            scale = Math.max(1, Math.min(50, scale));
+            document.getElementById('scale').value = scale;
+            document.getElementById('scaleValue').textContent = scale.toFixed(1);
+        });
+
+        // Parameter controls
+        document.getElementById('sigma').addEventListener('input', e => {
+            sigma = parseFloat(e.target.value);
+            document.getElementById('sigmaValue').textContent = sigma.toFixed(1);
+        });
+
+        document.getElementById('rho').addEventListener('input', e => {
+            rho = parseFloat(e.target.value);
+            document.getElementById('rhoValue').textContent = rho.toFixed(1);
+        });
+
+        document.getElementById('beta').addEventListener('input', e => {
+            beta = parseFloat(e.target.value);
+            document.getElementById('betaValue').textContent = beta.toFixed(2);
+        });
+
+        document.getElementById('dt').addEventListener('input', e => {
+            dt = parseFloat(e.target.value);
+            document.getElementById('dtValue').textContent = dt.toFixed(3);
+        });
+
+        document.getElementById('trail').addEventListener('input', e => {
+            trailLength = parseInt(e.target.value);
+            document.getElementById('trailValue').textContent = trailLength;
+        });
+
+        document.getElementById('lineWidth').addEventListener('input', e => {
+            lineWidth = parseFloat(e.target.value);
+            document.getElementById('lineWidthValue').textContent = lineWidth.toFixed(1);
+        });
+
+        document.getElementById('scale').addEventListener('input', e => {
+            scale = parseFloat(e.target.value);
+            document.getElementById('scaleValue').textContent = scale.toFixed(1);
+        });
+
+        document.getElementById('rotSpeed').addEventListener('input', e => {
+            rotationSpeed = parseFloat(e.target.value);
+            document.getElementById('rotSpeedValue').textContent = rotationSpeed.toFixed(1);
+        });
+
+        document.getElementById('autoRotate').addEventListener('change', e => {
+            autoRotate = e.target.checked;
+        });
+
+        document.getElementById('showAxes').addEventListener('change', e => {
+            showAxes = e.target.checked;
+        });
+
+        document.getElementById('attractorType').addEventListener('change', e => {
+            attractorType = e.target.value;
+            resetAttractor();
+            updateEquation();
+        });
+
+        // Color scheme buttons
+        document.querySelectorAll('.color-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                colorScheme = btn.dataset.scheme;
+            });
+        });
+
+        function updateEquation() {
+            const equations = {
+                lorenz: `dx/dt = σ(y - x)
+dy/dt = x(ρ - z) - y
+dz/dt = xy - βz`,
+                rossler: `dx/dt = -y - z
+dy/dt = x + ay
+dz/dt = b + z(x - c)`,
+                chen: `dx/dt = a(y - x)
+dy/dt = (c - a)x - xz + cy
+dz/dt = xy - bz`,
+                aizawa: `dx/dt = (z - β)x - δy
+dy/dt = δx + (z - β)y
+dz/dt = γ + αz - z³/3 - (x² + y²)(1 + εz) + ζzx³`,
+                thomas: `dx/dt = sin(y) - bx
+dy/dt = sin(z) - by
+dz/dt = sin(x) - bz`,
+                halvorsen: `dx/dt = -ax - 4y - 4z - y²
+dy/dt = -ay - 4z - 4x - z²
+dz/dt = -az - 4x - 4y - x²`
+            };
+
+            document.querySelector('.equation').innerHTML = equations[attractorType].split('\n').map(l => `<div>${l}</div>`).join('');
+        }
+
+        // Initialize
+        resetAttractor();
+        update();
+    </script>
+</body>
+</html>

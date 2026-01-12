@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>State Machine Designer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 280px 1fr 280px;
+            height: 100vh;
+        }
+
+        .panel {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 20px;
+            overflow-y: auto;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .panel:last-child {
+            border-right: none;
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        h1 {
+            font-size: 1.4rem;
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            color: #888;
+            font-size: 0.85rem;
+        }
+
+        .section {
+            margin-bottom: 20px;
+        }
+
+        .section h3 {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #f093fb;
+            margin-bottom: 12px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid rgba(240, 147, 251, 0.3);
+        }
+
+        .control-group {
+            margin-bottom: 12px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #aaa;
+            font-size: 0.85rem;
+        }
+
+        input[type="text"], select {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 6px;
+            background: rgba(0, 0, 0, 0.3);
+            color: #fff;
+            font-size: 0.9rem;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #f093fb;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-bottom: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            color: #fff;
+        }
+
+        .btn-secondary {
+            background: rgba(240, 147, 251, 0.2);
+            color: #f093fb;
+            border: 1px solid rgba(240, 147, 251, 0.3);
+        }
+
+        .btn-success {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        .btn-danger {
+            background: rgba(255, 100, 100, 0.2);
+            color: #ff6464;
+            border: 1px solid rgba(255, 100, 100, 0.3);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(240, 147, 251, 0.3);
+        }
+
+        .btn-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .canvas-container {
+            position: relative;
+            background: #0a0a15;
+        }
+
+        canvas {
+            display: block;
+            cursor: crosshair;
+        }
+
+        .toolbar {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 8px 15px;
+            border-radius: 25px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .tool-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            background: rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            margin: 0;
+            padding: 0;
+        }
+
+        .tool-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: none;
+            box-shadow: none;
+        }
+
+        .tool-btn.active {
+            border-color: #f093fb;
+            background: rgba(240, 147, 251, 0.2);
+        }
+
+        .tool-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: #fff;
+        }
+
+        .state-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .state-item, .transition-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+
+        .state-item.initial {
+            border-left: 3px solid #00ff88;
+        }
+
+        .state-item.accepting {
+            border-left: 3px solid #f093fb;
+        }
+
+        .state-item.current {
+            background: rgba(240, 147, 251, 0.2);
+        }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            color: #ff6464;
+            cursor: pointer;
+            padding: 5px;
+            width: auto;
+            margin: 0;
+        }
+
+        .simulation-panel {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .input-string {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+            min-height: 40px;
+            align-items: center;
+        }
+
+        .input-char {
+            padding: 5px 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            font-family: monospace;
+        }
+
+        .input-char.processed {
+            background: rgba(0, 255, 136, 0.3);
+        }
+
+        .input-char.current {
+            background: rgba(240, 147, 251, 0.5);
+            transform: scale(1.1);
+        }
+
+        .input-char.pending {
+            opacity: 0.5;
+        }
+
+        .result-indicator {
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        .result-indicator.accepted {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+        }
+
+        .result-indicator.rejected {
+            background: rgba(255, 100, 100, 0.2);
+            color: #ff6464;
+        }
+
+        .result-indicator.running {
+            background: rgba(240, 147, 251, 0.2);
+            color: #f093fb;
+        }
+
+        .examples {
+            font-size: 0.85rem;
+            color: #888;
+            margin-top: 15px;
+        }
+
+        .example-item {
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 4px;
+            margin-bottom: 5px;
+        }
+
+        .example-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .help-text {
+            font-size: 0.8rem;
+            color: #666;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="panel">
+            <div class="header">
+                <h1>State Machine Designer</h1>
+                <p class="subtitle">Finite Automata Visualizer</p>
+            </div>
+
+            <div class="section">
+                <h3>Tools</h3>
+                <div class="btn-group">
+                    <button class="btn-secondary" id="addStateBtn" onclick="setTool('state')">Add State</button>
+                    <button class="btn-secondary" id="addTransitionBtn" onclick="setTool('transition')">Add Transition</button>
+                </div>
+                <button class="btn-secondary" onclick="setTool('select')">Select/Move</button>
+            </div>
+
+            <div class="section">
+                <h3>State Properties</h3>
+                <div class="control-group">
+                    <label>State Name</label>
+                    <input type="text" id="stateName" placeholder="e.g., q0, q1...">
+                </div>
+                <div class="btn-group">
+                    <button class="btn-secondary" onclick="toggleInitial()">Set Initial</button>
+                    <button class="btn-secondary" onclick="toggleAccepting()">Set Accepting</button>
+                </div>
+                <button class="btn-danger" onclick="deleteSelected()">Delete Selected</button>
+            </div>
+
+            <div class="section">
+                <h3>Transition Properties</h3>
+                <div class="control-group">
+                    <label>Input Symbol(s)</label>
+                    <input type="text" id="transitionSymbol" placeholder="e.g., a, b, 0, 1, ε">
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>Presets</h3>
+                <button class="btn-secondary" onclick="loadPreset('binary')">Binary Divisible by 3</button>
+                <button class="btn-secondary" onclick="loadPreset('even')">Even Number of 1s</button>
+                <button class="btn-secondary" onclick="loadPreset('substring')">Contains "ab"</button>
+                <button class="btn-secondary" onclick="loadPreset('email')">Simple Email</button>
+            </div>
+
+            <div class="section">
+                <button class="btn-danger" onclick="clearAll()">Clear All</button>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="canvas"></canvas>
+            <div class="toolbar">
+                <button class="tool-btn active" id="selectTool" onclick="setTool('select')" title="Select/Move">
+                    <svg viewBox="0 0 24 24"><path d="M13.64 21.97C13.14 22.21 12.54 22 12.31 21.5L10.13 16.76L7.62 18.78C7.45 18.92 7.24 19 7 19C6.45 19 6 18.55 6 18V3C6 2.45 6.45 2 7 2C7.24 2 7.47 2.09 7.64 2.23L7.65 2.22L19.14 11.86C19.57 12.22 19.62 12.85 19.27 13.27C19.09 13.5 18.82 13.62 18.54 13.62L14.25 13.59L16.38 18.3C16.63 18.8 16.41 19.4 15.91 19.64L13.64 21.97Z"/></svg>
+                </button>
+                <button class="tool-btn" id="stateTool" onclick="setTool('state')" title="Add State">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="none" stroke="white" stroke-width="2"/></svg>
+                </button>
+                <button class="tool-btn" id="transitionTool" onclick="setTool('transition')" title="Add Transition">
+                    <svg viewBox="0 0 24 24"><path d="M4 12h12M12 8l4 4-4 4" fill="none" stroke="white" stroke-width="2"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="section">
+                <h3>Simulation</h3>
+                <div class="control-group">
+                    <label>Input String</label>
+                    <input type="text" id="inputString" placeholder="e.g., aabb, 1010">
+                </div>
+                <button class="btn-primary" onclick="startSimulation()">Run</button>
+                <div class="btn-group">
+                    <button class="btn-secondary" onclick="stepSimulation()">Step</button>
+                    <button class="btn-secondary" onclick="resetSimulation()">Reset</button>
+                </div>
+
+                <div class="simulation-panel">
+                    <label>Input:</label>
+                    <div class="input-string" id="inputDisplay"></div>
+                    <div class="result-indicator" id="resultIndicator" style="display: none;"></div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>States</h3>
+                <div class="state-list" id="stateList"></div>
+            </div>
+
+            <div class="section">
+                <h3>Transitions</h3>
+                <div class="state-list" id="transitionList"></div>
+            </div>
+
+            <div class="help-text">
+                <strong>Tips:</strong><br>
+                • Click canvas to add states<br>
+                • Drag between states for transitions<br>
+                • Double-click to edit state<br>
+                • Use ε for epsilon transitions<br>
+                • Green = initial, Double circle = accepting
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // State
+        let states = [];
+        let transitions = [];
+        let selectedState = null;
+        let selectedTransition = null;
+        let currentTool = 'select';
+        let isDragging = false;
+        let isCreatingTransition = false;
+        let transitionStart = null;
+        let mousePos = { x: 0, y: 0 };
+
+        // Simulation state
+        let simulationRunning = false;
+        let simulationIndex = 0;
+        let currentState = null;
+        let inputString = '';
+
+        const STATE_RADIUS = 30;
+        const COLORS = {
+            state: '#667eea',
+            initial: '#00ff88',
+            accepting: '#f093fb',
+            selected: '#fff',
+            transition: '#aaa',
+            current: '#ffcc00'
+        };
+
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            draw();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Tool management
+        function setTool(tool) {
+            currentTool = tool;
+            document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(tool + 'Tool')?.classList.add('active');
+
+            if (tool === 'state') {
+                document.getElementById('addStateBtn').classList.add('btn-primary');
+                document.getElementById('addStateBtn').classList.remove('btn-secondary');
+            } else {
+                document.getElementById('addStateBtn').classList.remove('btn-primary');
+                document.getElementById('addStateBtn').classList.add('btn-secondary');
+            }
+
+            if (tool === 'transition') {
+                document.getElementById('addTransitionBtn').classList.add('btn-primary');
+                document.getElementById('addTransitionBtn').classList.remove('btn-secondary');
+            } else {
+                document.getElementById('addTransitionBtn').classList.remove('btn-primary');
+                document.getElementById('addTransitionBtn').classList.add('btn-secondary');
+            }
+        }
+
+        // State class
+        class State {
+            constructor(x, y, name) {
+                this.x = x;
+                this.y = y;
+                this.name = name || `q${states.length}`;
+                this.isInitial = states.length === 0;
+                this.isAccepting = false;
+            }
+        }
+
+        // Transition class
+        class Transition {
+            constructor(from, to, symbol) {
+                this.from = from;
+                this.to = to;
+                this.symbol = symbol || '';
+                this.curveOffset = 0;
+            }
+        }
+
+        // Canvas events
+        canvas.addEventListener('mousedown', e => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            mousePos = { x, y };
+
+            if (currentTool === 'state') {
+                // Add new state
+                const state = new State(x, y);
+                states.push(state);
+                selectedState = state;
+                updateLists();
+                draw();
+            } else if (currentTool === 'transition') {
+                // Start creating transition
+                const state = getStateAt(x, y);
+                if (state) {
+                    isCreatingTransition = true;
+                    transitionStart = state;
+                }
+            } else if (currentTool === 'select') {
+                const state = getStateAt(x, y);
+                const transition = getTransitionAt(x, y);
+
+                if (state) {
+                    selectedState = state;
+                    selectedTransition = null;
+                    isDragging = true;
+                    document.getElementById('stateName').value = state.name;
+                } else if (transition) {
+                    selectedTransition = transition;
+                    selectedState = null;
+                    document.getElementById('transitionSymbol').value = transition.symbol;
+                } else {
+                    selectedState = null;
+                    selectedTransition = null;
+                }
+                updateLists();
+                draw();
+            }
+        });
+
+        canvas.addEventListener('mousemove', e => {
+            const rect = canvas.getBoundingClientRect();
+            mousePos = {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            };
+
+            if (isDragging && selectedState) {
+                selectedState.x = mousePos.x;
+                selectedState.y = mousePos.y;
+                draw();
+            } else if (isCreatingTransition) {
+                draw();
+            }
+        });
+
+        canvas.addEventListener('mouseup', e => {
+            if (isCreatingTransition && transitionStart) {
+                const endState = getStateAt(mousePos.x, mousePos.y);
+                if (endState) {
+                    const symbol = prompt('Enter transition symbol(s) (comma-separated, use ε for epsilon):', '');
+                    if (symbol !== null) {
+                        // Check for existing transition and add curve offset
+                        let offset = 0;
+                        const existing = transitions.filter(t =>
+                            (t.from === transitionStart && t.to === endState) ||
+                            (t.from === endState && t.to === transitionStart)
+                        );
+                        if (existing.length > 0) {
+                            offset = (existing.length) * 30;
+                        }
+
+                        const transition = new Transition(transitionStart, endState, symbol);
+                        transition.curveOffset = offset;
+                        transitions.push(transition);
+                        updateLists();
+                    }
+                }
+            }
+
+            isDragging = false;
+            isCreatingTransition = false;
+            transitionStart = null;
+            draw();
+        });
+
+        canvas.addEventListener('dblclick', e => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            const state = getStateAt(x, y);
+            if (state) {
+                const newName = prompt('Enter state name:', state.name);
+                if (newName) {
+                    state.name = newName;
+                    updateLists();
+                    draw();
+                }
+            }
+        });
+
+        // Input handlers
+        document.getElementById('stateName').addEventListener('input', e => {
+            if (selectedState) {
+                selectedState.name = e.target.value;
+                updateLists();
+                draw();
+            }
+        });
+
+        document.getElementById('transitionSymbol').addEventListener('input', e => {
+            if (selectedTransition) {
+                selectedTransition.symbol = e.target.value;
+                updateLists();
+                draw();
+            }
+        });
+
+        function getStateAt(x, y) {
+            for (let i = states.length - 1; i >= 0; i--) {
+                const state = states[i];
+                const dx = x - state.x;
+                const dy = y - state.y;
+                if (dx * dx + dy * dy <= STATE_RADIUS * STATE_RADIUS) {
+                    return state;
+                }
+            }
+            return null;
+        }
+
+        function getTransitionAt(x, y) {
+            for (const t of transitions) {
+                const midX = (t.from.x + t.to.x) / 2;
+                const midY = (t.from.y + t.to.y) / 2 - t.curveOffset;
+                const dx = x - midX;
+                const dy = y - midY;
+                if (dx * dx + dy * dy <= 400) {
+                    return t;
+                }
+            }
+            return null;
+        }
+
+        function toggleInitial() {
+            if (selectedState) {
+                // Only one initial state
+                states.forEach(s => s.isInitial = false);
+                selectedState.isInitial = true;
+                updateLists();
+                draw();
+            }
+        }
+
+        function toggleAccepting() {
+            if (selectedState) {
+                selectedState.isAccepting = !selectedState.isAccepting;
+                updateLists();
+                draw();
+            }
+        }
+
+        function deleteSelected() {
+            if (selectedState) {
+                // Remove associated transitions
+                transitions = transitions.filter(t => t.from !== selectedState && t.to !== selectedState);
+                states = states.filter(s => s !== selectedState);
+                selectedState = null;
+            }
+            if (selectedTransition) {
+                transitions = transitions.filter(t => t !== selectedTransition);
+                selectedTransition = null;
+            }
+            updateLists();
+            draw();
+        }
+
+        function clearAll() {
+            states = [];
+            transitions = [];
+            selectedState = null;
+            selectedTransition = null;
+            resetSimulation();
+            updateLists();
+            draw();
+        }
+
+        // Drawing
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw grid
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+            ctx.lineWidth = 1;
+            const gridSize = 50;
+            for (let x = 0; x < canvas.width; x += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y < canvas.height; y += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+
+            // Draw transitions
+            transitions.forEach(t => drawTransition(t));
+
+            // Draw transition being created
+            if (isCreatingTransition && transitionStart) {
+                ctx.beginPath();
+                ctx.moveTo(transitionStart.x, transitionStart.y);
+                ctx.lineTo(mousePos.x, mousePos.y);
+                ctx.strokeStyle = 'rgba(240, 147, 251, 0.5)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            // Draw states
+            states.forEach(state => drawState(state));
+        }
+
+        function drawState(state) {
+            const isSelected = state === selectedState;
+            const isCurrent = state === currentState;
+
+            // Initial state arrow
+            if (state.isInitial) {
+                ctx.beginPath();
+                ctx.moveTo(state.x - STATE_RADIUS - 30, state.y);
+                ctx.lineTo(state.x - STATE_RADIUS - 5, state.y);
+                ctx.strokeStyle = COLORS.initial;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Arrowhead
+                ctx.beginPath();
+                ctx.moveTo(state.x - STATE_RADIUS - 5, state.y);
+                ctx.lineTo(state.x - STATE_RADIUS - 15, state.y - 8);
+                ctx.lineTo(state.x - STATE_RADIUS - 15, state.y + 8);
+                ctx.closePath();
+                ctx.fillStyle = COLORS.initial;
+                ctx.fill();
+            }
+
+            // State circle
+            ctx.beginPath();
+            ctx.arc(state.x, state.y, STATE_RADIUS, 0, Math.PI * 2);
+
+            if (isCurrent) {
+                ctx.fillStyle = 'rgba(255, 204, 0, 0.3)';
+                ctx.fill();
+                ctx.strokeStyle = COLORS.current;
+            } else if (isSelected) {
+                ctx.fillStyle = 'rgba(102, 126, 234, 0.3)';
+                ctx.fill();
+                ctx.strokeStyle = COLORS.selected;
+            } else {
+                ctx.fillStyle = 'rgba(102, 126, 234, 0.2)';
+                ctx.fill();
+                ctx.strokeStyle = state.isInitial ? COLORS.initial : COLORS.state;
+            }
+
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Accepting state (double circle)
+            if (state.isAccepting) {
+                ctx.beginPath();
+                ctx.arc(state.x, state.y, STATE_RADIUS - 6, 0, Math.PI * 2);
+                ctx.strokeStyle = COLORS.accepting;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+
+            // State name
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 14px Segoe UI';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(state.name, state.x, state.y);
+        }
+
+        function drawTransition(t) {
+            const isSelected = t === selectedTransition;
+
+            if (t.from === t.to) {
+                // Self-loop
+                drawSelfLoop(t, isSelected);
+            } else {
+                // Regular transition
+                drawArrow(t, isSelected);
+            }
+        }
+
+        function drawArrow(t, isSelected) {
+            const dx = t.to.x - t.from.x;
+            const dy = t.to.y - t.from.y;
+            const len = Math.sqrt(dx * dx + dy * dy);
+            const nx = dx / len;
+            const ny = dy / len;
+
+            // Perpendicular for curve
+            const px = -ny;
+            const py = nx;
+
+            const startX = t.from.x + nx * STATE_RADIUS;
+            const startY = t.from.y + ny * STATE_RADIUS;
+            const endX = t.to.x - nx * STATE_RADIUS;
+            const endY = t.to.y - ny * STATE_RADIUS;
+
+            const midX = (startX + endX) / 2 + px * t.curveOffset;
+            const midY = (startY + endY) / 2 + py * t.curveOffset;
+
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            ctx.quadraticCurveTo(midX, midY, endX, endY);
+            ctx.strokeStyle = isSelected ? COLORS.selected : COLORS.transition;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Arrowhead
+            const angle = Math.atan2(endY - midY, endX - midX);
+            const arrowLen = 12;
+            ctx.beginPath();
+            ctx.moveTo(endX, endY);
+            ctx.lineTo(endX - arrowLen * Math.cos(angle - 0.3), endY - arrowLen * Math.sin(angle - 0.3));
+            ctx.lineTo(endX - arrowLen * Math.cos(angle + 0.3), endY - arrowLen * Math.sin(angle + 0.3));
+            ctx.closePath();
+            ctx.fillStyle = isSelected ? COLORS.selected : COLORS.transition;
+            ctx.fill();
+
+            // Label
+            const labelX = midX;
+            const labelY = midY - 10;
+            ctx.fillStyle = '#fff';
+            ctx.font = '14px Segoe UI';
+            ctx.textAlign = 'center';
+            ctx.fillText(t.symbol, labelX, labelY);
+        }
+
+        function drawSelfLoop(t, isSelected) {
+            const loopRadius = 20;
+            const loopX = t.from.x;
+            const loopY = t.from.y - STATE_RADIUS - loopRadius;
+
+            ctx.beginPath();
+            ctx.arc(loopX, loopY, loopRadius, 0.2 * Math.PI, 0.8 * Math.PI);
+            ctx.strokeStyle = isSelected ? COLORS.selected : COLORS.transition;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Arrowhead
+            const arrowX = loopX + loopRadius * Math.cos(0.8 * Math.PI);
+            const arrowY = loopY + loopRadius * Math.sin(0.8 * Math.PI);
+            const angle = 0.8 * Math.PI + Math.PI / 2;
+            const arrowLen = 10;
+
+            ctx.beginPath();
+            ctx.moveTo(arrowX, arrowY);
+            ctx.lineTo(arrowX - arrowLen * Math.cos(angle - 0.3), arrowY - arrowLen * Math.sin(angle - 0.3));
+            ctx.lineTo(arrowX - arrowLen * Math.cos(angle + 0.3), arrowY - arrowLen * Math.sin(angle + 0.3));
+            ctx.closePath();
+            ctx.fillStyle = isSelected ? COLORS.selected : COLORS.transition;
+            ctx.fill();
+
+            // Label
+            ctx.fillStyle = '#fff';
+            ctx.font = '14px Segoe UI';
+            ctx.textAlign = 'center';
+            ctx.fillText(t.symbol, loopX, loopY - loopRadius - 5);
+        }
+
+        // Update UI lists
+        function updateLists() {
+            const stateList = document.getElementById('stateList');
+            stateList.innerHTML = states.map(s => `
+                <div class="state-item ${s.isInitial ? 'initial' : ''} ${s.isAccepting ? 'accepting' : ''} ${s === currentState ? 'current' : ''}">
+                    <span>${s.name} ${s.isInitial ? '(init)' : ''} ${s.isAccepting ? '(accept)' : ''}</span>
+                    <button class="delete-btn" onclick="deleteState('${s.name}')">×</button>
+                </div>
+            `).join('');
+
+            const transitionList = document.getElementById('transitionList');
+            transitionList.innerHTML = transitions.map((t, i) => `
+                <div class="transition-item">
+                    <span>${t.from.name} → ${t.to.name} : ${t.symbol || 'ε'}</span>
+                    <button class="delete-btn" onclick="deleteTransition(${i})">×</button>
+                </div>
+            `).join('');
+        }
+
+        function deleteState(name) {
+            const state = states.find(s => s.name === name);
+            if (state) {
+                transitions = transitions.filter(t => t.from !== state && t.to !== state);
+                states = states.filter(s => s !== state);
+                if (selectedState === state) selectedState = null;
+                updateLists();
+                draw();
+            }
+        }
+
+        function deleteTransition(index) {
+            transitions.splice(index, 1);
+            updateLists();
+            draw();
+        }
+
+        // Simulation
+        function startSimulation() {
+            inputString = document.getElementById('inputString').value;
+            currentState = states.find(s => s.isInitial);
+            simulationIndex = 0;
+            simulationRunning = true;
+
+            updateInputDisplay();
+            runSimulation();
+        }
+
+        function runSimulation() {
+            if (!simulationRunning) return;
+
+            const interval = setInterval(() => {
+                if (simulationIndex >= inputString.length || !currentState) {
+                    clearInterval(interval);
+                    finishSimulation();
+                    return;
+                }
+
+                stepSimulation();
+            }, 500);
+        }
+
+        function stepSimulation() {
+            if (!currentState || simulationIndex >= inputString.length) {
+                finishSimulation();
+                return;
+            }
+
+            const symbol = inputString[simulationIndex];
+            const validTransitions = transitions.filter(t =>
+                t.from === currentState &&
+                t.symbol.split(',').map(s => s.trim()).includes(symbol)
+            );
+
+            if (validTransitions.length > 0) {
+                currentState = validTransitions[0].to;
+            } else {
+                // No valid transition - stuck
+                currentState = null;
+            }
+
+            simulationIndex++;
+            updateInputDisplay();
+            updateLists();
+            draw();
+        }
+
+        function finishSimulation() {
+            simulationRunning = false;
+            const resultIndicator = document.getElementById('resultIndicator');
+            resultIndicator.style.display = 'block';
+
+            if (currentState && currentState.isAccepting) {
+                resultIndicator.className = 'result-indicator accepted';
+                resultIndicator.textContent = '✓ Accepted';
+            } else {
+                resultIndicator.className = 'result-indicator rejected';
+                resultIndicator.textContent = '✗ Rejected';
+            }
+        }
+
+        function resetSimulation() {
+            simulationRunning = false;
+            simulationIndex = 0;
+            currentState = null;
+            document.getElementById('resultIndicator').style.display = 'none';
+            document.getElementById('inputDisplay').innerHTML = '';
+            updateLists();
+            draw();
+        }
+
+        function updateInputDisplay() {
+            const display = document.getElementById('inputDisplay');
+            display.innerHTML = inputString.split('').map((char, i) => {
+                let className = 'input-char';
+                if (i < simulationIndex) className += ' processed';
+                else if (i === simulationIndex) className += ' current';
+                else className += ' pending';
+                return `<span class="${className}">${char}</span>`;
+            }).join('');
+
+            const resultIndicator = document.getElementById('resultIndicator');
+            if (simulationRunning) {
+                resultIndicator.style.display = 'block';
+                resultIndicator.className = 'result-indicator running';
+                resultIndicator.textContent = `Current: ${currentState ? currentState.name : 'stuck'}`;
+            }
+        }
+
+        // Presets
+        function loadPreset(name) {
+            clearAll();
+
+            switch (name) {
+                case 'binary':
+                    // DFA for binary numbers divisible by 3
+                    states = [
+                        new State(150, 300, 'q0'),
+                        new State(350, 300, 'q1'),
+                        new State(550, 300, 'q2')
+                    ];
+                    states[0].isInitial = true;
+                    states[0].isAccepting = true;
+                    transitions = [
+                        new Transition(states[0], states[0], '0'),
+                        new Transition(states[0], states[1], '1'),
+                        new Transition(states[1], states[2], '0'),
+                        new Transition(states[1], states[0], '1'),
+                        new Transition(states[2], states[1], '0'),
+                        new Transition(states[2], states[2], '1')
+                    ];
+                    transitions[0].curveOffset = -40;
+                    transitions[5].curveOffset = -40;
+                    break;
+
+                case 'even':
+                    // DFA for even number of 1s
+                    states = [
+                        new State(200, 300, 'even'),
+                        new State(500, 300, 'odd')
+                    ];
+                    states[0].isInitial = true;
+                    states[0].isAccepting = true;
+                    transitions = [
+                        new Transition(states[0], states[0], '0'),
+                        new Transition(states[0], states[1], '1'),
+                        new Transition(states[1], states[1], '0'),
+                        new Transition(states[1], states[0], '1')
+                    ];
+                    transitions[0].curveOffset = -40;
+                    transitions[2].curveOffset = -40;
+                    break;
+
+                case 'substring':
+                    // DFA for strings containing "ab"
+                    states = [
+                        new State(150, 300, 'q0'),
+                        new State(350, 300, 'q1'),
+                        new State(550, 300, 'q2')
+                    ];
+                    states[0].isInitial = true;
+                    states[2].isAccepting = true;
+                    transitions = [
+                        new Transition(states[0], states[1], 'a'),
+                        new Transition(states[0], states[0], 'b'),
+                        new Transition(states[1], states[1], 'a'),
+                        new Transition(states[1], states[2], 'b'),
+                        new Transition(states[2], states[2], 'a, b')
+                    ];
+                    transitions[1].curveOffset = -40;
+                    transitions[2].curveOffset = -40;
+                    transitions[4].curveOffset = -40;
+                    break;
+
+                case 'email':
+                    // Simplified email pattern
+                    states = [
+                        new State(100, 300, 'start'),
+                        new State(250, 300, 'name'),
+                        new State(400, 300, '@'),
+                        new State(550, 300, 'domain'),
+                        new State(700, 300, 'end')
+                    ];
+                    states[0].isInitial = true;
+                    states[4].isAccepting = true;
+                    transitions = [
+                        new Transition(states[0], states[1], 'a-z'),
+                        new Transition(states[1], states[1], 'a-z, 0-9'),
+                        new Transition(states[1], states[2], '@'),
+                        new Transition(states[2], states[3], 'a-z'),
+                        new Transition(states[3], states[3], 'a-z'),
+                        new Transition(states[3], states[4], '.')
+                    ];
+                    transitions[1].curveOffset = -40;
+                    transitions[4].curveOffset = -40;
+                    break;
+            }
+
+            updateLists();
+            draw();
+        }
+
+        // Initialize
+        loadPreset('even');
+    </script>
+</body>
+</html>

@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fourier Transform Visualizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #0a0a15 0%, #1a1a2e 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            padding: 20px;
+            gap: 15px;
+        }
+
+        header {
+            text-align: center;
+            padding: 15px;
+        }
+
+        h1 {
+            font-size: 1.8em;
+            font-weight: 500;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: #888;
+            font-size: 0.95em;
+            margin-top: 5px;
+        }
+
+        .controls-bar {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            padding: 15px;
+            background: rgba(20, 20, 35, 0.8);
+            border-radius: 12px;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .control-label {
+            font-size: 0.85em;
+            color: #888;
+        }
+
+        select, input[type="range"] {
+            background: rgba(40, 40, 60, 0.8);
+            border: 1px solid #444;
+            border-radius: 6px;
+            color: #e0e0e0;
+            padding: 8px 12px;
+            font-size: 0.9em;
+            cursor: pointer;
+        }
+
+        select option {
+            background: #1a1a2e;
+        }
+
+        input[type="range"] {
+            width: 120px;
+            height: 6px;
+            padding: 0;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .control-value {
+            color: #667eea;
+            font-weight: 500;
+            min-width: 30px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            background: rgba(60, 60, 80, 0.5);
+            border: 1px solid #444;
+            color: #aaa;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: rgba(80, 80, 100, 0.6);
+            color: white;
+        }
+
+        .btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .main-content {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 15px;
+            min-height: 0;
+        }
+
+        .panel {
+            background: rgba(20, 20, 35, 0.8);
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-title {
+            font-size: 0.9em;
+            color: #667eea;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-subtitle {
+            font-size: 0.75em;
+            color: #888;
+            font-weight: normal;
+            text-transform: none;
+            letter-spacing: 0;
+        }
+
+        .canvas-container {
+            flex: 1;
+            position: relative;
+            min-height: 0;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 8px;
+        }
+
+        .epicycles-panel {
+            grid-column: 1;
+            grid-row: 1 / 3;
+        }
+
+        .drawing-panel {
+            position: relative;
+        }
+
+        .draw-instructions {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #666;
+            pointer-events: none;
+        }
+
+        .draw-instructions.hidden {
+            display: none;
+        }
+
+        .spectrum-legend {
+            display: flex;
+            gap: 15px;
+            font-size: 0.75em;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
+
+        .info-bar {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            padding: 10px;
+            background: rgba(20, 20, 35, 0.8);
+            border-radius: 8px;
+            font-size: 0.85em;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .info-label {
+            color: #888;
+        }
+
+        .info-value {
+            color: #667eea;
+            font-weight: 500;
+        }
+
+        @media (max-width: 900px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                grid-template-rows: repeat(4, 1fr);
+            }
+
+            .epicycles-panel {
+                grid-column: 1;
+                grid-row: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Fourier Transform Visualizer</h1>
+            <p class="subtitle">Decompose any signal into circular orbits and sine waves</p>
+        </header>
+
+        <div class="controls-bar">
+            <div class="control-group">
+                <span class="control-label">Signal:</span>
+                <select id="signal-select">
+                    <option value="square">Square Wave</option>
+                    <option value="sawtooth">Sawtooth Wave</option>
+                    <option value="triangle">Triangle Wave</option>
+                    <option value="pulse">Pulse Wave</option>
+                    <option value="custom">Draw Custom</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <span class="control-label">Harmonics:</span>
+                <input type="range" id="harmonics-slider" min="1" max="50" value="10">
+                <span class="control-value" id="harmonics-value">10</span>
+            </div>
+            <div class="control-group">
+                <span class="control-label">Speed:</span>
+                <input type="range" id="speed-slider" min="0.1" max="3" step="0.1" value="1">
+                <span class="control-value" id="speed-value">1.0x</span>
+            </div>
+            <button class="btn" id="pause-btn">Pause</button>
+            <button class="btn" id="clear-btn">Clear Path</button>
+        </div>
+
+        <div class="main-content">
+            <div class="panel epicycles-panel">
+                <div class="panel-title">
+                    Epicycles (Rotating Vectors)
+                    <span class="panel-subtitle">Sum of rotating circles</span>
+                </div>
+                <div class="canvas-container">
+                    <canvas id="epicycles-canvas"></canvas>
+                </div>
+            </div>
+
+            <div class="panel drawing-panel">
+                <div class="panel-title">
+                    Original Signal
+                    <span class="panel-subtitle">Time domain</span>
+                </div>
+                <div class="canvas-container">
+                    <canvas id="signal-canvas"></canvas>
+                    <div class="draw-instructions" id="draw-instructions">
+                        Click and drag to draw a custom waveform
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">
+                    Reconstructed Signal
+                    <span class="panel-subtitle">Sum of sine waves</span>
+                </div>
+                <div class="canvas-container">
+                    <canvas id="reconstructed-canvas"></canvas>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">
+                    Frequency Spectrum
+                    <span class="panel-subtitle">Amplitude of each harmonic</span>
+                </div>
+                <div class="canvas-container">
+                    <canvas id="spectrum-canvas"></canvas>
+                </div>
+                <div class="spectrum-legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #667eea;"></div>
+                        <span>Amplitude</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #ff6b6b;"></div>
+                        <span>Phase</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-bar">
+            <div class="info-item">
+                <span class="info-label">Fundamental Frequency:</span>
+                <span class="info-value" id="fundamental-freq">1 Hz</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Active Harmonics:</span>
+                <span class="info-value" id="active-harmonics">10</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Total Circles:</span>
+                <span class="info-value" id="total-circles">10</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Canvas setup
+        const epicyclesCanvas = document.getElementById('epicycles-canvas');
+        const signalCanvas = document.getElementById('signal-canvas');
+        const reconstructedCanvas = document.getElementById('reconstructed-canvas');
+        const spectrumCanvas = document.getElementById('spectrum-canvas');
+
+        const epicyclesCtx = epicyclesCanvas.getContext('2d');
+        const signalCtx = signalCanvas.getContext('2d');
+        const reconstructedCtx = reconstructedCanvas.getContext('2d');
+        const spectrumCtx = spectrumCanvas.getContext('2d');
+
+        // State
+        let time = 0;
+        let harmonics = 10;
+        let speed = 1;
+        let isPaused = false;
+        let signalType = 'square';
+        let path = [];
+        let customSignal = [];
+        let isDrawing = false;
+        let fourierCoefficients = [];
+
+        // Resize canvases
+        function resizeCanvases() {
+            const canvases = [
+                { canvas: epicyclesCanvas, container: epicyclesCanvas.parentElement },
+                { canvas: signalCanvas, container: signalCanvas.parentElement },
+                { canvas: reconstructedCanvas, container: reconstructedCanvas.parentElement },
+                { canvas: spectrumCanvas, container: spectrumCanvas.parentElement }
+            ];
+
+            canvases.forEach(({ canvas, container }) => {
+                canvas.width = container.clientWidth;
+                canvas.height = container.clientHeight;
+            });
+
+            computeFourierCoefficients();
+        }
+
+        // Compute Fourier coefficients for different waveforms
+        function computeFourierCoefficients() {
+            fourierCoefficients = [];
+
+            if (signalType === 'custom' && customSignal.length > 0) {
+                // DFT of custom signal
+                fourierCoefficients = computeDFT(customSignal);
+            } else {
+                // Analytical coefficients for standard waveforms
+                for (let n = 1; n <= harmonics; n++) {
+                    let amplitude = 0;
+                    let phase = 0;
+
+                    switch (signalType) {
+                        case 'square':
+                            // Square wave: only odd harmonics, amplitude = 4/(n*pi)
+                            if (n % 2 === 1) {
+                                amplitude = 4 / (n * Math.PI);
+                            }
+                            break;
+
+                        case 'sawtooth':
+                            // Sawtooth: all harmonics, amplitude = 2/(n*pi) * (-1)^(n+1)
+                            amplitude = 2 / (n * Math.PI) * (n % 2 === 1 ? 1 : -1);
+                            break;
+
+                        case 'triangle':
+                            // Triangle: only odd harmonics, amplitude = 8/(n^2*pi^2) * (-1)^((n-1)/2)
+                            if (n % 2 === 1) {
+                                amplitude = 8 / (n * n * Math.PI * Math.PI) * (((n - 1) / 2) % 2 === 0 ? 1 : -1);
+                            }
+                            break;
+
+                        case 'pulse':
+                            // Pulse wave (25% duty cycle)
+                            const duty = 0.25;
+                            amplitude = 2 * Math.sin(n * Math.PI * duty) / (n * Math.PI);
+                            break;
+                    }
+
+                    if (Math.abs(amplitude) > 0.0001) {
+                        fourierCoefficients.push({
+                            frequency: n,
+                            amplitude: Math.abs(amplitude),
+                            phase: amplitude < 0 ? Math.PI : 0
+                        });
+                    }
+                }
+            }
+
+            // Sort by amplitude (largest first for better visualization)
+            fourierCoefficients.sort((a, b) => b.amplitude - a.amplitude);
+
+            updateInfo();
+        }
+
+        // Discrete Fourier Transform for custom signal
+        function computeDFT(signal) {
+            const N = signal.length;
+            const coeffs = [];
+
+            for (let k = 1; k <= Math.min(harmonics, N / 2); k++) {
+                let re = 0, im = 0;
+
+                for (let n = 0; n < N; n++) {
+                    const angle = (2 * Math.PI * k * n) / N;
+                    re += signal[n] * Math.cos(angle);
+                    im -= signal[n] * Math.sin(angle);
+                }
+
+                re /= N;
+                im /= N;
+
+                const amplitude = 2 * Math.sqrt(re * re + im * im);
+                const phase = Math.atan2(im, re);
+
+                if (amplitude > 0.01) {
+                    coeffs.push({ frequency: k, amplitude, phase });
+                }
+            }
+
+            return coeffs;
+        }
+
+        // Generate signal value at time t
+        function getSignalValue(t) {
+            // Normalize t to [0, 2π]
+            const normalizedT = ((t % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+            const x = normalizedT / (2 * Math.PI); // [0, 1]
+
+            switch (signalType) {
+                case 'square':
+                    return x < 0.5 ? 1 : -1;
+
+                case 'sawtooth':
+                    return 2 * x - 1;
+
+                case 'triangle':
+                    return x < 0.5 ? 4 * x - 1 : 3 - 4 * x;
+
+                case 'pulse':
+                    return x < 0.25 ? 1 : -0.33;
+
+                case 'custom':
+                    if (customSignal.length === 0) return 0;
+                    const idx = Math.floor(x * customSignal.length);
+                    return customSignal[Math.min(idx, customSignal.length - 1)];
+
+                default:
+                    return 0;
+            }
+        }
+
+        // Draw epicycles
+        function drawEpicycles() {
+            const ctx = epicyclesCtx;
+            const width = epicyclesCanvas.width;
+            const height = epicyclesCanvas.height;
+
+            ctx.fillStyle = 'rgba(10, 10, 21, 0.3)';
+            ctx.fillRect(0, 0, width, height);
+
+            const centerX = width * 0.35;
+            const centerY = height / 2;
+            const maxRadius = Math.min(width * 0.3, height * 0.4);
+
+            let x = centerX;
+            let y = centerY;
+
+            // Draw each epicycle
+            fourierCoefficients.slice(0, harmonics).forEach((coeff, i) => {
+                const prevX = x;
+                const prevY = y;
+
+                const radius = coeff.amplitude * maxRadius;
+                const angle = coeff.frequency * time + coeff.phase;
+
+                x += radius * Math.cos(angle);
+                y += radius * Math.sin(angle);
+
+                // Draw circle
+                ctx.beginPath();
+                ctx.arc(prevX, prevY, radius, 0, 2 * Math.PI);
+                ctx.strokeStyle = `hsla(${i * 30}, 70%, 60%, 0.4)`;
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                // Draw radius line
+                ctx.beginPath();
+                ctx.moveTo(prevX, prevY);
+                ctx.lineTo(x, y);
+                ctx.strokeStyle = `hsla(${i * 30}, 70%, 60%, 0.8)`;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Draw center point
+                ctx.beginPath();
+                ctx.arc(prevX, prevY, 2, 0, 2 * Math.PI);
+                ctx.fillStyle = `hsla(${i * 30}, 70%, 60%, 1)`;
+                ctx.fill();
+            });
+
+            // Draw final point
+            ctx.beginPath();
+            ctx.arc(x, y, 5, 0, 2 * Math.PI);
+            ctx.fillStyle = '#f1fa8c';
+            ctx.fill();
+
+            // Add to path
+            path.unshift({ x, y });
+            if (path.length > 1000) path.pop();
+
+            // Draw path
+            if (path.length > 1) {
+                ctx.beginPath();
+                ctx.moveTo(path[0].x, path[0].y);
+                for (let i = 1; i < path.length; i++) {
+                    ctx.lineTo(path[i].x, path[i].y);
+                }
+                ctx.strokeStyle = 'rgba(241, 250, 140, 0.6)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+
+            // Draw line to reconstructed signal
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(width, y);
+            ctx.strokeStyle = 'rgba(241, 250, 140, 0.3)';
+            ctx.setLineDash([5, 5]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        // Draw original signal
+        function drawSignal() {
+            const ctx = signalCtx;
+            const width = signalCanvas.width;
+            const height = signalCanvas.height;
+
+            ctx.fillStyle = 'rgba(10, 10, 21, 1)';
+            ctx.fillRect(0, 0, width, height);
+
+            // Draw grid
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(0, height / 2);
+            ctx.lineTo(width, height / 2);
+            ctx.stroke();
+
+            // Draw signal
+            ctx.beginPath();
+            const amplitude = height * 0.35;
+
+            for (let i = 0; i < width; i++) {
+                const t = (i / width) * 2 * Math.PI;
+                const value = getSignalValue(t);
+                const y = height / 2 - value * amplitude;
+
+                if (i === 0) ctx.moveTo(i, y);
+                else ctx.lineTo(i, y);
+            }
+
+            ctx.strokeStyle = '#667eea';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Draw current position marker
+            const markerX = ((time % (2 * Math.PI)) / (2 * Math.PI)) * width;
+            ctx.beginPath();
+            ctx.moveTo(markerX, 0);
+            ctx.lineTo(markerX, height);
+            ctx.strokeStyle = 'rgba(241, 250, 140, 0.5)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+
+        // Draw reconstructed signal
+        function drawReconstructed() {
+            const ctx = reconstructedCtx;
+            const width = reconstructedCanvas.width;
+            const height = reconstructedCanvas.height;
+
+            ctx.fillStyle = 'rgba(10, 10, 21, 1)';
+            ctx.fillRect(0, 0, width, height);
+
+            // Draw grid
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(0, height / 2);
+            ctx.lineTo(width, height / 2);
+            ctx.stroke();
+
+            // Draw reconstructed signal from Fourier series
+            ctx.beginPath();
+            const amplitude = height * 0.35;
+
+            for (let i = 0; i < width; i++) {
+                const t = (i / width) * 2 * Math.PI;
+                let value = 0;
+
+                fourierCoefficients.slice(0, harmonics).forEach(coeff => {
+                    value += coeff.amplitude * Math.cos(coeff.frequency * t + coeff.phase);
+                });
+
+                const y = height / 2 - value * amplitude;
+
+                if (i === 0) ctx.moveTo(i, y);
+                else ctx.lineTo(i, y);
+            }
+
+            ctx.strokeStyle = '#50fa7b';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Draw individual harmonics faintly
+            fourierCoefficients.slice(0, Math.min(5, harmonics)).forEach((coeff, idx) => {
+                ctx.beginPath();
+                for (let i = 0; i < width; i++) {
+                    const t = (i / width) * 2 * Math.PI;
+                    const value = coeff.amplitude * Math.cos(coeff.frequency * t + coeff.phase);
+                    const y = height / 2 - value * amplitude;
+
+                    if (i === 0) ctx.moveTo(i, y);
+                    else ctx.lineTo(i, y);
+                }
+                ctx.strokeStyle = `hsla(${idx * 60}, 70%, 60%, 0.2)`;
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            });
+
+            // Draw current position marker
+            const markerX = ((time % (2 * Math.PI)) / (2 * Math.PI)) * width;
+            ctx.beginPath();
+            ctx.moveTo(markerX, 0);
+            ctx.lineTo(markerX, height);
+            ctx.strokeStyle = 'rgba(241, 250, 140, 0.5)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+
+        // Draw frequency spectrum
+        function drawSpectrum() {
+            const ctx = spectrumCtx;
+            const width = spectrumCanvas.width;
+            const height = spectrumCanvas.height;
+
+            ctx.fillStyle = 'rgba(10, 10, 21, 1)';
+            ctx.fillRect(0, 0, width, height);
+
+            if (fourierCoefficients.length === 0) return;
+
+            const barWidth = Math.max(4, (width - 40) / Math.min(harmonics, 50) - 2);
+            const maxAmp = Math.max(...fourierCoefficients.map(c => c.amplitude), 0.1);
+            const barHeight = height - 50;
+
+            // Sort by frequency for display
+            const sortedCoeffs = [...fourierCoefficients].sort((a, b) => a.frequency - b.frequency);
+
+            sortedCoeffs.slice(0, harmonics).forEach((coeff, i) => {
+                const x = 20 + i * (barWidth + 2);
+                const ampHeight = (coeff.amplitude / maxAmp) * barHeight * 0.8;
+
+                // Amplitude bar
+                const gradient = ctx.createLinearGradient(x, height - 25, x, height - 25 - ampHeight);
+                gradient.addColorStop(0, '#667eea');
+                gradient.addColorStop(1, '#764ba2');
+
+                ctx.fillStyle = gradient;
+                ctx.fillRect(x, height - 25 - ampHeight, barWidth, ampHeight);
+
+                // Phase indicator (small dot)
+                const phaseY = height - 35 - ampHeight;
+                const phaseX = x + barWidth / 2 + Math.cos(coeff.phase) * 5;
+                const phaseYOffset = Math.sin(coeff.phase) * 5;
+
+                ctx.beginPath();
+                ctx.arc(phaseX, phaseY + phaseYOffset, 3, 0, 2 * Math.PI);
+                ctx.fillStyle = '#ff6b6b';
+                ctx.fill();
+
+                // Frequency label
+                if (i < 15 || i % 5 === 0) {
+                    ctx.fillStyle = '#888';
+                    ctx.font = '10px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(coeff.frequency.toString(), x + barWidth / 2, height - 8);
+                }
+            });
+
+            // Y-axis label
+            ctx.save();
+            ctx.translate(10, height / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillStyle = '#888';
+            ctx.font = '11px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Amplitude', 0, 0);
+            ctx.restore();
+        }
+
+        // Animation loop
+        function animate() {
+            if (!isPaused) {
+                time += 0.02 * speed;
+            }
+
+            drawEpicycles();
+            drawSignal();
+            drawReconstructed();
+            drawSpectrum();
+
+            requestAnimationFrame(animate);
+        }
+
+        // Update info display
+        function updateInfo() {
+            document.getElementById('active-harmonics').textContent = fourierCoefficients.length;
+            document.getElementById('total-circles').textContent = Math.min(harmonics, fourierCoefficients.length);
+        }
+
+        // Custom drawing
+        signalCanvas.addEventListener('mousedown', (e) => {
+            if (signalType !== 'custom') return;
+            isDrawing = true;
+            customSignal = [];
+            document.getElementById('draw-instructions').classList.add('hidden');
+        });
+
+        signalCanvas.addEventListener('mousemove', (e) => {
+            if (!isDrawing) return;
+            const rect = signalCanvas.getBoundingClientRect();
+            const y = e.clientY - rect.top;
+            const normalizedY = 1 - 2 * (y / signalCanvas.height);
+            customSignal.push(Math.max(-1, Math.min(1, normalizedY)));
+        });
+
+        signalCanvas.addEventListener('mouseup', () => {
+            if (isDrawing && customSignal.length > 10) {
+                computeFourierCoefficients();
+                path = [];
+            }
+            isDrawing = false;
+        });
+
+        signalCanvas.addEventListener('mouseleave', () => {
+            if (isDrawing && customSignal.length > 10) {
+                computeFourierCoefficients();
+                path = [];
+            }
+            isDrawing = false;
+        });
+
+        // Event listeners
+        document.getElementById('signal-select').addEventListener('change', (e) => {
+            signalType = e.target.value;
+            customSignal = [];
+            path = [];
+
+            const instructions = document.getElementById('draw-instructions');
+            if (signalType === 'custom') {
+                instructions.classList.remove('hidden');
+            } else {
+                instructions.classList.add('hidden');
+            }
+
+            computeFourierCoefficients();
+        });
+
+        document.getElementById('harmonics-slider').addEventListener('input', (e) => {
+            harmonics = parseInt(e.target.value);
+            document.getElementById('harmonics-value').textContent = harmonics;
+            path = [];
+            computeFourierCoefficients();
+        });
+
+        document.getElementById('speed-slider').addEventListener('input', (e) => {
+            speed = parseFloat(e.target.value);
+            document.getElementById('speed-value').textContent = speed.toFixed(1) + 'x';
+        });
+
+        document.getElementById('pause-btn').addEventListener('click', function() {
+            isPaused = !isPaused;
+            this.textContent = isPaused ? 'Play' : 'Pause';
+            this.classList.toggle('active', isPaused);
+        });
+
+        document.getElementById('clear-btn').addEventListener('click', () => {
+            path = [];
+        });
+
+        // Initialize
+        window.addEventListener('resize', resizeCanvases);
+        resizeCanvases();
+        animate();
+    </script>
+</body>
+</html>

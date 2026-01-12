@@ -1,0 +1,1429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emergent Intelligence: Artificial Life Ecosystem</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0f;
+            color: #e0e0e0;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+            display: flex;
+            height: 100vh;
+        }
+
+        #simulation-container {
+            flex: 1;
+            position: relative;
+        }
+
+        #canvas {
+            display: block;
+            background: radial-gradient(ellipse at center, #0d1117 0%, #010409 100%);
+        }
+
+        #sidebar {
+            width: 320px;
+            background: linear-gradient(180deg, #161b22 0%, #0d1117 100%);
+            border-left: 1px solid #30363d;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .panel {
+            background: rgba(22, 27, 34, 0.8);
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .panel h3 {
+            color: #58a6ff;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #21262d;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            font-size: 11px;
+        }
+
+        .stat-label {
+            color: #8b949e;
+        }
+
+        .stat-value {
+            color: #f0f6fc;
+            font-weight: bold;
+        }
+
+        .stat-value.positive { color: #3fb950; }
+        .stat-value.negative { color: #f85149; }
+        .stat-value.neutral { color: #58a6ff; }
+
+        #species-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .species-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px;
+            margin-bottom: 4px;
+            background: rgba(48, 54, 61, 0.3);
+            border-radius: 4px;
+            font-size: 10px;
+        }
+
+        .species-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .species-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .species-name {
+            color: #c9d1d9;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .species-count {
+            color: #8b949e;
+        }
+
+        #event-log {
+            max-height: 150px;
+            overflow-y: auto;
+            font-size: 9px;
+        }
+
+        .event {
+            padding: 4px 6px;
+            margin-bottom: 2px;
+            border-left: 2px solid #30363d;
+            color: #8b949e;
+        }
+
+        .event.birth { border-color: #3fb950; }
+        .event.death { border-color: #f85149; }
+        .event.mutation { border-color: #a371f7; }
+        .event.discovery { border-color: #f9e2af; }
+
+        #neural-display {
+            height: 120px;
+            position: relative;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        #neural-canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .title-bar {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+        }
+
+        .title-bar h1 {
+            font-size: 24px;
+            color: #58a6ff;
+            text-shadow: 0 0 20px rgba(88, 166, 255, 0.5);
+            margin-bottom: 4px;
+        }
+
+        .title-bar p {
+            font-size: 11px;
+            color: #8b949e;
+        }
+
+        #selected-info {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(22, 27, 34, 0.9);
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 12px;
+            max-width: 280px;
+            display: none;
+            font-size: 10px;
+        }
+
+        #selected-info.visible {
+            display: block;
+        }
+
+        .genome-display {
+            font-family: monospace;
+            font-size: 8px;
+            color: #7ee787;
+            background: rgba(0,0,0,0.3);
+            padding: 4px;
+            border-radius: 2px;
+            word-break: break-all;
+            margin-top: 6px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 6px 12px;
+            background: #21262d;
+            border: 1px solid #30363d;
+            color: #c9d1d9;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 10px;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: #30363d;
+            border-color: #58a6ff;
+        }
+
+        .btn.active {
+            background: #1f6feb;
+            border-color: #58a6ff;
+        }
+
+        .slider-container {
+            margin-top: 8px;
+        }
+
+        .slider-container label {
+            display: block;
+            font-size: 10px;
+            color: #8b949e;
+            margin-bottom: 4px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 4px;
+            background: #21262d;
+            border-radius: 2px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            background: #58a6ff;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .graph-container {
+            height: 60px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        #population-graph {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="simulation-container">
+        <canvas id="canvas"></canvas>
+        <div class="title-bar">
+            <h1>Emergent Intelligence</h1>
+            <p>Artificial Life Ecosystem | Generation <span id="generation">0</span></p>
+        </div>
+        <div id="selected-info">
+            <div id="selected-content"></div>
+        </div>
+    </div>
+
+    <div id="sidebar">
+        <div class="panel">
+            <h3>Simulation Statistics</h3>
+            <div class="stat-row">
+                <span class="stat-label">Population</span>
+                <span class="stat-value" id="population">0</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Total Births</span>
+                <span class="stat-value positive" id="births">0</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Total Deaths</span>
+                <span class="stat-value negative" id="deaths">0</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Mutations</span>
+                <span class="stat-value neutral" id="mutations">0</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Species Count</span>
+                <span class="stat-value" id="species-count">0</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Avg Intelligence</span>
+                <span class="stat-value neutral" id="avg-intelligence">0</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Simulation Time</span>
+                <span class="stat-value" id="sim-time">0:00</span>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h3>Population History</h3>
+            <div class="graph-container">
+                <canvas id="population-graph"></canvas>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h3>Active Species</h3>
+            <div id="species-list"></div>
+        </div>
+
+        <div class="panel">
+            <h3>Neural Network (Selected)</h3>
+            <div id="neural-display">
+                <canvas id="neural-canvas"></canvas>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h3>Event Log</h3>
+            <div id="event-log"></div>
+        </div>
+
+        <div class="panel">
+            <h3>Controls</h3>
+            <div class="controls">
+                <button class="btn" id="pause-btn">Pause</button>
+                <button class="btn" id="reset-btn">Reset</button>
+                <button class="btn" id="spawn-btn">+10 Creatures</button>
+            </div>
+            <div class="slider-container">
+                <label>Simulation Speed: <span id="speed-val">1x</span></label>
+                <input type="range" id="speed" min="0.1" max="5" step="0.1" value="1">
+            </div>
+            <div class="slider-container">
+                <label>Mutation Rate: <span id="mutation-val">5%</span></label>
+                <input type="range" id="mutation-rate" min="1" max="20" step="1" value="5">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // EMERGENT INTELLIGENCE: ARTIFICIAL LIFE
+        // A demonstration of evolutionary computation
+        // ============================================
+
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const neuralCanvas = document.getElementById('neural-canvas');
+        const neuralCtx = neuralCanvas.getContext('2d');
+        const graphCanvas = document.getElementById('population-graph');
+        const graphCtx = graphCanvas.getContext('2d');
+
+        // Simulation state
+        let creatures = [];
+        let food = [];
+        let pheromones = [];
+        let species = new Map();
+        let selectedCreature = null;
+        let paused = false;
+        let simulationSpeed = 1;
+        let mutationRate = 0.05;
+        let generation = 0;
+        let totalBirths = 0;
+        let totalDeaths = 0;
+        let totalMutations = 0;
+        let startTime = Date.now();
+        let populationHistory = [];
+        let eventLog = [];
+        let lastUpdate = 0;
+
+        // Constants
+        const INITIAL_POPULATION = 50;
+        const MAX_POPULATION = 300;
+        const FOOD_SPAWN_RATE = 0.3;
+        const MAX_FOOD = 200;
+        const PHEROMONE_DECAY = 0.995;
+
+        // Neural network architecture
+        const INPUT_SIZE = 16;  // Sensors
+        const HIDDEN_SIZE = 12;
+        const OUTPUT_SIZE = 6;  // Actions
+
+        // ============================================
+        // UTILITY FUNCTIONS
+        // ============================================
+
+        function resize() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+        }
+
+        function random(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+
+        function randomInt(min, max) {
+            return Math.floor(random(min, max + 1));
+        }
+
+        function distance(a, b) {
+            return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
+        }
+
+        function clamp(val, min, max) {
+            return Math.max(min, Math.min(max, val));
+        }
+
+        function hslToRgb(h, s, l) {
+            let r, g, b;
+            if (s === 0) {
+                r = g = b = l;
+            } else {
+                const hue2rgb = (p, q, t) => {
+                    if (t < 0) t += 1;
+                    if (t > 1) t -= 1;
+                    if (t < 1/6) return p + (q - p) * 6 * t;
+                    if (t < 1/2) return q;
+                    if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+                    return p;
+                };
+                const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                const p = 2 * l - q;
+                r = hue2rgb(p, q, h + 1/3);
+                g = hue2rgb(p, q, h);
+                b = hue2rgb(p, q, h - 1/3);
+            }
+            return `rgb(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(b * 255)})`;
+        }
+
+        function generateSpeciesName() {
+            const prefixes = ['Aur', 'Bol', 'Cry', 'Dex', 'Eth', 'Flo', 'Gal', 'Hel', 'Ion', 'Jux',
+                            'Kel', 'Lum', 'Mor', 'Nex', 'Orb', 'Pul', 'Qua', 'Rex', 'Sol', 'Tau',
+                            'Ulx', 'Vex', 'Wyr', 'Xen', 'Yor', 'Zep'];
+            const middles = ['an', 'or', 'ix', 'um', 'ax', 'on', 'ar', 'is', 'ex', 'us'];
+            const suffixes = ['ius', 'ora', 'ens', 'ica', 'ota', 'ula', 'ida', 'ana', 'oma', 'ina'];
+            return prefixes[randomInt(0, prefixes.length - 1)] +
+                   middles[randomInt(0, middles.length - 1)] +
+                   suffixes[randomInt(0, suffixes.length - 1)];
+        }
+
+        // ============================================
+        // NEURAL NETWORK
+        // ============================================
+
+        class NeuralNetwork {
+            constructor(genome = null) {
+                if (genome) {
+                    this.weights1 = genome.weights1.map(row => [...row]);
+                    this.weights2 = genome.weights2.map(row => [...row]);
+                    this.bias1 = [...genome.bias1];
+                    this.bias2 = [...genome.bias2];
+                } else {
+                    // Xavier initialization
+                    this.weights1 = Array(HIDDEN_SIZE).fill(0).map(() =>
+                        Array(INPUT_SIZE).fill(0).map(() => random(-1, 1) * Math.sqrt(2 / INPUT_SIZE))
+                    );
+                    this.weights2 = Array(OUTPUT_SIZE).fill(0).map(() =>
+                        Array(HIDDEN_SIZE).fill(0).map(() => random(-1, 1) * Math.sqrt(2 / HIDDEN_SIZE))
+                    );
+                    this.bias1 = Array(HIDDEN_SIZE).fill(0).map(() => random(-0.1, 0.1));
+                    this.bias2 = Array(OUTPUT_SIZE).fill(0).map(() => random(-0.1, 0.1));
+                }
+                this.lastHidden = Array(HIDDEN_SIZE).fill(0);
+                this.lastOutput = Array(OUTPUT_SIZE).fill(0);
+            }
+
+            forward(inputs) {
+                // Hidden layer with tanh activation
+                const hidden = this.weights1.map((row, i) => {
+                    const sum = row.reduce((acc, w, j) => acc + w * inputs[j], this.bias1[i]);
+                    return Math.tanh(sum);
+                });
+                this.lastHidden = hidden;
+
+                // Output layer with sigmoid for probabilities
+                const output = this.weights2.map((row, i) => {
+                    const sum = row.reduce((acc, w, j) => acc + w * hidden[j], this.bias2[i]);
+                    return 1 / (1 + Math.exp(-sum));
+                });
+                this.lastOutput = output;
+
+                return output;
+            }
+
+            mutate(rate) {
+                let mutated = false;
+                const mutateArray = (arr) => {
+                    return arr.map(val => {
+                        if (Math.random() < rate) {
+                            mutated = true;
+                            return val + random(-0.5, 0.5);
+                        }
+                        return val;
+                    });
+                };
+
+                this.weights1 = this.weights1.map(row => mutateArray(row));
+                this.weights2 = this.weights2.map(row => mutateArray(row));
+                this.bias1 = mutateArray(this.bias1);
+                this.bias2 = mutateArray(this.bias2);
+
+                return mutated;
+            }
+
+            getGenomeHash() {
+                // Create a simplified hash of the genome for species identification
+                const sample = [
+                    this.weights1[0][0], this.weights1[2][4], this.weights1[5][8],
+                    this.weights2[0][0], this.weights2[2][5],
+                    this.bias1[0], this.bias2[0]
+                ];
+                return sample.map(v => Math.round(v * 10)).join(',');
+            }
+
+            complexity() {
+                // Measure network complexity by counting significant weights
+                let count = 0;
+                const threshold = 0.3;
+                this.weights1.flat().forEach(w => { if (Math.abs(w) > threshold) count++; });
+                this.weights2.flat().forEach(w => { if (Math.abs(w) > threshold) count++; });
+                return count;
+            }
+        }
+
+        // ============================================
+        // CREATURE CLASS
+        // ============================================
+
+        class Creature {
+            constructor(x, y, genome = null, parent = null) {
+                this.id = Math.random().toString(36).substr(2, 9);
+                this.x = x;
+                this.y = y;
+                this.vx = 0;
+                this.vy = 0;
+                this.angle = random(0, Math.PI * 2);
+                this.angularVelocity = 0;
+
+                this.energy = 100;
+                this.maxEnergy = 150;
+                this.age = 0;
+                this.generation = parent ? parent.generation + 1 : 0;
+
+                this.brain = new NeuralNetwork(genome);
+
+                // Genetic traits
+                if (parent) {
+                    this.size = clamp(parent.size + random(-0.5, 0.5), 4, 20);
+                    this.speed = clamp(parent.speed + random(-0.1, 0.1), 0.5, 4);
+                    this.senseRange = clamp(parent.senseRange + random(-5, 5), 30, 150);
+                    this.hue = (parent.hue + random(-10, 10) + 360) % 360;
+                    this.metabolism = clamp(parent.metabolism + random(-0.02, 0.02), 0.05, 0.3);
+                    this.aggression = clamp(parent.aggression + random(-0.1, 0.1), 0, 1);
+                } else {
+                    this.size = random(6, 14);
+                    this.speed = random(1, 3);
+                    this.senseRange = random(50, 100);
+                    this.hue = random(0, 360);
+                    this.metabolism = random(0.08, 0.15);
+                    this.aggression = random(0.1, 0.5);
+                }
+
+                this.speciesId = this.determineSpecies();
+                this.offspring = 0;
+                this.foodEaten = 0;
+                this.distanceTraveled = 0;
+                this.isAlive = true;
+
+                // Behavior state
+                this.lastAction = null;
+                this.memory = [];
+                this.fear = 0;
+            }
+
+            determineSpecies() {
+                const hash = this.brain.getGenomeHash();
+                const traitHash = `${Math.round(this.size)}-${Math.round(this.hue / 30)}`;
+                const fullHash = `${hash}-${traitHash}`;
+
+                // Find or create species
+                for (const [id, sp] of species) {
+                    if (sp.hash === fullHash) {
+                        sp.count++;
+                        return id;
+                    }
+                }
+
+                // New species!
+                const newId = Math.random().toString(36).substr(2, 6);
+                species.set(newId, {
+                    hash: fullHash,
+                    name: generateSpeciesName(),
+                    count: 1,
+                    hue: this.hue,
+                    founded: generation,
+                    totalBorn: 1,
+                    traits: {
+                        size: this.size,
+                        speed: this.speed,
+                        senseRange: this.senseRange,
+                        aggression: this.aggression
+                    }
+                });
+
+                addEvent('discovery', `New species discovered: ${species.get(newId).name}`);
+                return newId;
+            }
+
+            getSensorInputs() {
+                const inputs = new Array(INPUT_SIZE).fill(0);
+
+                // Inputs:
+                // 0-3: Nearest food direction and distance (normalized)
+                // 4-7: Nearest creature direction, distance, and relative size
+                // 8-9: Current velocity
+                // 10: Energy level
+                // 11: Age
+                // 12-13: Nearest wall distances
+                // 14: Pheromone concentration
+                // 15: Fear level
+
+                // Find nearest food
+                let nearestFood = null;
+                let nearestFoodDist = Infinity;
+                for (const f of food) {
+                    const d = distance(this, f);
+                    if (d < this.senseRange && d < nearestFoodDist) {
+                        nearestFoodDist = d;
+                        nearestFood = f;
+                    }
+                }
+
+                if (nearestFood) {
+                    const dx = nearestFood.x - this.x;
+                    const dy = nearestFood.y - this.y;
+                    const angle = Math.atan2(dy, dx) - this.angle;
+                    inputs[0] = Math.cos(angle);
+                    inputs[1] = Math.sin(angle);
+                    inputs[2] = 1 - nearestFoodDist / this.senseRange;
+                    inputs[3] = nearestFood.value / 30;
+                }
+
+                // Find nearest creature
+                let nearestCreature = null;
+                let nearestCreatureDist = Infinity;
+                for (const c of creatures) {
+                    if (c === this || !c.isAlive) continue;
+                    const d = distance(this, c);
+                    if (d < this.senseRange && d < nearestCreatureDist) {
+                        nearestCreatureDist = d;
+                        nearestCreature = c;
+                    }
+                }
+
+                if (nearestCreature) {
+                    const dx = nearestCreature.x - this.x;
+                    const dy = nearestCreature.y - this.y;
+                    const angle = Math.atan2(dy, dx) - this.angle;
+                    inputs[4] = Math.cos(angle);
+                    inputs[5] = Math.sin(angle);
+                    inputs[6] = 1 - nearestCreatureDist / this.senseRange;
+                    inputs[7] = (nearestCreature.size - this.size) / 20;
+                }
+
+                // Velocity
+                inputs[8] = this.vx / this.speed;
+                inputs[9] = this.vy / this.speed;
+
+                // Internal state
+                inputs[10] = this.energy / this.maxEnergy;
+                inputs[11] = Math.min(this.age / 1000, 1);
+
+                // Wall proximity
+                inputs[12] = Math.min(this.x, canvas.width - this.x) / 100;
+                inputs[13] = Math.min(this.y, canvas.height - this.y) / 100;
+
+                // Pheromone sensing
+                let pheromoneSum = 0;
+                for (const p of pheromones) {
+                    const d = distance(this, p);
+                    if (d < this.senseRange) {
+                        pheromoneSum += p.strength * (1 - d / this.senseRange);
+                    }
+                }
+                inputs[14] = Math.min(pheromoneSum, 1);
+
+                inputs[15] = this.fear;
+
+                return inputs;
+            }
+
+            think() {
+                const inputs = this.getSensorInputs();
+                const outputs = this.brain.forward(inputs);
+
+                // Outputs:
+                // 0: Forward acceleration
+                // 1: Turn left
+                // 2: Turn right
+                // 3: Reproduce intention
+                // 4: Release pheromone
+                // 5: Attack/flee response
+
+                // Movement
+                const forwardForce = (outputs[0] - 0.3) * this.speed * 0.5;
+                const turnForce = (outputs[2] - outputs[1]) * 0.2;
+
+                this.angularVelocity = this.angularVelocity * 0.8 + turnForce;
+                this.angle += this.angularVelocity;
+
+                const ax = Math.cos(this.angle) * forwardForce;
+                const ay = Math.sin(this.angle) * forwardForce;
+
+                this.vx = this.vx * 0.95 + ax;
+                this.vy = this.vy * 0.95 + ay;
+
+                // Limit speed
+                const currentSpeed = Math.sqrt(this.vx ** 2 + this.vy ** 2);
+                if (currentSpeed > this.speed) {
+                    this.vx = (this.vx / currentSpeed) * this.speed;
+                    this.vy = (this.vy / currentSpeed) * this.speed;
+                }
+
+                // Reproduction intention
+                if (outputs[3] > 0.7 && this.energy > 80 && this.age > 100) {
+                    this.tryReproduce();
+                }
+
+                // Pheromone release
+                if (outputs[4] > 0.8 && Math.random() < 0.1) {
+                    pheromones.push({
+                        x: this.x,
+                        y: this.y,
+                        strength: 1,
+                        hue: this.hue
+                    });
+                }
+
+                // Fight or flight
+                this.fear = this.fear * 0.95;
+                if (outputs[5] > 0.7) {
+                    this.fear = Math.min(1, this.fear + 0.1);
+                }
+
+                this.lastAction = outputs;
+            }
+
+            update() {
+                if (!this.isAlive) return;
+
+                this.think();
+
+                // Move
+                const prevX = this.x;
+                const prevY = this.y;
+                this.x += this.vx;
+                this.y += this.vy;
+                this.distanceTraveled += Math.sqrt((this.x - prevX) ** 2 + (this.y - prevY) ** 2);
+
+                // Boundary wrapping
+                if (this.x < 0) this.x = canvas.width;
+                if (this.x > canvas.width) this.x = 0;
+                if (this.y < 0) this.y = canvas.height;
+                if (this.y > canvas.height) this.y = 0;
+
+                // Energy consumption
+                const movementCost = Math.sqrt(this.vx ** 2 + this.vy ** 2) * 0.02 * (this.size / 10);
+                const thinkingCost = this.brain.complexity() * 0.0001;
+                const baseCost = this.metabolism;
+                this.energy -= movementCost + thinkingCost + baseCost;
+
+                // Eating
+                for (let i = food.length - 1; i >= 0; i--) {
+                    const f = food[i];
+                    if (distance(this, f) < this.size + f.size) {
+                        this.energy = Math.min(this.maxEnergy, this.energy + f.value);
+                        this.foodEaten++;
+                        food.splice(i, 1);
+                    }
+                }
+
+                // Combat with nearby creatures
+                for (const other of creatures) {
+                    if (other === this || !other.isAlive) continue;
+                    const d = distance(this, other);
+                    if (d < this.size + other.size) {
+                        // Size and aggression determine outcome
+                        if (this.size > other.size * 1.3 && this.aggression > 0.5) {
+                            // Attack
+                            const damage = (this.size - other.size) * this.aggression * 2;
+                            other.energy -= damage;
+                            this.energy += damage * 0.5; // Gain some energy
+                            other.fear = 1;
+                        }
+                    }
+                }
+
+                this.age++;
+
+                // Death conditions
+                if (this.energy <= 0 || this.age > 2000) {
+                    this.die();
+                }
+            }
+
+            tryReproduce() {
+                if (creatures.length >= MAX_POPULATION) return;
+                if (Math.random() > 0.02) return;
+
+                this.energy -= 40;
+
+                const child = new Creature(
+                    this.x + random(-20, 20),
+                    this.y + random(-20, 20),
+                    this.brain,
+                    this
+                );
+
+                // Mutation
+                if (child.brain.mutate(mutationRate)) {
+                    totalMutations++;
+                    addEvent('mutation', `Mutation in generation ${child.generation}`);
+                }
+
+                creatures.push(child);
+                this.offspring++;
+                totalBirths++;
+
+                if (child.generation > generation) {
+                    generation = child.generation;
+                }
+
+                addEvent('birth', `New creature born (gen ${child.generation})`);
+            }
+
+            die() {
+                this.isAlive = false;
+                totalDeaths++;
+
+                // Update species count
+                const sp = species.get(this.speciesId);
+                if (sp) {
+                    sp.count--;
+                    if (sp.count <= 0) {
+                        addEvent('death', `Species ${sp.name} went extinct!`);
+                        species.delete(this.speciesId);
+                    }
+                }
+            }
+
+            draw() {
+                if (!this.isAlive) return;
+
+                const isSelected = selectedCreature === this;
+
+                // Glow effect for selection
+                if (isSelected) {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size + 15, 0, Math.PI * 2);
+                    const gradient = ctx.createRadialGradient(
+                        this.x, this.y, this.size,
+                        this.x, this.y, this.size + 15
+                    );
+                    gradient.addColorStop(0, `hsla(${this.hue}, 80%, 60%, 0.4)`);
+                    gradient.addColorStop(1, 'transparent');
+                    ctx.fillStyle = gradient;
+                    ctx.fill();
+                }
+
+                // Sense range (when selected)
+                if (isSelected) {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.senseRange, 0, Math.PI * 2);
+                    ctx.strokeStyle = `hsla(${this.hue}, 50%, 50%, 0.2)`;
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+
+                // Body
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle);
+
+                // Energy-based luminosity
+                const luminosity = 40 + (this.energy / this.maxEnergy) * 30;
+                const saturation = 70 + this.aggression * 20;
+
+                // Main body
+                ctx.beginPath();
+                ctx.ellipse(0, 0, this.size, this.size * 0.7, 0, 0, Math.PI * 2);
+                ctx.fillStyle = `hsl(${this.hue}, ${saturation}%, ${luminosity}%)`;
+                ctx.fill();
+                ctx.strokeStyle = `hsl(${this.hue}, ${saturation}%, ${luminosity + 20}%)`;
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                // Direction indicator
+                ctx.beginPath();
+                ctx.moveTo(this.size * 0.5, 0);
+                ctx.lineTo(this.size * 1.2, 0);
+                ctx.strokeStyle = `hsl(${this.hue}, ${saturation}%, ${luminosity + 30}%)`;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Eye
+                ctx.beginPath();
+                ctx.arc(this.size * 0.4, 0, this.size * 0.2, 0, Math.PI * 2);
+                ctx.fillStyle = '#fff';
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(this.size * 0.5, 0, this.size * 0.1, 0, Math.PI * 2);
+                ctx.fillStyle = '#000';
+                ctx.fill();
+
+                ctx.restore();
+
+                // Energy bar (when selected or low energy)
+                if (isSelected || this.energy < 30) {
+                    const barWidth = this.size * 2;
+                    const barHeight = 3;
+                    const barX = this.x - barWidth / 2;
+                    const barY = this.y - this.size - 8;
+
+                    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                    ctx.fillRect(barX, barY, barWidth, barHeight);
+
+                    const energyRatio = this.energy / this.maxEnergy;
+                    const barColor = energyRatio > 0.5 ? '#3fb950' : energyRatio > 0.25 ? '#f9e2af' : '#f85149';
+                    ctx.fillStyle = barColor;
+                    ctx.fillRect(barX, barY, barWidth * energyRatio, barHeight);
+                }
+            }
+
+            getInfo() {
+                const sp = species.get(this.speciesId);
+                return {
+                    id: this.id,
+                    species: sp ? sp.name : 'Unknown',
+                    generation: this.generation,
+                    age: this.age,
+                    energy: Math.round(this.energy),
+                    size: this.size.toFixed(1),
+                    speed: this.speed.toFixed(2),
+                    senseRange: Math.round(this.senseRange),
+                    aggression: (this.aggression * 100).toFixed(0) + '%',
+                    offspring: this.offspring,
+                    foodEaten: this.foodEaten,
+                    distance: Math.round(this.distanceTraveled),
+                    brainComplexity: this.brain.complexity()
+                };
+            }
+        }
+
+        // ============================================
+        // FOOD CLASS
+        // ============================================
+
+        class Food {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.size = random(3, 8);
+                this.value = this.size * 4;
+                this.hue = random(80, 140);
+                this.pulse = random(0, Math.PI * 2);
+            }
+
+            draw() {
+                this.pulse += 0.05;
+                const glow = 1 + Math.sin(this.pulse) * 0.2;
+
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size * glow, 0, Math.PI * 2);
+                const gradient = ctx.createRadialGradient(
+                    this.x, this.y, 0,
+                    this.x, this.y, this.size * glow
+                );
+                gradient.addColorStop(0, `hsl(${this.hue}, 80%, 70%)`);
+                gradient.addColorStop(1, `hsl(${this.hue}, 60%, 40%)`);
+                ctx.fillStyle = gradient;
+                ctx.fill();
+            }
+        }
+
+        // ============================================
+        // EVENT LOGGING
+        // ============================================
+
+        function addEvent(type, message) {
+            eventLog.unshift({ type, message, time: Date.now() });
+            if (eventLog.length > 50) eventLog.pop();
+            updateEventLog();
+        }
+
+        function updateEventLog() {
+            const container = document.getElementById('event-log');
+            container.innerHTML = eventLog.slice(0, 20).map(e =>
+                `<div class="event ${e.type}">${e.message}</div>`
+            ).join('');
+        }
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+
+        function init() {
+            resize();
+            window.addEventListener('resize', resize);
+
+            // Create initial population
+            for (let i = 0; i < INITIAL_POPULATION; i++) {
+                creatures.push(new Creature(
+                    random(50, canvas.width - 50),
+                    random(50, canvas.height - 50)
+                ));
+            }
+
+            // Create initial food
+            for (let i = 0; i < MAX_FOOD / 2; i++) {
+                spawnFood();
+            }
+
+            // Event listeners
+            canvas.addEventListener('click', handleClick);
+            document.getElementById('pause-btn').addEventListener('click', togglePause);
+            document.getElementById('reset-btn').addEventListener('click', resetSimulation);
+            document.getElementById('spawn-btn').addEventListener('click', spawnCreatures);
+
+            document.getElementById('speed').addEventListener('input', (e) => {
+                simulationSpeed = parseFloat(e.target.value);
+                document.getElementById('speed-val').textContent = simulationSpeed.toFixed(1) + 'x';
+            });
+
+            document.getElementById('mutation-rate').addEventListener('input', (e) => {
+                mutationRate = parseInt(e.target.value) / 100;
+                document.getElementById('mutation-val').textContent = (mutationRate * 100).toFixed(0) + '%';
+            });
+
+            addEvent('discovery', 'Simulation initialized');
+            requestAnimationFrame(gameLoop);
+        }
+
+        function spawnFood() {
+            if (food.length < MAX_FOOD) {
+                // Cluster food in patches
+                const centerX = random(50, canvas.width - 50);
+                const centerY = random(50, canvas.height - 50);
+                const count = randomInt(1, 5);
+
+                for (let i = 0; i < count && food.length < MAX_FOOD; i++) {
+                    food.push(new Food(
+                        centerX + random(-50, 50),
+                        centerY + random(-50, 50)
+                    ));
+                }
+            }
+        }
+
+        function spawnCreatures() {
+            for (let i = 0; i < 10 && creatures.length < MAX_POPULATION; i++) {
+                creatures.push(new Creature(
+                    random(50, canvas.width - 50),
+                    random(50, canvas.height - 50)
+                ));
+            }
+        }
+
+        function handleClick(e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            // Find clicked creature
+            let found = null;
+            for (const c of creatures) {
+                if (c.isAlive && distance({x, y}, c) < c.size + 5) {
+                    found = c;
+                    break;
+                }
+            }
+
+            selectedCreature = found;
+            updateSelectedInfo();
+        }
+
+        function togglePause() {
+            paused = !paused;
+            document.getElementById('pause-btn').textContent = paused ? 'Resume' : 'Pause';
+            document.getElementById('pause-btn').classList.toggle('active', paused);
+        }
+
+        function resetSimulation() {
+            creatures = [];
+            food = [];
+            pheromones = [];
+            species.clear();
+            selectedCreature = null;
+            generation = 0;
+            totalBirths = 0;
+            totalDeaths = 0;
+            totalMutations = 0;
+            startTime = Date.now();
+            populationHistory = [];
+            eventLog = [];
+
+            for (let i = 0; i < INITIAL_POPULATION; i++) {
+                creatures.push(new Creature(
+                    random(50, canvas.width - 50),
+                    random(50, canvas.height - 50)
+                ));
+            }
+
+            for (let i = 0; i < MAX_FOOD / 2; i++) {
+                spawnFood();
+            }
+
+            addEvent('discovery', 'Simulation reset');
+            updateSelectedInfo();
+        }
+
+        // ============================================
+        // UPDATE AND RENDER
+        // ============================================
+
+        function update() {
+            // Spawn food
+            if (Math.random() < FOOD_SPAWN_RATE * simulationSpeed) {
+                spawnFood();
+            }
+
+            // Update creatures
+            for (const creature of creatures) {
+                creature.update();
+            }
+
+            // Remove dead creatures
+            creatures = creatures.filter(c => c.isAlive);
+
+            // Emergency respawn if population too low
+            if (creatures.length < 5) {
+                addEvent('discovery', 'Emergency repopulation triggered');
+                for (let i = 0; i < 20; i++) {
+                    creatures.push(new Creature(
+                        random(50, canvas.width - 50),
+                        random(50, canvas.height - 50)
+                    ));
+                }
+            }
+
+            // Update pheromones
+            pheromones = pheromones.filter(p => {
+                p.strength *= PHEROMONE_DECAY;
+                return p.strength > 0.01;
+            });
+
+            // Update selected creature if dead
+            if (selectedCreature && !selectedCreature.isAlive) {
+                selectedCreature = null;
+                updateSelectedInfo();
+            }
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw pheromone trails
+            for (const p of pheromones) {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 5 * p.strength, 0, Math.PI * 2);
+                ctx.fillStyle = `hsla(${p.hue}, 50%, 50%, ${p.strength * 0.3})`;
+                ctx.fill();
+            }
+
+            // Draw food
+            for (const f of food) {
+                f.draw();
+            }
+
+            // Draw creatures (selected last to be on top)
+            const sorted = [...creatures].sort((a, b) =>
+                (a === selectedCreature ? 1 : 0) - (b === selectedCreature ? 1 : 0)
+            );
+            for (const creature of sorted) {
+                creature.draw();
+            }
+        }
+
+        function updateUI() {
+            const now = Date.now();
+            if (now - lastUpdate < 200) return;
+            lastUpdate = now;
+
+            const aliveCount = creatures.filter(c => c.isAlive).length;
+
+            // Update stats
+            document.getElementById('generation').textContent = generation;
+            document.getElementById('population').textContent = aliveCount;
+            document.getElementById('births').textContent = totalBirths;
+            document.getElementById('deaths').textContent = totalDeaths;
+            document.getElementById('mutations').textContent = totalMutations;
+            document.getElementById('species-count').textContent = species.size;
+
+            // Average intelligence (brain complexity)
+            const avgComplexity = creatures.reduce((sum, c) => sum + c.brain.complexity(), 0) / Math.max(1, creatures.length);
+            document.getElementById('avg-intelligence').textContent = avgComplexity.toFixed(1);
+
+            // Simulation time
+            const elapsed = Math.floor((now - startTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            document.getElementById('sim-time').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+            // Update species list
+            updateSpeciesList();
+
+            // Update population graph
+            populationHistory.push(aliveCount);
+            if (populationHistory.length > 100) populationHistory.shift();
+            drawPopulationGraph();
+
+            // Update neural network display
+            if (selectedCreature) {
+                drawNeuralNetwork();
+            }
+        }
+
+        function updateSpeciesList() {
+            const container = document.getElementById('species-list');
+            const sortedSpecies = [...species.entries()]
+                .sort((a, b) => b[1].count - a[1].count)
+                .slice(0, 10);
+
+            container.innerHTML = sortedSpecies.map(([id, sp]) => `
+                <div class="species-item">
+                    <div class="species-color" style="background: hsl(${sp.hue}, 70%, 50%)"></div>
+                    <div class="species-info">
+                        <div class="species-name">${sp.name}</div>
+                        <div class="species-count">${sp.count} alive | Gen ${sp.founded}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateSelectedInfo() {
+            const container = document.getElementById('selected-info');
+            const content = document.getElementById('selected-content');
+
+            if (!selectedCreature) {
+                container.classList.remove('visible');
+                return;
+            }
+
+            const info = selectedCreature.getInfo();
+            content.innerHTML = `
+                <strong style="color: #58a6ff">${info.species}</strong><br>
+                <span style="color: #8b949e">ID: ${info.id} | Gen ${info.generation}</span>
+                <div style="margin-top: 8px">
+                    <div class="stat-row"><span class="stat-label">Age</span><span class="stat-value">${info.age}</span></div>
+                    <div class="stat-row"><span class="stat-label">Energy</span><span class="stat-value ${info.energy > 50 ? 'positive' : 'negative'}">${info.energy}</span></div>
+                    <div class="stat-row"><span class="stat-label">Size</span><span class="stat-value">${info.size}</span></div>
+                    <div class="stat-row"><span class="stat-label">Speed</span><span class="stat-value">${info.speed}</span></div>
+                    <div class="stat-row"><span class="stat-label">Sense Range</span><span class="stat-value">${info.senseRange}</span></div>
+                    <div class="stat-row"><span class="stat-label">Aggression</span><span class="stat-value">${info.aggression}</span></div>
+                    <div class="stat-row"><span class="stat-label">Offspring</span><span class="stat-value positive">${info.offspring}</span></div>
+                    <div class="stat-row"><span class="stat-label">Food Eaten</span><span class="stat-value">${info.foodEaten}</span></div>
+                    <div class="stat-row"><span class="stat-label">Distance</span><span class="stat-value">${info.distance}</span></div>
+                    <div class="stat-row"><span class="stat-label">Brain Nodes</span><span class="stat-value neutral">${info.brainComplexity}</span></div>
+                </div>
+            `;
+            container.classList.add('visible');
+        }
+
+        function drawPopulationGraph() {
+            const w = graphCanvas.width = graphCanvas.parentElement.clientWidth;
+            const h = graphCanvas.height = graphCanvas.parentElement.clientHeight;
+
+            graphCtx.clearRect(0, 0, w, h);
+
+            if (populationHistory.length < 2) return;
+
+            const max = Math.max(...populationHistory, MAX_POPULATION);
+            const step = w / (populationHistory.length - 1);
+
+            graphCtx.beginPath();
+            graphCtx.moveTo(0, h - (populationHistory[0] / max) * h);
+
+            for (let i = 1; i < populationHistory.length; i++) {
+                graphCtx.lineTo(i * step, h - (populationHistory[i] / max) * h);
+            }
+
+            graphCtx.strokeStyle = '#58a6ff';
+            graphCtx.lineWidth = 2;
+            graphCtx.stroke();
+
+            // Fill under curve
+            graphCtx.lineTo(w, h);
+            graphCtx.lineTo(0, h);
+            graphCtx.closePath();
+            graphCtx.fillStyle = 'rgba(88, 166, 255, 0.1)';
+            graphCtx.fill();
+        }
+
+        function drawNeuralNetwork() {
+            if (!selectedCreature) return;
+
+            const w = neuralCanvas.width = neuralCanvas.parentElement.clientWidth;
+            const h = neuralCanvas.height = neuralCanvas.parentElement.clientHeight;
+
+            neuralCtx.clearRect(0, 0, w, h);
+
+            const brain = selectedCreature.brain;
+            const layers = [INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE];
+            const layerX = [w * 0.15, w * 0.5, w * 0.85];
+
+            const nodePositions = [];
+
+            // Calculate node positions
+            for (let l = 0; l < layers.length; l++) {
+                nodePositions[l] = [];
+                const count = layers[l];
+                const spacing = h / (count + 1);
+                for (let n = 0; n < count; n++) {
+                    nodePositions[l][n] = { x: layerX[l], y: spacing * (n + 1) };
+                }
+            }
+
+            // Draw connections (weights1: input->hidden)
+            for (let i = 0; i < HIDDEN_SIZE; i++) {
+                for (let j = 0; j < INPUT_SIZE; j++) {
+                    const weight = brain.weights1[i][j];
+                    const intensity = Math.min(Math.abs(weight), 1);
+                    const color = weight > 0 ? `rgba(63, 185, 80, ${intensity * 0.5})` : `rgba(248, 81, 73, ${intensity * 0.5})`;
+
+                    neuralCtx.beginPath();
+                    neuralCtx.moveTo(nodePositions[0][j].x, nodePositions[0][j].y);
+                    neuralCtx.lineTo(nodePositions[1][i].x, nodePositions[1][i].y);
+                    neuralCtx.strokeStyle = color;
+                    neuralCtx.lineWidth = intensity * 2;
+                    neuralCtx.stroke();
+                }
+            }
+
+            // Draw connections (weights2: hidden->output)
+            for (let i = 0; i < OUTPUT_SIZE; i++) {
+                for (let j = 0; j < HIDDEN_SIZE; j++) {
+                    const weight = brain.weights2[i][j];
+                    const intensity = Math.min(Math.abs(weight), 1);
+                    const color = weight > 0 ? `rgba(63, 185, 80, ${intensity * 0.5})` : `rgba(248, 81, 73, ${intensity * 0.5})`;
+
+                    neuralCtx.beginPath();
+                    neuralCtx.moveTo(nodePositions[1][j].x, nodePositions[1][j].y);
+                    neuralCtx.lineTo(nodePositions[2][i].x, nodePositions[2][i].y);
+                    neuralCtx.strokeStyle = color;
+                    neuralCtx.lineWidth = intensity * 2;
+                    neuralCtx.stroke();
+                }
+            }
+
+            // Draw nodes
+            // Input layer
+            for (let i = 0; i < INPUT_SIZE; i++) {
+                neuralCtx.beginPath();
+                neuralCtx.arc(nodePositions[0][i].x, nodePositions[0][i].y, 3, 0, Math.PI * 2);
+                neuralCtx.fillStyle = '#58a6ff';
+                neuralCtx.fill();
+            }
+
+            // Hidden layer (with activation)
+            for (let i = 0; i < HIDDEN_SIZE; i++) {
+                const activation = brain.lastHidden[i];
+                neuralCtx.beginPath();
+                neuralCtx.arc(nodePositions[1][i].x, nodePositions[1][i].y, 4, 0, Math.PI * 2);
+                neuralCtx.fillStyle = `hsl(${200 + activation * 60}, 70%, ${50 + activation * 30}%)`;
+                neuralCtx.fill();
+            }
+
+            // Output layer (with activation)
+            const outputLabels = ['Fwd', 'L', 'R', 'Rep', 'Pher', 'Fight'];
+            for (let i = 0; i < OUTPUT_SIZE; i++) {
+                const activation = brain.lastOutput[i];
+                neuralCtx.beginPath();
+                neuralCtx.arc(nodePositions[2][i].x, nodePositions[2][i].y, 5, 0, Math.PI * 2);
+                neuralCtx.fillStyle = `hsl(${activation * 120}, 70%, ${40 + activation * 40}%)`;
+                neuralCtx.fill();
+
+                neuralCtx.fillStyle = '#8b949e';
+                neuralCtx.font = '8px monospace';
+                neuralCtx.fillText(outputLabels[i], nodePositions[2][i].x + 8, nodePositions[2][i].y + 3);
+            }
+        }
+
+        // ============================================
+        // GAME LOOP
+        // ============================================
+
+        function gameLoop(timestamp) {
+            if (!paused) {
+                const steps = Math.ceil(simulationSpeed);
+                for (let i = 0; i < steps; i++) {
+                    update();
+                }
+            }
+
+            render();
+            updateUI();
+            updateSelectedInfo();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Start the simulation
+        init();
+    </script>
+</body>
+</html>

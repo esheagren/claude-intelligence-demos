@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DNA Sequence Visualizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a1628 0%, #1a0a28 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .sidebar {
+            width: 320px;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 20px;
+            overflow-y: auto;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        h1 {
+            font-size: 1.5em;
+            margin-bottom: 5px;
+            background: linear-gradient(135deg, #00ff88, #00d4ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            font-size: 0.8em;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .section {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .section h3 {
+            font-size: 0.85em;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+
+        .sequence-input {
+            width: 100%;
+            height: 120px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            padding: 12px;
+            color: #00ff88;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+        }
+
+        .sequence-input:focus {
+            outline: none;
+            border-color: #00ff88;
+        }
+
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .btn {
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: rgba(0, 255, 136, 0.2);
+            border-color: #00ff88;
+        }
+
+        .btn.active {
+            background: rgba(0, 255, 136, 0.3);
+            border-color: #00ff88;
+        }
+
+        .preset-btn {
+            flex: 1;
+            min-width: 90px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .stat-item {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #00ff88;
+        }
+
+        .stat-label {
+            font-size: 0.7em;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .gc-bar {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .gc-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff88, #00d4ff);
+            transition: width 0.3s;
+        }
+
+        .main-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .tabs {
+            display: flex;
+            background: rgba(0, 0, 0, 0.3);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+        }
+
+        .tab:hover {
+            color: #fff;
+        }
+
+        .tab.active {
+            color: #00ff88;
+            border-bottom-color: #00ff88;
+        }
+
+        .tab-content {
+            flex: 1;
+            overflow: auto;
+            padding: 20px;
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .helix-container {
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #helixCanvas {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        .sequence-display {
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 2;
+            word-break: break-all;
+        }
+
+        .base {
+            padding: 2px 4px;
+            border-radius: 3px;
+            margin: 1px;
+            display: inline-block;
+        }
+
+        .base-A { background: #ff6b6b; color: #fff; }
+        .base-T { background: #4ecdc4; color: #fff; }
+        .base-G { background: #ffe66d; color: #333; }
+        .base-C { background: #95e1d3; color: #333; }
+        .base-U { background: #a29bfe; color: #fff; }
+
+        .codon-display {
+            margin-top: 20px;
+        }
+
+        .codon {
+            display: inline-block;
+            padding: 8px 12px;
+            margin: 4px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .codon-seq {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #00ff88;
+        }
+
+        .amino-acid {
+            font-size: 16px;
+            font-weight: bold;
+            margin-top: 4px;
+        }
+
+        .amino-acid.stop {
+            color: #ff6b6b;
+        }
+
+        .orf-display {
+            margin-top: 20px;
+        }
+
+        .orf-item {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 3px solid #00ff88;
+        }
+
+        .orf-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+        }
+
+        .orf-sequence {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #aaa;
+            word-break: break-all;
+        }
+
+        .restriction-sites {
+            margin-top: 20px;
+        }
+
+        .site-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+
+        .site-enzyme {
+            width: 100px;
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .site-pattern {
+            font-family: 'Courier New', monospace;
+            color: #888;
+            margin-right: 20px;
+        }
+
+        .site-positions {
+            color: #00ff88;
+        }
+
+        .alignment-container {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+
+        .alignment-row {
+            display: flex;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+
+        .alignment-label {
+            width: 80px;
+            color: #888;
+            flex-shrink: 0;
+        }
+
+        .alignment-seq {
+            display: flex;
+        }
+
+        .alignment-match {
+            color: #00ff88;
+        }
+
+        .alignment-mismatch {
+            color: #ff6b6b;
+        }
+
+        .alignment-gap {
+            color: #666;
+        }
+
+        .legend {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8em;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+
+        .info-text {
+            font-size: 0.75em;
+            color: #666;
+            margin-top: 15px;
+            line-height: 1.5;
+        }
+
+        .complement-display {
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin-top: 20px;
+        }
+
+        .complement-row {
+            margin-bottom: 15px;
+        }
+
+        .complement-label {
+            color: #888;
+            font-size: 0.8em;
+            margin-bottom: 5px;
+        }
+
+        .complement-seq {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 6px;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h1>DNA Visualizer</h1>
+            <p class="subtitle">Molecular Biology Tools</p>
+
+            <div class="section">
+                <h3>Input Sequence</h3>
+                <textarea class="sequence-input" id="sequenceInput" placeholder="Enter DNA sequence (A, T, G, C)...">ATGCGATCGATCGATCGATCGAATTCGGATCCAAGCTTCTGCAG</textarea>
+                <div class="btn-group">
+                    <button class="btn" id="analyzeBtn">Analyze</button>
+                    <button class="btn" id="randomBtn">Random</button>
+                    <button class="btn" id="clearBtn">Clear</button>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>Presets</h3>
+                <div class="btn-group">
+                    <button class="btn preset-btn" data-preset="insulin">Insulin Gene</button>
+                    <button class="btn preset-btn" data-preset="gfp">GFP Protein</button>
+                    <button class="btn preset-btn" data-preset="promoter">Promoter</button>
+                    <button class="btn preset-btn" data-preset="custom">Plasmid MCS</button>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>Statistics</h3>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value" id="lengthStat">0</div>
+                        <div class="stat-label">Length (bp)</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="gcStat">0%</div>
+                        <div class="stat-label">GC Content</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="aStat">0</div>
+                        <div class="stat-label">Adenine</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="tStat">0</div>
+                        <div class="stat-label">Thymine</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="gStat">0</div>
+                        <div class="stat-label">Guanine</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="cStat">0</div>
+                        <div class="stat-label">Cytosine</div>
+                    </div>
+                </div>
+                <div class="gc-bar">
+                    <div class="gc-fill" id="gcBar" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>Legend</h3>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #ff6b6b;"></div>
+                        <span>Adenine (A)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #4ecdc4;"></div>
+                        <span>Thymine (T)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #ffe66d;"></div>
+                        <span>Guanine (G)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #95e1d3;"></div>
+                        <span>Cytosine (C)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-text">
+                <strong>Tips:</strong><br>
+                • Enter valid DNA bases (A, T, G, C)<br>
+                • Use presets for example sequences<br>
+                • Explore ORFs and restriction sites
+            </div>
+        </div>
+
+        <div class="main-area">
+            <div class="tabs">
+                <button class="tab active" data-tab="helix">3D Helix</button>
+                <button class="tab" data-tab="sequence">Sequence</button>
+                <button class="tab" data-tab="translation">Translation</button>
+                <button class="tab" data-tab="orf">ORF Finder</button>
+                <button class="tab" data-tab="restriction">Restriction</button>
+                <button class="tab" data-tab="complement">Complement</button>
+            </div>
+
+            <div class="tab-content active" data-tab="helix">
+                <div class="helix-container">
+                    <canvas id="helixCanvas"></canvas>
+                </div>
+            </div>
+
+            <div class="tab-content" data-tab="sequence">
+                <h3 style="margin-bottom: 15px; color: #00ff88;">Sequence Display</h3>
+                <div class="sequence-display" id="sequenceDisplay"></div>
+            </div>
+
+            <div class="tab-content" data-tab="translation">
+                <h3 style="margin-bottom: 15px; color: #00ff88;">Codon Translation (5' → 3')</h3>
+                <div class="codon-display" id="codonDisplay"></div>
+            </div>
+
+            <div class="tab-content" data-tab="orf">
+                <h3 style="margin-bottom: 15px; color: #00ff88;">Open Reading Frames</h3>
+                <div class="orf-display" id="orfDisplay"></div>
+            </div>
+
+            <div class="tab-content" data-tab="restriction">
+                <h3 style="margin-bottom: 15px; color: #00ff88;">Restriction Enzyme Sites</h3>
+                <div class="restriction-sites" id="restrictionDisplay"></div>
+            </div>
+
+            <div class="tab-content" data-tab="complement">
+                <h3 style="margin-bottom: 15px; color: #00ff88;">Sequence Transformations</h3>
+                <div class="complement-display" id="complementDisplay"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('helixCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let currentSequence = 'ATGCGATCGATCGATCGATCGAATTCGGATCCAAGCTTCTGCAG';
+        let rotationAngle = 0;
+        let animationId;
+
+        // Codon table
+        const codonTable = {
+            'TTT': 'F', 'TTC': 'F', 'TTA': 'L', 'TTG': 'L',
+            'TCT': 'S', 'TCC': 'S', 'TCA': 'S', 'TCG': 'S',
+            'TAT': 'Y', 'TAC': 'Y', 'TAA': '*', 'TAG': '*',
+            'TGT': 'C', 'TGC': 'C', 'TGA': '*', 'TGG': 'W',
+            'CTT': 'L', 'CTC': 'L', 'CTA': 'L', 'CTG': 'L',
+            'CCT': 'P', 'CCC': 'P', 'CCA': 'P', 'CCG': 'P',
+            'CAT': 'H', 'CAC': 'H', 'CAA': 'Q', 'CAG': 'Q',
+            'CGT': 'R', 'CGC': 'R', 'CGA': 'R', 'CGG': 'R',
+            'ATT': 'I', 'ATC': 'I', 'ATA': 'I', 'ATG': 'M',
+            'ACT': 'T', 'ACC': 'T', 'ACA': 'T', 'ACG': 'T',
+            'AAT': 'N', 'AAC': 'N', 'AAA': 'K', 'AAG': 'K',
+            'AGT': 'S', 'AGC': 'S', 'AGA': 'R', 'AGG': 'R',
+            'GTT': 'V', 'GTC': 'V', 'GTA': 'V', 'GTG': 'V',
+            'GCT': 'A', 'GCC': 'A', 'GCA': 'A', 'GCG': 'A',
+            'GAT': 'D', 'GAC': 'D', 'GAA': 'E', 'GAG': 'E',
+            'GGT': 'G', 'GGC': 'G', 'GGA': 'G', 'GGG': 'G'
+        };
+
+        const aminoAcidNames = {
+            'A': 'Ala', 'R': 'Arg', 'N': 'Asn', 'D': 'Asp',
+            'C': 'Cys', 'E': 'Glu', 'Q': 'Gln', 'G': 'Gly',
+            'H': 'His', 'I': 'Ile', 'L': 'Leu', 'K': 'Lys',
+            'M': 'Met', 'F': 'Phe', 'P': 'Pro', 'S': 'Ser',
+            'T': 'Thr', 'W': 'Trp', 'Y': 'Tyr', 'V': 'Val',
+            '*': 'Stop'
+        };
+
+        // Restriction enzymes
+        const restrictionEnzymes = {
+            'EcoRI': 'GAATTC',
+            'BamHI': 'GGATCC',
+            'HindIII': 'AAGCTT',
+            'PstI': 'CTGCAG',
+            'SalI': 'GTCGAC',
+            'XhoI': 'CTCGAG',
+            'NotI': 'GCGGCCGC',
+            'XbaI': 'TCTAGA',
+            'SmaI': 'CCCGGG',
+            'KpnI': 'GGTACC'
+        };
+
+        // Preset sequences
+        const presets = {
+            insulin: 'ATGGCCCTGTGGATGCGCCTCCTGCCCCTGCTGGCGCTGCTGGCCCTCTGGGGACCTGACCCAGCCGCAGCCTTTGTGAACCAACACCTGTGCGGCTCACACCTGGTGGAAGCTCTCTACCTAGTGTGCGGGGAACGAGGCTTCTTCTACACACCCAAGACCCGCCGGGAGGCAGAGGACCTGCAGGTGGGGCAGGTGGAGCTGGGCGGGGGCCCTGGTGCAGGCAGCCTGCAGCCCTTGGCCCTGGAGGGGTCCCTGCAGAAGCGTGGCATTGTGGAACAATGCTGTACCAGCATCTGCTCCCTCTACCAGCTGGAGAACTACTGCAACTAG',
+            gfp: 'ATGAGTAAAGGAGAAGAACTTTTCACTGGAGTTGTCCCAATTCTTGTTGAATTAGATGGTGATGTTAATGGGCACAAATTTTCTGTCAGTGGAGAGGGTGAAGGTGATGCAACATACGGAAAACTTACCCTTAAATTTATTTGCACTACTGGAAAACTACCTGTTCCATGGCCAACACTTGTCACTACTTTCTCTTATGGTGTTCAATGCTTTTCAAGATACCCAGATCATATGAAACGGCATGACTTTTTCAAGAGTGCCATGCCCGAAGGTTATGTACAGGAAAGAACTATATTTTTCAAAGATGACGGGAACTACAAGACACGTGCTGAAGTCAAGTTTGAAGGTGATACCCTTGTTAATAGAATCGAGTTAAAAGGTATTGATTTTAAAGAAGATGGAAACATTCTTGGACACAAATTGGAATACAACTATAACTCACACAATGTATACATCATGGCAGACAAACAAAAGAATGGAATCAAAGTTAACTTCAAAATTAGACACAACATTGAAGATGGAAGCGTTCAACTAGCAGACCATTATCAACAAAATACTCCAATTGGCGATGGCCCTGTCCTTTTACCAGACAACCATTACCTGTCCACACAATCTGCCCTTTCGAAAGATCCCAACGAAAAGAGAGACCACATGGTCCTTCTTGAGTTTGTAACAGCTGCTGGGATTACACATGGCATGGATGAACTATACAAATAG',
+            promoter: 'TTGACAATTAATCATCGGCTCGTATAATGTGTGGAATTGTGAGCGGATAACAATTTCACACAGGAAACAGCTATGACCATGATTACGCCAAGCTTGCATGCCTGCAGGTCGACTCTAGAGGATCCCCGGGTACCGAGCTCGAATTC',
+            custom: 'GAATTCGGATCCAAGCTTCTGCAGGCATGCAAGCTTGGATCCGAATTCGTCGACCTCGAGTCTAGAGCGGCCGCGGTACCGAGCTC'
+        };
+
+        const baseColors = {
+            'A': '#ff6b6b',
+            'T': '#4ecdc4',
+            'G': '#ffe66d',
+            'C': '#95e1d3'
+        };
+
+        const complementBase = {
+            'A': 'T', 'T': 'A', 'G': 'C', 'C': 'G'
+        };
+
+        function cleanSequence(seq) {
+            return seq.toUpperCase().replace(/[^ATGC]/g, '');
+        }
+
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+        }
+
+        function drawHelix() {
+            ctx.fillStyle = '#0a1628';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = Math.min(canvas.width, canvas.height) * 0.3;
+            const verticalSpacing = 15;
+            const numBases = Math.min(currentSequence.length, 40);
+
+            // Draw helix backbone
+            ctx.lineWidth = 3;
+
+            for (let strand = 0; strand < 2; strand++) {
+                const offset = strand * Math.PI;
+
+                ctx.beginPath();
+                for (let i = 0; i < numBases; i++) {
+                    const angle = rotationAngle + i * 0.3 + offset;
+                    const x = centerX + Math.cos(angle) * radius;
+                    const y = centerY - numBases * verticalSpacing / 2 + i * verticalSpacing;
+                    const z = Math.sin(angle);
+
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                ctx.strokeStyle = strand === 0 ? 'rgba(0, 255, 136, 0.6)' : 'rgba(0, 212, 255, 0.6)';
+                ctx.stroke();
+            }
+
+            // Draw base pairs
+            const basePairs = [];
+            for (let i = 0; i < numBases; i++) {
+                const angle = rotationAngle + i * 0.3;
+                const x1 = centerX + Math.cos(angle) * radius;
+                const x2 = centerX + Math.cos(angle + Math.PI) * radius;
+                const y = centerY - numBases * verticalSpacing / 2 + i * verticalSpacing;
+                const z = Math.sin(angle);
+
+                const base = currentSequence[i] || 'A';
+                const complement = complementBase[base] || 'T';
+
+                basePairs.push({
+                    x1, x2, y, z,
+                    base, complement
+                });
+            }
+
+            // Sort by z for proper depth rendering
+            basePairs.sort((a, b) => a.z - b.z);
+
+            basePairs.forEach(bp => {
+                const alpha = (bp.z + 1) / 2 * 0.7 + 0.3;
+
+                // Draw connecting line
+                ctx.beginPath();
+                ctx.moveTo(bp.x1, bp.y);
+                ctx.lineTo(bp.x2, bp.y);
+                ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.3})`;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Draw bases
+                const size = 8 + bp.z * 3;
+
+                ctx.beginPath();
+                ctx.arc(bp.x1, bp.y, size, 0, Math.PI * 2);
+                ctx.fillStyle = baseColors[bp.base];
+                ctx.globalAlpha = alpha;
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.arc(bp.x2, bp.y, size, 0, Math.PI * 2);
+                ctx.fillStyle = baseColors[bp.complement];
+                ctx.fill();
+
+                ctx.globalAlpha = 1;
+
+                // Draw base letters
+                if (size > 6) {
+                    ctx.fillStyle = '#fff';
+                    ctx.font = `bold ${Math.floor(size)}px Arial`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.globalAlpha = alpha;
+                    ctx.fillText(bp.base, bp.x1, bp.y);
+                    ctx.fillText(bp.complement, bp.x2, bp.y);
+                    ctx.globalAlpha = 1;
+                }
+            });
+
+            // Labels
+            ctx.fillStyle = '#00ff88';
+            ctx.font = '14px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText("5'", centerX - radius - 30, centerY - numBases * verticalSpacing / 2 - 10);
+            ctx.fillText("3'", centerX - radius - 30, centerY + numBases * verticalSpacing / 2 + 20);
+            ctx.fillStyle = '#00d4ff';
+            ctx.fillText("3'", centerX + radius + 30, centerY - numBases * verticalSpacing / 2 - 10);
+            ctx.fillText("5'", centerX + radius + 30, centerY + numBases * verticalSpacing / 2 + 20);
+
+            rotationAngle += 0.02;
+            animationId = requestAnimationFrame(drawHelix);
+        }
+
+        function updateStats() {
+            const seq = currentSequence;
+            const length = seq.length;
+            const aCount = (seq.match(/A/g) || []).length;
+            const tCount = (seq.match(/T/g) || []).length;
+            const gCount = (seq.match(/G/g) || []).length;
+            const cCount = (seq.match(/C/g) || []).length;
+            const gcContent = length > 0 ? ((gCount + cCount) / length * 100).toFixed(1) : 0;
+
+            document.getElementById('lengthStat').textContent = length;
+            document.getElementById('gcStat').textContent = gcContent + '%';
+            document.getElementById('aStat').textContent = aCount;
+            document.getElementById('tStat').textContent = tCount;
+            document.getElementById('gStat').textContent = gCount;
+            document.getElementById('cStat').textContent = cCount;
+            document.getElementById('gcBar').style.width = gcContent + '%';
+        }
+
+        function updateSequenceDisplay() {
+            const display = document.getElementById('sequenceDisplay');
+            let html = '';
+            const chunkSize = 60;
+
+            for (let i = 0; i < currentSequence.length; i += chunkSize) {
+                const chunk = currentSequence.slice(i, i + chunkSize);
+                const lineNum = String(i + 1).padStart(6, ' ');
+                html += `<span style="color: #666; margin-right: 10px;">${lineNum}</span>`;
+
+                for (const base of chunk) {
+                    html += `<span class="base base-${base}">${base}</span>`;
+                }
+                html += '<br>';
+            }
+
+            display.innerHTML = html;
+        }
+
+        function updateTranslation() {
+            const display = document.getElementById('codonDisplay');
+            let html = '<div style="display: flex; flex-wrap: wrap; gap: 5px;">';
+
+            for (let frame = 0; frame < 3; frame++) {
+                html += `<div style="width: 100%; margin-bottom: 20px;">`;
+                html += `<div style="color: #888; font-size: 0.9em; margin-bottom: 10px;">Reading Frame ${frame + 1} (starting at position ${frame + 1})</div>`;
+                html += '<div style="display: flex; flex-wrap: wrap; gap: 5px;">';
+
+                for (let i = frame; i < currentSequence.length - 2; i += 3) {
+                    const codon = currentSequence.slice(i, i + 3);
+                    const aminoAcid = codonTable[codon] || '?';
+                    const isStop = aminoAcid === '*';
+
+                    html += `<div class="codon">
+                        <div class="codon-seq">${codon}</div>
+                        <div class="amino-acid ${isStop ? 'stop' : ''}">${aminoAcidNames[aminoAcid] || aminoAcid}</div>
+                    </div>`;
+                }
+                html += '</div></div>';
+            }
+            html += '</div>';
+
+            display.innerHTML = html;
+        }
+
+        function findORFs() {
+            const display = document.getElementById('orfDisplay');
+            const orfs = [];
+            const minLength = 30; // Minimum ORF length in nucleotides
+
+            for (let frame = 0; frame < 3; frame++) {
+                let inORF = false;
+                let orfStart = 0;
+                let orfSeq = '';
+
+                for (let i = frame; i < currentSequence.length - 2; i += 3) {
+                    const codon = currentSequence.slice(i, i + 3);
+                    const aminoAcid = codonTable[codon];
+
+                    if (codon === 'ATG' && !inORF) {
+                        inORF = true;
+                        orfStart = i;
+                        orfSeq = codon;
+                    } else if (inORF) {
+                        orfSeq += codon;
+                        if (aminoAcid === '*') {
+                            if (orfSeq.length >= minLength) {
+                                orfs.push({
+                                    frame: frame + 1,
+                                    start: orfStart + 1,
+                                    end: i + 3,
+                                    length: orfSeq.length,
+                                    sequence: orfSeq,
+                                    protein: translateSequence(orfSeq)
+                                });
+                            }
+                            inORF = false;
+                            orfSeq = '';
+                        }
+                    }
+                }
+            }
+
+            if (orfs.length === 0) {
+                display.innerHTML = '<p style="color: #888;">No open reading frames found (minimum 30 bp)</p>';
+                return;
+            }
+
+            let html = '';
+            orfs.forEach((orf, index) => {
+                html += `<div class="orf-item">
+                    <div class="orf-header">
+                        <span><strong>ORF ${index + 1}</strong> (Frame ${orf.frame})</span>
+                        <span>Position: ${orf.start} - ${orf.end} | Length: ${orf.length} bp</span>
+                    </div>
+                    <div class="orf-sequence">${orf.sequence}</div>
+                    <div style="margin-top: 10px; color: #00ff88;">Protein: ${orf.protein}</div>
+                </div>`;
+            });
+
+            display.innerHTML = html;
+        }
+
+        function translateSequence(seq) {
+            let protein = '';
+            for (let i = 0; i < seq.length - 2; i += 3) {
+                const codon = seq.slice(i, i + 3);
+                const aa = codonTable[codon] || '?';
+                if (aa === '*') break;
+                protein += aa;
+            }
+            return protein;
+        }
+
+        function findRestrictionSites() {
+            const display = document.getElementById('restrictionDisplay');
+            let html = '';
+
+            for (const [enzyme, pattern] of Object.entries(restrictionEnzymes)) {
+                const positions = [];
+                let pos = currentSequence.indexOf(pattern);
+                while (pos !== -1) {
+                    positions.push(pos + 1);
+                    pos = currentSequence.indexOf(pattern, pos + 1);
+                }
+
+                const posText = positions.length > 0
+                    ? positions.join(', ')
+                    : 'No sites found';
+
+                html += `<div class="site-item">
+                    <span class="site-enzyme">${enzyme}</span>
+                    <span class="site-pattern">${pattern}</span>
+                    <span class="site-positions">${posText}</span>
+                </div>`;
+            }
+
+            display.innerHTML = html;
+        }
+
+        function getComplement(seq) {
+            return seq.split('').map(base => complementBase[base] || base).join('');
+        }
+
+        function getReverseComplement(seq) {
+            return getComplement(seq).split('').reverse().join('');
+        }
+
+        function transcribeToRNA(seq) {
+            return seq.replace(/T/g, 'U');
+        }
+
+        function updateComplement() {
+            const display = document.getElementById('complementDisplay');
+            const complement = getComplement(currentSequence);
+            const reverseComplement = getReverseComplement(currentSequence);
+            const rna = transcribeToRNA(currentSequence);
+
+            display.innerHTML = `
+                <div class="complement-row">
+                    <div class="complement-label">Original Sequence (5' → 3')</div>
+                    <div class="complement-seq" style="color: #00ff88;">${currentSequence}</div>
+                </div>
+                <div class="complement-row">
+                    <div class="complement-label">Complement (3' → 5')</div>
+                    <div class="complement-seq" style="color: #00d4ff;">${complement}</div>
+                </div>
+                <div class="complement-row">
+                    <div class="complement-label">Reverse Complement (5' → 3')</div>
+                    <div class="complement-seq" style="color: #ffd700;">${reverseComplement}</div>
+                </div>
+                <div class="complement-row">
+                    <div class="complement-label">mRNA Transcript (5' → 3')</div>
+                    <div class="complement-seq" style="color: #a29bfe;">${rna}</div>
+                </div>
+            `;
+        }
+
+        function analyze() {
+            currentSequence = cleanSequence(document.getElementById('sequenceInput').value);
+            document.getElementById('sequenceInput').value = currentSequence;
+
+            updateStats();
+            updateSequenceDisplay();
+            updateTranslation();
+            findORFs();
+            findRestrictionSites();
+            updateComplement();
+        }
+
+        function generateRandomSequence(length = 100) {
+            const bases = 'ATGC';
+            let seq = '';
+            for (let i = 0; i < length; i++) {
+                seq += bases[Math.floor(Math.random() * 4)];
+            }
+            return seq;
+        }
+
+        // Event listeners
+        document.getElementById('analyzeBtn').addEventListener('click', analyze);
+
+        document.getElementById('randomBtn').addEventListener('click', () => {
+            document.getElementById('sequenceInput').value = generateRandomSequence(150);
+            analyze();
+        });
+
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            document.getElementById('sequenceInput').value = '';
+            currentSequence = '';
+            updateStats();
+        });
+
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const preset = btn.dataset.preset;
+                if (presets[preset]) {
+                    document.getElementById('sequenceInput').value = presets[preset];
+                    analyze();
+                }
+            });
+        });
+
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                document.querySelector(`.tab-content[data-tab="${tab.dataset.tab}"]`).classList.add('active');
+            });
+        });
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // Initialize
+        resizeCanvas();
+        analyze();
+        drawHelix();
+    </script>
+</body>
+</html>

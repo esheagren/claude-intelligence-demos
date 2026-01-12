@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Particle System Playground</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: rgba(15, 15, 25, 0.95);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            overflow-y: auto;
+            z-index: 10;
+        }
+
+        h1 {
+            font-size: 20px;
+            margin-bottom: 5px;
+            background: linear-gradient(135deg, #ff6b6b, #feca57, #48dbfb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 20px;
+        }
+
+        .section {
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 10px;
+        }
+
+        .presets {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+            margin-bottom: 15px;
+        }
+
+        button {
+            padding: 8px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        button.active {
+            background: rgba(100, 200, 255, 0.2);
+            border-color: #48dbfb;
+        }
+
+        .slider-group {
+            margin-bottom: 12px;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 4px;
+        }
+
+        .slider-value {
+            color: #48dbfb;
+            font-family: monospace;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            background: #48dbfb;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .color-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        input[type="color"] {
+            width: 40px;
+            height: 30px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background: transparent;
+        }
+
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+
+        input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: #48dbfb;
+        }
+
+        .stats {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-family: monospace;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            color: #feca57;
+        }
+
+        canvas {
+            flex: 1;
+            cursor: crosshair;
+        }
+
+        .force-indicator {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            z-index: 5;
+        }
+
+        .instructions {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                max-height: 35vh;
+                position: fixed;
+                bottom: 0;
+                border-right: none;
+                border-top: 1px solid rgba(255, 255, 255, 0.1);
+            }
+
+            canvas {
+                height: 65vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h1>Particle System</h1>
+            <p class="subtitle">Interactive Particle Playground</p>
+
+            <div class="section">
+                <div class="section-title">Presets</div>
+                <div class="presets">
+                    <button class="preset-btn active" data-preset="fire">Fire</button>
+                    <button class="preset-btn" data-preset="snow">Snow</button>
+                    <button class="preset-btn" data-preset="fountain">Fountain</button>
+                    <button class="preset-btn" data-preset="explosion">Explosion</button>
+                    <button class="preset-btn" data-preset="smoke">Smoke</button>
+                    <button class="preset-btn" data-preset="sparkles">Sparkles</button>
+                    <button class="preset-btn" data-preset="rain">Rain</button>
+                    <button class="preset-btn" data-preset="galaxy">Galaxy</button>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">Emission</div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Particles/sec</span>
+                        <span class="slider-value" id="rateValue">100</span>
+                    </div>
+                    <input type="range" id="rate" min="1" max="500" value="100">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Lifetime (s)</span>
+                        <span class="slider-value" id="lifetimeValue">2.0</span>
+                    </div>
+                    <input type="range" id="lifetime" min="0.1" max="10" step="0.1" value="2">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Spread Angle</span>
+                        <span class="slider-value" id="spreadValue">30°</span>
+                    </div>
+                    <input type="range" id="spread" min="0" max="180" value="30">
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">Particle Properties</div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Size (min-max)</span>
+                        <span class="slider-value" id="sizeValue">2-8</span>
+                    </div>
+                    <input type="range" id="sizeMin" min="1" max="20" value="2">
+                    <input type="range" id="sizeMax" min="1" max="50" value="8" style="margin-top: 4px;">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Speed</span>
+                        <span class="slider-value" id="speedValue">150</span>
+                    </div>
+                    <input type="range" id="speed" min="10" max="500" value="150">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Speed Variance</span>
+                        <span class="slider-value" id="speedVarValue">50</span>
+                    </div>
+                    <input type="range" id="speedVar" min="0" max="200" value="50">
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">Colors</div>
+                <div class="color-row">
+                    <input type="color" id="colorStart" value="#ff6b00">
+                    <input type="color" id="colorEnd" value="#ffff00">
+                </div>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="fadeOut" checked>
+                    <label for="fadeOut">Fade out over lifetime</label>
+                </div>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="shrink" checked>
+                    <label for="shrink">Shrink over lifetime</label>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">Physics</div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Gravity</span>
+                        <span class="slider-value" id="gravityValue">100</span>
+                    </div>
+                    <input type="range" id="gravity" min="-300" max="300" value="100">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Wind</span>
+                        <span class="slider-value" id="windValue">0</span>
+                    </div>
+                    <input type="range" id="wind" min="-200" max="200" value="0">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Friction</span>
+                        <span class="slider-value" id="frictionValue">0.98</span>
+                    </div>
+                    <input type="range" id="friction" min="0.9" max="1" step="0.005" value="0.98">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Turbulence</span>
+                        <span class="slider-value" id="turbulenceValue">0</span>
+                    </div>
+                    <input type="range" id="turbulence" min="0" max="100" value="0">
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">Emitter</div>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="followMouse" checked>
+                    <label for="followMouse">Follow mouse</label>
+                </div>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="emitOnClick">
+                    <label for="emitOnClick">Emit only on click</label>
+                </div>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="burst">
+                    <label for="burst">Burst mode (click)</label>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">Actions</div>
+                <div style="display: flex; gap: 8px;">
+                    <button id="clearBtn" style="flex: 1;">Clear</button>
+                    <button id="pauseBtn" style="flex: 1;">Pause</button>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">Statistics</div>
+                <div class="stats">
+                    <div class="stat-row">
+                        <span>Particles</span>
+                        <span class="stat-value" id="particleCount">0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>FPS</span>
+                        <span class="stat-value" id="fps">60</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <canvas id="canvas"></canvas>
+    </div>
+
+    <div class="instructions">
+        Click/drag to emit particles. Right-click to add attractor. Middle-click to add repulsor.
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let particles = [];
+        let forces = [];
+        let emitterX, emitterY;
+        let isEmitting = false;
+        let isPaused = false;
+        let lastTime = 0;
+        let emissionAccumulator = 0;
+        let frameCount = 0;
+        let fpsTime = 0;
+        let currentFps = 60;
+
+        // Configuration
+        const config = {
+            rate: 100,
+            lifetime: 2,
+            spread: 30,
+            sizeMin: 2,
+            sizeMax: 8,
+            speed: 150,
+            speedVar: 50,
+            colorStart: '#ff6b00',
+            colorEnd: '#ffff00',
+            fadeOut: true,
+            shrink: true,
+            gravity: 100,
+            wind: 0,
+            friction: 0.98,
+            turbulence: 0,
+            followMouse: true,
+            emitOnClick: false,
+            burst: false,
+            direction: -Math.PI / 2 // Up
+        };
+
+        // Presets
+        const presets = {
+            fire: {
+                rate: 150, lifetime: 1.5, spread: 30,
+                sizeMin: 3, sizeMax: 15, speed: 120, speedVar: 40,
+                colorStart: '#ff6b00', colorEnd: '#ffff00',
+                gravity: -80, wind: 0, friction: 0.98, turbulence: 20,
+                fadeOut: true, shrink: true, direction: -Math.PI / 2
+            },
+            snow: {
+                rate: 80, lifetime: 8, spread: 180,
+                sizeMin: 2, sizeMax: 6, speed: 30, speedVar: 20,
+                colorStart: '#ffffff', colorEnd: '#e0e0ff',
+                gravity: 30, wind: 20, friction: 0.99, turbulence: 30,
+                fadeOut: true, shrink: false, direction: Math.PI / 2
+            },
+            fountain: {
+                rate: 200, lifetime: 3, spread: 20,
+                sizeMin: 3, sizeMax: 8, speed: 300, speedVar: 50,
+                colorStart: '#00aaff', colorEnd: '#00ffff',
+                gravity: 200, wind: 0, friction: 0.99, turbulence: 5,
+                fadeOut: true, shrink: true, direction: -Math.PI / 2
+            },
+            explosion: {
+                rate: 500, lifetime: 1.5, spread: 180,
+                sizeMin: 2, sizeMax: 10, speed: 400, speedVar: 150,
+                colorStart: '#ff4400', colorEnd: '#ffff00',
+                gravity: 50, wind: 0, friction: 0.96, turbulence: 0,
+                fadeOut: true, shrink: true, direction: 0,
+                burst: true
+            },
+            smoke: {
+                rate: 50, lifetime: 5, spread: 40,
+                sizeMin: 10, sizeMax: 40, speed: 50, speedVar: 20,
+                colorStart: '#555555', colorEnd: '#222222',
+                gravity: -30, wind: 30, friction: 0.98, turbulence: 40,
+                fadeOut: true, shrink: false, direction: -Math.PI / 2
+            },
+            sparkles: {
+                rate: 100, lifetime: 2, spread: 180,
+                sizeMin: 1, sizeMax: 4, speed: 150, speedVar: 100,
+                colorStart: '#ffff00', colorEnd: '#ff00ff',
+                gravity: 0, wind: 0, friction: 0.995, turbulence: 50,
+                fadeOut: true, shrink: false, direction: 0
+            },
+            rain: {
+                rate: 300, lifetime: 2, spread: 10,
+                sizeMin: 1, sizeMax: 3, speed: 500, speedVar: 100,
+                colorStart: '#6699ff', colorEnd: '#3366cc',
+                gravity: 400, wind: 50, friction: 1, turbulence: 0,
+                fadeOut: false, shrink: false, direction: Math.PI / 2
+            },
+            galaxy: {
+                rate: 80, lifetime: 6, spread: 180,
+                sizeMin: 1, sizeMax: 3, speed: 80, speedVar: 40,
+                colorStart: '#ff66ff', colorEnd: '#6666ff',
+                gravity: 0, wind: 0, friction: 0.995, turbulence: 10,
+                fadeOut: true, shrink: false, direction: 0
+            }
+        };
+
+        function resize() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            emitterX = canvas.width / 2;
+            emitterY = canvas.height / 2;
+        }
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : { r: 255, g: 255, b: 255 };
+        }
+
+        function lerpColor(color1, color2, t) {
+            return {
+                r: Math.round(color1.r + (color2.r - color1.r) * t),
+                g: Math.round(color1.g + (color2.g - color1.g) * t),
+                b: Math.round(color1.b + (color2.b - color1.b) * t)
+            };
+        }
+
+        function createParticle() {
+            const spreadRad = (config.spread * Math.PI) / 180;
+            const angle = config.direction + (Math.random() - 0.5) * spreadRad;
+            const speed = config.speed + (Math.random() - 0.5) * config.speedVar;
+
+            return {
+                x: emitterX,
+                y: emitterY,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed,
+                size: config.sizeMin + Math.random() * (config.sizeMax - config.sizeMin),
+                life: config.lifetime,
+                maxLife: config.lifetime,
+                colorStart: hexToRgb(config.colorStart),
+                colorEnd: hexToRgb(config.colorEnd),
+                rotation: Math.random() * Math.PI * 2,
+                rotationSpeed: (Math.random() - 0.5) * 5
+            };
+        }
+
+        function emitParticles(count) {
+            for (let i = 0; i < count; i++) {
+                particles.push(createParticle());
+            }
+        }
+
+        function update(dt) {
+            // Emit particles
+            if (!config.emitOnClick || isEmitting) {
+                if (!config.burst) {
+                    emissionAccumulator += config.rate * dt;
+                    while (emissionAccumulator >= 1) {
+                        emitParticles(1);
+                        emissionAccumulator--;
+                    }
+                }
+            }
+
+            // Update particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+
+                // Apply forces
+                p.vy += config.gravity * dt;
+                p.vx += config.wind * dt;
+
+                // Apply turbulence
+                if (config.turbulence > 0) {
+                    p.vx += (Math.random() - 0.5) * config.turbulence * dt * 10;
+                    p.vy += (Math.random() - 0.5) * config.turbulence * dt * 10;
+                }
+
+                // Apply external forces (attractors/repulsors)
+                forces.forEach(force => {
+                    const dx = force.x - p.x;
+                    const dy = force.y - p.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist > 10) {
+                        const strength = (force.strength * 1000) / (dist * dist);
+                        p.vx += (dx / dist) * strength * dt;
+                        p.vy += (dy / dist) * strength * dt;
+                    }
+                });
+
+                // Apply friction
+                p.vx *= config.friction;
+                p.vy *= config.friction;
+
+                // Update position
+                p.x += p.vx * dt;
+                p.y += p.vy * dt;
+
+                // Update rotation
+                p.rotation += p.rotationSpeed * dt;
+
+                // Update life
+                p.life -= dt;
+
+                // Remove dead particles
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+
+            // Remove forces that have decayed
+            forces = forces.filter(f => f.duration > 0);
+            forces.forEach(f => f.duration -= dt);
+        }
+
+        function draw() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw particles
+            particles.forEach(p => {
+                const lifeRatio = p.life / p.maxLife;
+                const color = lerpColor(p.colorEnd, p.colorStart, lifeRatio);
+
+                let alpha = 1;
+                if (config.fadeOut) {
+                    alpha = lifeRatio;
+                }
+
+                let size = p.size;
+                if (config.shrink) {
+                    size *= lifeRatio;
+                }
+
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate(p.rotation);
+
+                ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha})`;
+                ctx.beginPath();
+                ctx.arc(0, 0, size, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Glow effect
+                if (alpha > 0.5) {
+                    ctx.shadowBlur = size * 2;
+                    ctx.shadowColor = `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.5})`;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, size * 0.5, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
+
+                ctx.restore();
+            });
+
+            // Draw forces
+            forces.forEach(force => {
+                ctx.beginPath();
+                ctx.arc(force.x, force.y, 15, 0, Math.PI * 2);
+                ctx.strokeStyle = force.strength > 0 ? 'rgba(0, 255, 255, 0.5)' : 'rgba(255, 100, 100, 0.5)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            });
+
+            // Draw emitter
+            if (config.followMouse) {
+                ctx.beginPath();
+                ctx.arc(emitterX, emitterY, 5, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+        }
+
+        function gameLoop(timestamp) {
+            if (!lastTime) lastTime = timestamp;
+            const dt = Math.min((timestamp - lastTime) / 1000, 0.1);
+            lastTime = timestamp;
+
+            // FPS calculation
+            frameCount++;
+            fpsTime += dt;
+            if (fpsTime >= 1) {
+                currentFps = Math.round(frameCount / fpsTime);
+                document.getElementById('fps').textContent = currentFps;
+                frameCount = 0;
+                fpsTime = 0;
+            }
+
+            if (!isPaused) {
+                update(dt);
+            }
+            draw();
+
+            document.getElementById('particleCount').textContent = particles.length;
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function applyPreset(name) {
+            const preset = presets[name];
+            if (!preset) return;
+
+            Object.keys(preset).forEach(key => {
+                config[key] = preset[key];
+            });
+
+            // Update UI
+            document.getElementById('rate').value = config.rate;
+            document.getElementById('rateValue').textContent = config.rate;
+            document.getElementById('lifetime').value = config.lifetime;
+            document.getElementById('lifetimeValue').textContent = config.lifetime.toFixed(1);
+            document.getElementById('spread').value = config.spread;
+            document.getElementById('spreadValue').textContent = config.spread + '°';
+            document.getElementById('sizeMin').value = config.sizeMin;
+            document.getElementById('sizeMax').value = config.sizeMax;
+            document.getElementById('sizeValue').textContent = `${config.sizeMin}-${config.sizeMax}`;
+            document.getElementById('speed').value = config.speed;
+            document.getElementById('speedValue').textContent = config.speed;
+            document.getElementById('speedVar').value = config.speedVar;
+            document.getElementById('speedVarValue').textContent = config.speedVar;
+            document.getElementById('colorStart').value = config.colorStart;
+            document.getElementById('colorEnd').value = config.colorEnd;
+            document.getElementById('fadeOut').checked = config.fadeOut;
+            document.getElementById('shrink').checked = config.shrink;
+            document.getElementById('gravity').value = config.gravity;
+            document.getElementById('gravityValue').textContent = config.gravity;
+            document.getElementById('wind').value = config.wind;
+            document.getElementById('windValue').textContent = config.wind;
+            document.getElementById('friction').value = config.friction;
+            document.getElementById('frictionValue').textContent = config.friction.toFixed(3);
+            document.getElementById('turbulence').value = config.turbulence;
+            document.getElementById('turbulenceValue').textContent = config.turbulence;
+
+            if (preset.burst) {
+                document.getElementById('burst').checked = true;
+                config.burst = true;
+            }
+        }
+
+        function setupEventListeners() {
+            // Canvas events
+            canvas.addEventListener('mousedown', (e) => {
+                if (e.button === 0) { // Left click
+                    isEmitting = true;
+                    if (config.burst) {
+                        emitParticles(50);
+                    }
+                } else if (e.button === 2) { // Right click
+                    forces.push({
+                        x: e.clientX - canvas.offsetLeft,
+                        y: e.clientY,
+                        strength: 100,
+                        duration: 5
+                    });
+                } else if (e.button === 1) { // Middle click
+                    forces.push({
+                        x: e.clientX - canvas.offsetLeft,
+                        y: e.clientY,
+                        strength: -100,
+                        duration: 5
+                    });
+                }
+            });
+
+            canvas.addEventListener('mouseup', () => {
+                isEmitting = false;
+            });
+
+            canvas.addEventListener('mousemove', (e) => {
+                if (config.followMouse) {
+                    emitterX = e.clientX - canvas.offsetLeft;
+                    emitterY = e.clientY;
+                }
+            });
+
+            canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+            // Touch events
+            canvas.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                isEmitting = true;
+                const touch = e.touches[0];
+                emitterX = touch.clientX - canvas.offsetLeft;
+                emitterY = touch.clientY;
+                if (config.burst) {
+                    emitParticles(50);
+                }
+            });
+
+            canvas.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                const touch = e.touches[0];
+                emitterX = touch.clientX - canvas.offsetLeft;
+                emitterY = touch.clientY;
+            });
+
+            canvas.addEventListener('touchend', () => {
+                isEmitting = false;
+            });
+
+            // Presets
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    applyPreset(btn.dataset.preset);
+                });
+            });
+
+            // Sliders
+            document.getElementById('rate').addEventListener('input', e => {
+                config.rate = parseInt(e.target.value);
+                document.getElementById('rateValue').textContent = config.rate;
+            });
+
+            document.getElementById('lifetime').addEventListener('input', e => {
+                config.lifetime = parseFloat(e.target.value);
+                document.getElementById('lifetimeValue').textContent = config.lifetime.toFixed(1);
+            });
+
+            document.getElementById('spread').addEventListener('input', e => {
+                config.spread = parseInt(e.target.value);
+                document.getElementById('spreadValue').textContent = config.spread + '°';
+            });
+
+            document.getElementById('sizeMin').addEventListener('input', e => {
+                config.sizeMin = parseInt(e.target.value);
+                document.getElementById('sizeValue').textContent = `${config.sizeMin}-${config.sizeMax}`;
+            });
+
+            document.getElementById('sizeMax').addEventListener('input', e => {
+                config.sizeMax = parseInt(e.target.value);
+                document.getElementById('sizeValue').textContent = `${config.sizeMin}-${config.sizeMax}`;
+            });
+
+            document.getElementById('speed').addEventListener('input', e => {
+                config.speed = parseInt(e.target.value);
+                document.getElementById('speedValue').textContent = config.speed;
+            });
+
+            document.getElementById('speedVar').addEventListener('input', e => {
+                config.speedVar = parseInt(e.target.value);
+                document.getElementById('speedVarValue').textContent = config.speedVar;
+            });
+
+            document.getElementById('gravity').addEventListener('input', e => {
+                config.gravity = parseInt(e.target.value);
+                document.getElementById('gravityValue').textContent = config.gravity;
+            });
+
+            document.getElementById('wind').addEventListener('input', e => {
+                config.wind = parseInt(e.target.value);
+                document.getElementById('windValue').textContent = config.wind;
+            });
+
+            document.getElementById('friction').addEventListener('input', e => {
+                config.friction = parseFloat(e.target.value);
+                document.getElementById('frictionValue').textContent = config.friction.toFixed(3);
+            });
+
+            document.getElementById('turbulence').addEventListener('input', e => {
+                config.turbulence = parseInt(e.target.value);
+                document.getElementById('turbulenceValue').textContent = config.turbulence;
+            });
+
+            // Colors
+            document.getElementById('colorStart').addEventListener('input', e => {
+                config.colorStart = e.target.value;
+            });
+
+            document.getElementById('colorEnd').addEventListener('input', e => {
+                config.colorEnd = e.target.value;
+            });
+
+            // Checkboxes
+            document.getElementById('fadeOut').addEventListener('change', e => {
+                config.fadeOut = e.target.checked;
+            });
+
+            document.getElementById('shrink').addEventListener('change', e => {
+                config.shrink = e.target.checked;
+            });
+
+            document.getElementById('followMouse').addEventListener('change', e => {
+                config.followMouse = e.target.checked;
+            });
+
+            document.getElementById('emitOnClick').addEventListener('change', e => {
+                config.emitOnClick = e.target.checked;
+            });
+
+            document.getElementById('burst').addEventListener('change', e => {
+                config.burst = e.target.checked;
+            });
+
+            // Buttons
+            document.getElementById('clearBtn').addEventListener('click', () => {
+                particles = [];
+                forces = [];
+            });
+
+            document.getElementById('pauseBtn').addEventListener('click', () => {
+                isPaused = !isPaused;
+                document.getElementById('pauseBtn').textContent = isPaused ? 'Resume' : 'Pause';
+            });
+
+            window.addEventListener('resize', resize);
+        }
+
+        // Initialize
+        resize();
+        applyPreset('fire');
+        setupEventListeners();
+        requestAnimationFrame(gameLoop);
+    </script>
+</body>
+</html>

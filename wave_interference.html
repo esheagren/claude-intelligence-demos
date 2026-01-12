@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wave Interference Simulation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0a0a0a 0%, #0f172a 50%, #1e1b4b 100%);
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            height: 100vh;
+        }
+
+        .controls {
+            background: rgba(20, 20, 35, 0.95);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        h1 {
+            font-size: 1.4em;
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 11px;
+            margin-bottom: 20px;
+        }
+
+        .control-section {
+            margin-bottom: 20px;
+        }
+
+        .control-section h3 {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #3b82f6;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .mode-btns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        .mode-btn {
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 11px;
+        }
+
+        .mode-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .mode-btn.active {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(139, 92, 246, 0.3));
+            border-color: #3b82f6;
+        }
+
+        .slider-group {
+            margin-bottom: 12px;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .slider-value {
+            color: #8b5cf6;
+            font-weight: 600;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 5px;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+
+        input[type="checkbox"] {
+            width: 14px;
+            height: 14px;
+            accent-color: #3b82f6;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border: none;
+            border-radius: 6px;
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 6px;
+            font-size: 12px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: none;
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .info-panel {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 12px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            gap: 15px;
+        }
+
+        .info-label {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .info-value {
+            color: #3b82f6;
+            font-weight: 600;
+        }
+
+        .formula-box {
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            font-family: 'Times New Roman', serif;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+            text-align: center;
+        }
+
+        .wave-sources {
+            max-height: 150px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+        }
+
+        .wave-source {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            margin-bottom: 6px;
+            font-size: 11px;
+        }
+
+        .wave-source-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .wave-source-info {
+            flex: 1;
+        }
+
+        .wave-source-remove {
+            cursor: pointer;
+            color: #ef4444;
+            font-size: 14px;
+        }
+
+        .preset-btn {
+            padding: 6px;
+            font-size: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="controls">
+            <h1>Wave Interference</h1>
+            <p class="subtitle">Superposition and interference patterns</p>
+
+            <div class="control-section">
+                <h3>Visualization Mode</h3>
+                <div class="mode-btns">
+                    <button class="mode-btn active" data-mode="2d">2D Ripples</button>
+                    <button class="mode-btn" data-mode="1d">1D Waves</button>
+                    <button class="mode-btn" data-mode="slit">Double Slit</button>
+                    <button class="mode-btn" data-mode="3d">3D Surface</button>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>Wave Sources</h3>
+                <div class="wave-sources" id="waveSources"></div>
+                <button onclick="addSource()" class="btn-secondary">Add Source</button>
+                <button onclick="clearSources()" class="btn-secondary">Clear All</button>
+            </div>
+
+            <div class="control-section">
+                <h3>Wave Properties</h3>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Wavelength (λ)</span>
+                        <span class="slider-value" id="wavelengthValue">30</span>
+                    </div>
+                    <input type="range" id="wavelength" min="10" max="100" value="30">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Frequency (f)</span>
+                        <span class="slider-value" id="frequencyValue">1.0</span>
+                    </div>
+                    <input type="range" id="frequency" min="0.1" max="3" step="0.1" value="1">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Amplitude (A)</span>
+                        <span class="slider-value" id="amplitudeValue">1.0</span>
+                    </div>
+                    <input type="range" id="amplitude" min="0.1" max="2" step="0.1" value="1">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Damping</span>
+                        <span class="slider-value" id="dampingValue">0.00</span>
+                    </div>
+                    <input type="range" id="damping" min="0" max="0.1" step="0.01" value="0">
+                </div>
+            </div>
+
+            <div class="control-section" id="slitControls" style="display: none;">
+                <h3>Double Slit Parameters</h3>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Slit Separation (d)</span>
+                        <span class="slider-value" id="slitSepValue">100</span>
+                    </div>
+                    <input type="range" id="slitSeparation" min="20" max="200" value="100">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Slit Width (a)</span>
+                        <span class="slider-value" id="slitWidthValue">10</span>
+                    </div>
+                    <input type="range" id="slitWidth" min="2" max="50" value="10">
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>Display Options</h3>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="showAmplitude" checked>
+                    <label for="showAmplitude">Show Amplitude</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="showIntensity">
+                    <label for="showIntensity">Show Intensity (I ∝ A²)</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="showNodes">
+                    <label for="showNodes">Highlight Nodes</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="showAntinodes">
+                    <label for="showAntinodes">Highlight Antinodes</label>
+                </div>
+                <select id="colorScheme" style="width: 100%; margin-top: 8px; padding: 8px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #fff;">
+                    <option value="blue">Blue Ocean</option>
+                    <option value="thermal">Thermal</option>
+                    <option value="rainbow">Rainbow</option>
+                    <option value="grayscale">Grayscale</option>
+                    <option value="electric">Electric</option>
+                </select>
+            </div>
+
+            <div class="control-section">
+                <h3>Presets</h3>
+                <button onclick="loadPreset('twoSource')" class="btn-secondary preset-btn">Two-Source</button>
+                <button onclick="loadPreset('standing')" class="btn-secondary preset-btn">Standing Wave</button>
+                <button onclick="loadPreset('circular')" class="btn-secondary preset-btn">Circular Array</button>
+                <button onclick="loadPreset('beats')" class="btn-secondary preset-btn">Beat Frequency</button>
+            </div>
+
+            <div class="control-section">
+                <button onclick="togglePause()">Pause / Resume</button>
+                <button onclick="reset()" class="btn-secondary">Reset</button>
+            </div>
+
+            <div class="formula-box">
+                y = A sin(kx - ωt + φ)<br>
+                k = 2π/λ, ω = 2πf
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="canvas"></canvas>
+            <div class="info-panel">
+                <div class="info-row">
+                    <span class="info-label">Sources:</span>
+                    <span class="info-value" id="numSources">0</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Time:</span>
+                    <span class="info-value" id="timeValue">0.00</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Wave Speed:</span>
+                    <span class="info-value" id="speedValue">v = λf</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // State
+        let sources = [];
+        let mode = '2d';
+        let isPaused = false;
+        let time = 0;
+
+        // Wave parameters
+        let wavelength = 30;
+        let frequency = 1;
+        let amplitude = 1;
+        let damping = 0;
+
+        // Slit parameters
+        let slitSeparation = 100;
+        let slitWidth = 10;
+
+        // Colors
+        const colorSchemes = {
+            blue: (v) => {
+                const r = Math.max(0, Math.min(255, 128 - v * 128));
+                const g = Math.max(0, Math.min(255, 128 + v * 64));
+                const b = Math.max(0, Math.min(255, 200 + v * 55));
+                return `rgb(${r}, ${g}, ${b})`;
+            },
+            thermal: (v) => {
+                const t = (v + 1) / 2;
+                const r = Math.floor(Math.min(255, t * 510));
+                const g = Math.floor(Math.max(0, Math.min(255, (t - 0.5) * 510)));
+                const b = Math.floor(Math.max(0, 255 - t * 510));
+                return `rgb(${r}, ${g}, ${b})`;
+            },
+            rainbow: (v) => {
+                const h = ((v + 1) / 2) * 270;
+                return `hsl(${h}, 80%, 50%)`;
+            },
+            grayscale: (v) => {
+                const g = Math.floor((v + 1) / 2 * 255);
+                return `rgb(${g}, ${g}, ${g})`;
+            },
+            electric: (v) => {
+                const t = (v + 1) / 2;
+                const r = Math.floor(t * 100);
+                const g = Math.floor(t * 200 + 55);
+                const b = Math.floor(255 - t * 50);
+                return `rgb(${r}, ${g}, ${b})`;
+            }
+        };
+
+        let sourceIdCounter = 0;
+
+        // Initialize
+        function init() {
+            resizeCanvas();
+            addSource(canvas.offsetWidth / 2 - 100, canvas.offsetHeight / 2);
+            addSource(canvas.offsetWidth / 2 + 100, canvas.offsetHeight / 2);
+            updateSourcesList();
+            animate();
+        }
+
+        function resizeCanvas() {
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // Wave calculation
+        function calculateWave(x, y, t) {
+            let totalAmplitude = 0;
+            const k = 2 * Math.PI / wavelength;
+            const omega = 2 * Math.PI * frequency;
+
+            for (const source of sources) {
+                const dx = x - source.x;
+                const dy = y - source.y;
+                const r = Math.sqrt(dx * dx + dy * dy);
+
+                // Wave equation: A * sin(k*r - omega*t + phase)
+                // With optional damping: A * exp(-damping*r) * sin(...)
+                const dampFactor = damping > 0 ? Math.exp(-damping * r) : 1;
+                const sourceAmp = source.amplitude * amplitude * dampFactor;
+
+                // For 2D circular waves, amplitude decreases as 1/sqrt(r)
+                const distanceFactor = mode === '2d' ? (r > 1 ? 1 / Math.sqrt(r) : 1) : 1;
+
+                totalAmplitude += sourceAmp * distanceFactor * Math.sin(k * r - omega * t + source.phase);
+            }
+
+            return totalAmplitude;
+        }
+
+        // Draw functions
+        function draw2D() {
+            const width = canvas.offsetWidth;
+            const height = canvas.offsetHeight;
+            const colorScheme = document.getElementById('colorScheme').value;
+            const getColor = colorSchemes[colorScheme];
+            const showIntensity = document.getElementById('showIntensity').checked;
+            const showNodes = document.getElementById('showNodes').checked;
+            const showAntinodes = document.getElementById('showAntinodes').checked;
+
+            const imageData = ctx.createImageData(width, height);
+            const data = imageData.data;
+
+            const step = 2; // Skip pixels for performance
+
+            for (let y = 0; y < height; y += step) {
+                for (let x = 0; x < width; x += step) {
+                    let v = calculateWave(x, y, time);
+
+                    // Clamp value
+                    v = Math.max(-1, Math.min(1, v / (sources.length || 1)));
+
+                    if (showIntensity) {
+                        v = v * v; // Intensity is proportional to amplitude squared
+                    }
+
+                    // Get color
+                    const color = getColor(v);
+                    const match = color.match(/\d+/g);
+                    const r = parseInt(match[0]);
+                    const g = parseInt(match[1]);
+                    const b = parseInt(match[2]);
+
+                    // Fill the step x step block
+                    for (let dy = 0; dy < step && y + dy < height; dy++) {
+                        for (let dx = 0; dx < step && x + dx < width; dx++) {
+                            const idx = ((y + dy) * width + (x + dx)) * 4;
+                            data[idx] = r;
+                            data[idx + 1] = g;
+                            data[idx + 2] = b;
+                            data[idx + 3] = 255;
+                        }
+                    }
+                }
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+
+            // Highlight nodes (destructive interference)
+            if (showNodes) {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                for (let y = 0; y < height; y += 10) {
+                    for (let x = 0; x < width; x += 10) {
+                        const v = Math.abs(calculateWave(x, y, time));
+                        if (v < 0.1) {
+                            ctx.fillRect(x - 2, y - 2, 4, 4);
+                        }
+                    }
+                }
+            }
+
+            // Highlight antinodes (constructive interference)
+            if (showAntinodes) {
+                ctx.fillStyle = 'rgba(255, 200, 0, 0.4)';
+                for (let y = 0; y < height; y += 10) {
+                    for (let x = 0; x < width; x += 10) {
+                        const v = Math.abs(calculateWave(x, y, time));
+                        if (v > 1.5) {
+                            ctx.fillRect(x - 2, y - 2, 4, 4);
+                        }
+                    }
+                }
+            }
+
+            // Draw source points
+            sources.forEach(s => {
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, 8, 0, Math.PI * 2);
+                ctx.fillStyle = s.color;
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            });
+        }
+
+        function draw1D() {
+            const width = canvas.offsetWidth;
+            const height = canvas.offsetHeight;
+            const centerY = height / 2;
+
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(0, 0, width, height);
+
+            // Draw grid
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.lineWidth = 1;
+
+            ctx.beginPath();
+            ctx.moveTo(0, centerY);
+            ctx.lineTo(width, centerY);
+            ctx.stroke();
+
+            // Draw individual waves
+            const showAmplitude = document.getElementById('showAmplitude').checked;
+
+            if (showAmplitude) {
+                sources.forEach((source, idx) => {
+                    ctx.strokeStyle = source.color + '80';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+
+                    for (let x = 0; x < width; x++) {
+                        const k = 2 * Math.PI / wavelength;
+                        const omega = 2 * Math.PI * frequency;
+                        const y = source.amplitude * amplitude * Math.sin(k * (x - source.x) - omega * time + source.phase);
+                        const screenY = centerY - y * 100;
+
+                        if (x === 0) ctx.moveTo(x, screenY);
+                        else ctx.lineTo(x, screenY);
+                    }
+
+                    ctx.stroke();
+                });
+            }
+
+            // Draw superposition
+            ctx.strokeStyle = '#3b82f6';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+
+            for (let x = 0; x < width; x++) {
+                let y = 0;
+                const k = 2 * Math.PI / wavelength;
+                const omega = 2 * Math.PI * frequency;
+
+                sources.forEach(source => {
+                    y += source.amplitude * amplitude * Math.sin(k * (x - source.x) - omega * time + source.phase);
+                });
+
+                const screenY = centerY - y * 100;
+
+                if (x === 0) ctx.moveTo(x, screenY);
+                else ctx.lineTo(x, screenY);
+            }
+
+            ctx.stroke();
+
+            // Draw source markers
+            sources.forEach(s => {
+                ctx.beginPath();
+                ctx.arc(s.x, centerY, 6, 0, Math.PI * 2);
+                ctx.fillStyle = s.color;
+                ctx.fill();
+            });
+        }
+
+        function drawDoubleSlit() {
+            const width = canvas.offsetWidth;
+            const height = canvas.offsetHeight;
+            const colorScheme = document.getElementById('colorScheme').value;
+            const getColor = colorSchemes[colorScheme];
+
+            const imageData = ctx.createImageData(width, height);
+            const data = imageData.data;
+
+            const slitX = 100;
+            const centerY = height / 2;
+            const slit1Y = centerY - slitSeparation / 2;
+            const slit2Y = centerY + slitSeparation / 2;
+
+            const k = 2 * Math.PI / wavelength;
+            const omega = 2 * Math.PI * frequency;
+
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    let v = 0;
+
+                    if (x < slitX) {
+                        // Plane wave before slit
+                        v = Math.sin(k * x - omega * time);
+                    } else {
+                        // After slit - interference from two sources
+                        const r1 = Math.sqrt((x - slitX) ** 2 + (y - slit1Y) ** 2);
+                        const r2 = Math.sqrt((x - slitX) ** 2 + (y - slit2Y) ** 2);
+
+                        // Check if within slit opening
+                        const inSlit1 = Math.abs(y - slit1Y) < slitWidth / 2;
+                        const inSlit2 = Math.abs(y - slit2Y) < slitWidth / 2;
+
+                        const amp1 = inSlit1 || x > slitX + 5 ? 1 / Math.sqrt(Math.max(1, r1)) : 0;
+                        const amp2 = inSlit2 || x > slitX + 5 ? 1 / Math.sqrt(Math.max(1, r2)) : 0;
+
+                        v = amp1 * Math.sin(k * r1 - omega * time) + amp2 * Math.sin(k * r2 - omega * time);
+                        v /= 2;
+                    }
+
+                    v = Math.max(-1, Math.min(1, v));
+
+                    const color = getColor(v);
+                    const match = color.match(/\d+/g);
+
+                    const idx = (y * width + x) * 4;
+                    data[idx] = parseInt(match[0]);
+                    data[idx + 1] = parseInt(match[1]);
+                    data[idx + 2] = parseInt(match[2]);
+                    data[idx + 3] = 255;
+                }
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+
+            // Draw barrier
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(slitX - 5, 0, 10, slit1Y - slitWidth / 2);
+            ctx.fillRect(slitX - 5, slit1Y + slitWidth / 2, 10, slit2Y - slit1Y - slitWidth);
+            ctx.fillRect(slitX - 5, slit2Y + slitWidth / 2, 10, height - slit2Y - slitWidth / 2);
+
+            // Draw intensity graph on right
+            const graphX = width - 100;
+
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(graphX, 0);
+            ctx.lineTo(graphX, height);
+            ctx.stroke();
+
+            ctx.strokeStyle = '#fbbf24';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+
+            for (let y = 0; y < height; y++) {
+                // Calculate intensity at screen position
+                const pathDiff = Math.abs((y - slit1Y) - (y - slit2Y));
+                const r1 = Math.sqrt((width - slitX) ** 2 + (y - slit1Y) ** 2);
+                const r2 = Math.sqrt((width - slitX) ** 2 + (y - slit2Y) ** 2);
+                const phaseDiff = k * (r2 - r1);
+
+                // Intensity pattern: I = 4*I0 * cos²(δ/2)
+                const intensity = Math.cos(phaseDiff / 2) ** 2;
+                const graphWidth = intensity * 80;
+
+                if (y === 0) ctx.moveTo(graphX + graphWidth, y);
+                else ctx.lineTo(graphX + graphWidth, y);
+            }
+
+            ctx.stroke();
+        }
+
+        function draw3D() {
+            const width = canvas.offsetWidth;
+            const height = canvas.offsetHeight;
+
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(0, 0, width, height);
+
+            const gridSize = 50;
+            const cellSize = 15;
+            const offsetX = width / 2;
+            const offsetY = 100;
+            const scale = 8;
+
+            // Isometric projection
+            const isoX = (x, y) => offsetX + (x - y) * cellSize * 0.7;
+            const isoY = (x, y, z) => offsetY + (x + y) * cellSize * 0.4 - z * scale;
+
+            // Calculate heights
+            const heights = [];
+            for (let gy = 0; gy < gridSize; gy++) {
+                heights[gy] = [];
+                for (let gx = 0; gx < gridSize; gx++) {
+                    const worldX = (gx - gridSize / 2) * 10 + width / 2;
+                    const worldY = (gy - gridSize / 2) * 10 + height / 2;
+                    heights[gy][gx] = calculateWave(worldX, worldY, time);
+                }
+            }
+
+            // Draw from back to front
+            for (let gy = 0; gy < gridSize - 1; gy++) {
+                for (let gx = 0; gx < gridSize - 1; gx++) {
+                    const z00 = heights[gy][gx];
+                    const z10 = heights[gy][gx + 1];
+                    const z01 = heights[gy + 1][gx];
+                    const z11 = heights[gy + 1][gx + 1];
+
+                    const x0 = isoX(gx, gy);
+                    const y00 = isoY(gx, gy, z00);
+                    const x1 = isoX(gx + 1, gy);
+                    const y10 = isoY(gx + 1, gy, z10);
+                    const x2 = isoX(gx + 1, gy + 1);
+                    const y11 = isoY(gx + 1, gy + 1, z11);
+                    const x3 = isoX(gx, gy + 1);
+                    const y01 = isoY(gx, gy + 1, z01);
+
+                    const avgZ = (z00 + z10 + z01 + z11) / 4;
+                    const hue = 220 + avgZ * 30;
+                    const lightness = 30 + avgZ * 20;
+
+                    ctx.fillStyle = `hsl(${hue}, 70%, ${lightness}%)`;
+                    ctx.strokeStyle = `hsl(${hue}, 70%, ${lightness + 10}%)`;
+                    ctx.lineWidth = 0.5;
+
+                    ctx.beginPath();
+                    ctx.moveTo(x0, y00);
+                    ctx.lineTo(x1, y10);
+                    ctx.lineTo(x2, y11);
+                    ctx.lineTo(x3, y01);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                }
+            }
+        }
+
+        function draw() {
+            switch (mode) {
+                case '2d': draw2D(); break;
+                case '1d': draw1D(); break;
+                case 'slit': drawDoubleSlit(); break;
+                case '3d': draw3D(); break;
+            }
+
+            // Update info
+            document.getElementById('numSources').textContent = sources.length;
+            document.getElementById('timeValue').textContent = time.toFixed(2);
+
+            const v = wavelength * frequency;
+            document.getElementById('speedValue').textContent = `${v.toFixed(1)} px/s`;
+        }
+
+        // Animation
+        function animate() {
+            if (!isPaused) {
+                time += 0.05;
+            }
+
+            draw();
+            requestAnimationFrame(animate);
+        }
+
+        // Source management
+        function addSource(x, y) {
+            const width = canvas.offsetWidth;
+            const height = canvas.offsetHeight;
+
+            if (x === undefined) x = Math.random() * width * 0.6 + width * 0.2;
+            if (y === undefined) y = Math.random() * height * 0.6 + height * 0.2;
+
+            const colors = ['#3b82f6', '#8b5cf6', '#ec4899', '#f97316', '#22c55e', '#06b6d4'];
+
+            sources.push({
+                id: sourceIdCounter++,
+                x,
+                y,
+                amplitude: 1,
+                phase: 0,
+                color: colors[sources.length % colors.length]
+            });
+
+            updateSourcesList();
+        }
+
+        function removeSource(id) {
+            sources = sources.filter(s => s.id !== id);
+            updateSourcesList();
+        }
+
+        function clearSources() {
+            sources = [];
+            updateSourcesList();
+        }
+
+        function updateSourcesList() {
+            const container = document.getElementById('waveSources');
+            container.innerHTML = '';
+
+            sources.forEach(s => {
+                const div = document.createElement('div');
+                div.className = 'wave-source';
+                div.innerHTML = `
+                    <div class="wave-source-color" style="background: ${s.color}"></div>
+                    <div class="wave-source-info">
+                        (${Math.round(s.x)}, ${Math.round(s.y)})
+                    </div>
+                    <span class="wave-source-remove" onclick="removeSource(${s.id})">×</span>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // Mode switching
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                mode = btn.dataset.mode;
+
+                document.getElementById('slitControls').style.display = mode === 'slit' ? 'block' : 'none';
+            });
+        });
+
+        // Slider updates
+        document.getElementById('wavelength').addEventListener('input', e => {
+            wavelength = parseInt(e.target.value);
+            document.getElementById('wavelengthValue').textContent = wavelength;
+        });
+
+        document.getElementById('frequency').addEventListener('input', e => {
+            frequency = parseFloat(e.target.value);
+            document.getElementById('frequencyValue').textContent = frequency.toFixed(1);
+        });
+
+        document.getElementById('amplitude').addEventListener('input', e => {
+            amplitude = parseFloat(e.target.value);
+            document.getElementById('amplitudeValue').textContent = amplitude.toFixed(1);
+        });
+
+        document.getElementById('damping').addEventListener('input', e => {
+            damping = parseFloat(e.target.value);
+            document.getElementById('dampingValue').textContent = damping.toFixed(2);
+        });
+
+        document.getElementById('slitSeparation').addEventListener('input', e => {
+            slitSeparation = parseInt(e.target.value);
+            document.getElementById('slitSepValue').textContent = slitSeparation;
+        });
+
+        document.getElementById('slitWidth').addEventListener('input', e => {
+            slitWidth = parseInt(e.target.value);
+            document.getElementById('slitWidthValue').textContent = slitWidth;
+        });
+
+        // Presets
+        function loadPreset(preset) {
+            const width = canvas.offsetWidth;
+            const height = canvas.offsetHeight;
+
+            clearSources();
+
+            switch (preset) {
+                case 'twoSource':
+                    addSource(width / 2 - 100, height / 2);
+                    addSource(width / 2 + 100, height / 2);
+                    wavelength = 30;
+                    break;
+                case 'standing':
+                    addSource(100, height / 2);
+                    addSource(width - 100, height / 2);
+                    sources[1].phase = Math.PI;
+                    mode = '1d';
+                    document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === '1d'));
+                    break;
+                case 'circular':
+                    const cx = width / 2;
+                    const cy = height / 2;
+                    for (let i = 0; i < 6; i++) {
+                        const angle = (i / 6) * Math.PI * 2;
+                        addSource(cx + Math.cos(angle) * 150, cy + Math.sin(angle) * 150);
+                    }
+                    break;
+                case 'beats':
+                    addSource(width / 2, height / 2);
+                    addSource(width / 2, height / 2);
+                    sources[1].phase = 0;
+                    // Different frequencies create beats
+                    wavelength = 40;
+                    mode = '1d';
+                    document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === '1d'));
+                    break;
+            }
+
+            document.getElementById('wavelength').value = wavelength;
+            document.getElementById('wavelengthValue').textContent = wavelength;
+            updateSourcesList();
+        }
+
+        function togglePause() {
+            isPaused = !isPaused;
+        }
+
+        function reset() {
+            time = 0;
+        }
+
+        // Mouse interaction for adding sources
+        canvas.addEventListener('click', e => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            // Check if clicking near existing source (drag)
+            for (const s of sources) {
+                if (Math.sqrt((x - s.x) ** 2 + (y - s.y) ** 2) < 20) {
+                    return; // Don't add if clicking on source
+                }
+            }
+
+            addSource(x, y);
+        });
+
+        // Drag sources
+        let draggingSource = null;
+
+        canvas.addEventListener('mousedown', e => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            for (const s of sources) {
+                if (Math.sqrt((x - s.x) ** 2 + (y - s.y) ** 2) < 20) {
+                    draggingSource = s;
+                    return;
+                }
+            }
+        });
+
+        canvas.addEventListener('mousemove', e => {
+            if (!draggingSource) return;
+
+            const rect = canvas.getBoundingClientRect();
+            draggingSource.x = e.clientX - rect.left;
+            draggingSource.y = e.clientY - rect.top;
+            updateSourcesList();
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            draggingSource = null;
+        });
+
+        // Start
+        init();
+    </script>
+</body>
+</html>

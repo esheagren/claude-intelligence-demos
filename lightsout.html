@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lights Out</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3e 100%);
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 42px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #ffeb3b, #ffc107);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 20px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .control-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .control-group label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        select, button {
+            padding: 10px 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        button.primary {
+            background: linear-gradient(135deg, rgba(255, 235, 59, 0.3), rgba(255, 193, 7, 0.3));
+            border-color: #ffeb3b;
+        }
+
+        .stats-bar {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 20px;
+        }
+
+        .stat {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px 20px;
+            border-radius: 10px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #ffeb3b;
+            font-family: monospace;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .game-container {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 20px;
+            padding: 30px;
+        }
+
+        .grid {
+            display: grid;
+            gap: 8px;
+        }
+
+        .cell {
+            width: 60px;
+            height: 60px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .cell.off {
+            background: linear-gradient(135deg, #1a1a2e, #2a2a4e);
+            box-shadow:
+                inset 0 3px 10px rgba(0, 0, 0, 0.5),
+                0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .cell.on {
+            background: linear-gradient(135deg, #ffeb3b, #ffc107);
+            box-shadow:
+                0 0 30px rgba(255, 235, 59, 0.5),
+                0 0 60px rgba(255, 235, 59, 0.3),
+                inset 0 -3px 10px rgba(0, 0, 0, 0.2);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .cell:hover {
+            transform: scale(1.05);
+        }
+
+        .cell:active {
+            transform: scale(0.95);
+        }
+
+        .cell.preview {
+            outline: 3px solid rgba(255, 235, 59, 0.5);
+            outline-offset: 2px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+
+        .message {
+            text-align: center;
+            padding: 20px 40px;
+            border-radius: 15px;
+            margin-top: 20px;
+            font-size: 20px;
+        }
+
+        .message.win {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+            border: 1px solid rgba(0, 255, 136, 0.5);
+        }
+
+        .instructions {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 15px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .level-select {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+
+        .level-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .level-btn.completed {
+            background: rgba(0, 255, 136, 0.2);
+            border-color: #00ff88;
+            color: #00ff88;
+        }
+
+        .level-btn.current {
+            background: rgba(255, 235, 59, 0.3);
+            border-color: #ffeb3b;
+        }
+
+        @media (max-width: 500px) {
+            .cell {
+                width: 50px;
+                height: 50px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Lights Out</h1>
+    <p class="subtitle">Turn off all the lights to win!</p>
+
+    <div class="controls">
+        <div class="control-group">
+            <label>Grid Size:</label>
+            <select id="gridSize">
+                <option value="3">3x3</option>
+                <option value="4">4x4</option>
+                <option value="5" selected>5x5</option>
+            </select>
+        </div>
+        <button class="primary" id="newGameBtn">New Puzzle</button>
+    </div>
+
+    <div class="stats-bar">
+        <div class="stat">
+            <div class="stat-value" id="moves">0</div>
+            <div class="stat-label">Moves</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value" id="lightsOn">0</div>
+            <div class="stat-label">Lights On</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value" id="best">-</div>
+            <div class="stat-label">Best</div>
+        </div>
+    </div>
+
+    <div class="game-container">
+        <div class="grid" id="grid"></div>
+        <div class="action-buttons">
+            <button id="hintBtn">Show Hint</button>
+            <button id="solveBtn">Auto Solve</button>
+        </div>
+        <p class="instructions">
+            Click a light to toggle it and its neighbors (up, down, left, right).<br>
+            Goal: Turn all lights OFF.
+        </p>
+    </div>
+
+    <div id="messageArea"></div>
+
+    <script>
+        let size = 5;
+        let grid = [];
+        let moves = 0;
+        let bestMoves = {};
+        let solving = false;
+
+        function init() {
+            loadBestMoves();
+            document.getElementById('newGameBtn').addEventListener('click', newGame);
+            document.getElementById('hintBtn').addEventListener('click', showHint);
+            document.getElementById('solveBtn').addEventListener('click', autoSolve);
+            document.getElementById('gridSize').addEventListener('change', (e) => {
+                size = parseInt(e.target.value);
+                newGame();
+            });
+            newGame();
+        }
+
+        function loadBestMoves() {
+            bestMoves = JSON.parse(localStorage.getItem('lightsout-best') || '{}');
+            updateBestDisplay();
+        }
+
+        function saveBestMoves(size, moves) {
+            if (!bestMoves[size] || moves < bestMoves[size]) {
+                bestMoves[size] = moves;
+                localStorage.setItem('lightsout-best', JSON.stringify(bestMoves));
+                updateBestDisplay();
+                return true;
+            }
+            return false;
+        }
+
+        function updateBestDisplay() {
+            const best = bestMoves[size];
+            document.getElementById('best').textContent = best || '-';
+        }
+
+        function newGame() {
+            size = parseInt(document.getElementById('gridSize').value);
+            updateBestDisplay();
+
+            // Create empty grid
+            grid = Array(size).fill(null).map(() => Array(size).fill(false));
+            moves = 0;
+            solving = false;
+
+            // Generate solvable puzzle by working backwards
+            // Make random valid moves from solved state
+            const numMoves = Math.floor(size * size * 0.6) + Math.floor(Math.random() * size);
+
+            for (let i = 0; i < numMoves; i++) {
+                const r = Math.floor(Math.random() * size);
+                const c = Math.floor(Math.random() * size);
+                toggleCell(r, c, false);
+            }
+
+            document.getElementById('moves').textContent = moves;
+            document.getElementById('messageArea').innerHTML = '';
+
+            renderGrid();
+            updateLightsCount();
+        }
+
+        function toggleCell(row, col, countMove = true) {
+            // Toggle clicked cell
+            grid[row][col] = !grid[row][col];
+
+            // Toggle neighbors
+            const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+            for (const [dr, dc] of directions) {
+                const nr = row + dr;
+                const nc = col + dc;
+                if (nr >= 0 && nr < size && nc >= 0 && nc < size) {
+                    grid[nr][nc] = !grid[nr][nc];
+                }
+            }
+
+            if (countMove) {
+                moves++;
+                document.getElementById('moves').textContent = moves;
+            }
+        }
+
+        function renderGrid() {
+            const gridEl = document.getElementById('grid');
+            gridEl.innerHTML = '';
+            gridEl.style.gridTemplateColumns = `repeat(${size}, 60px)`;
+
+            for (let r = 0; r < size; r++) {
+                for (let c = 0; c < size; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = `cell ${grid[r][c] ? 'on' : 'off'}`;
+                    cell.dataset.row = r;
+                    cell.dataset.col = c;
+
+                    cell.addEventListener('click', () => handleClick(r, c));
+                    cell.addEventListener('mouseenter', () => showPreview(r, c));
+                    cell.addEventListener('mouseleave', clearPreview);
+
+                    gridEl.appendChild(cell);
+                }
+            }
+        }
+
+        function handleClick(row, col) {
+            if (solving) return;
+
+            toggleCell(row, col);
+            renderGrid();
+            updateLightsCount();
+            checkWin();
+        }
+
+        function showPreview(row, col) {
+            const cells = document.querySelectorAll('.cell');
+
+            // Show which cells will be affected
+            const getIndex = (r, c) => r * size + c;
+
+            cells[getIndex(row, col)].classList.add('preview');
+
+            const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+            for (const [dr, dc] of directions) {
+                const nr = row + dr;
+                const nc = col + dc;
+                if (nr >= 0 && nr < size && nc >= 0 && nc < size) {
+                    cells[getIndex(nr, nc)].classList.add('preview');
+                }
+            }
+        }
+
+        function clearPreview() {
+            document.querySelectorAll('.cell.preview').forEach(cell => {
+                cell.classList.remove('preview');
+            });
+        }
+
+        function updateLightsCount() {
+            let count = 0;
+            for (let r = 0; r < size; r++) {
+                for (let c = 0; c < size; c++) {
+                    if (grid[r][c]) count++;
+                }
+            }
+            document.getElementById('lightsOn').textContent = count;
+        }
+
+        function checkWin() {
+            for (let r = 0; r < size; r++) {
+                for (let c = 0; c < size; c++) {
+                    if (grid[r][c]) return;
+                }
+            }
+
+            // Win!
+            const isNewBest = saveBestMoves(size, moves);
+
+            document.getElementById('messageArea').innerHTML = `
+                <div class="message win">
+                    Congratulations! Solved in ${moves} moves!
+                    ${isNewBest ? '<br>New best!' : ''}
+                </div>
+            `;
+        }
+
+        function showHint() {
+            // Use Gaussian elimination to find solution
+            const solution = solve();
+            if (!solution) return;
+
+            // Find first move in solution
+            for (let i = 0; i < solution.length; i++) {
+                if (solution[i]) {
+                    const r = Math.floor(i / size);
+                    const c = i % size;
+                    const cells = document.querySelectorAll('.cell');
+                    cells[i].style.outline = '3px solid #00ff88';
+                    cells[i].style.outlineOffset = '4px';
+
+                    setTimeout(() => {
+                        cells[i].style.outline = '';
+                        cells[i].style.outlineOffset = '';
+                    }, 2000);
+                    return;
+                }
+            }
+        }
+
+        async function autoSolve() {
+            const solution = solve();
+            if (!solution) return;
+
+            solving = true;
+
+            for (let i = 0; i < solution.length; i++) {
+                if (solution[i]) {
+                    const r = Math.floor(i / size);
+                    const c = i % size;
+
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                    toggleCell(r, c);
+                    renderGrid();
+                    updateLightsCount();
+                }
+            }
+
+            solving = false;
+            checkWin();
+        }
+
+        function solve() {
+            // Gaussian elimination over GF(2)
+            const n = size * size;
+
+            // Build augmented matrix
+            // Each row represents one cell, columns are coefficients for each button press
+            const matrix = [];
+
+            for (let i = 0; i < n; i++) {
+                const row = Array(n + 1).fill(0);
+                const r = Math.floor(i / size);
+                const c = i % size;
+
+                // Pressing cell (r,c) affects cell i
+                row[i] = 1;
+
+                // Neighbors
+                if (r > 0) row[(r - 1) * size + c] = 1;
+                if (r < size - 1) row[(r + 1) * size + c] = 1;
+                if (c > 0) row[r * size + c - 1] = 1;
+                if (c < size - 1) row[r * size + c + 1] = 1;
+
+                // RHS: current state (we want to turn off, so 1 if on)
+                row[n] = grid[r][c] ? 1 : 0;
+
+                matrix.push(row);
+            }
+
+            // Gaussian elimination
+            let pivot = 0;
+            for (let col = 0; col < n && pivot < n; col++) {
+                // Find pivot
+                let pivotRow = -1;
+                for (let row = pivot; row < n; row++) {
+                    if (matrix[row][col] === 1) {
+                        pivotRow = row;
+                        break;
+                    }
+                }
+
+                if (pivotRow === -1) continue;
+
+                // Swap rows
+                [matrix[pivot], matrix[pivotRow]] = [matrix[pivotRow], matrix[pivot]];
+
+                // Eliminate
+                for (let row = 0; row < n; row++) {
+                    if (row !== pivot && matrix[row][col] === 1) {
+                        for (let k = 0; k <= n; k++) {
+                            matrix[row][k] ^= matrix[pivot][k];
+                        }
+                    }
+                }
+
+                pivot++;
+            }
+
+            // Back substitution
+            const solution = Array(n).fill(0);
+            for (let i = n - 1; i >= 0; i--) {
+                // Find leading 1
+                let leadCol = -1;
+                for (let col = 0; col < n; col++) {
+                    if (matrix[i][col] === 1) {
+                        leadCol = col;
+                        break;
+                    }
+                }
+
+                if (leadCol === -1) {
+                    if (matrix[i][n] === 1) {
+                        // No solution
+                        return null;
+                    }
+                    continue;
+                }
+
+                let val = matrix[i][n];
+                for (let col = leadCol + 1; col < n; col++) {
+                    val ^= matrix[i][col] * solution[col];
+                }
+                solution[leadCol] = val;
+            }
+
+            return solution;
+        }
+
+        // Initialize
+        init();
+    </script>
+</body>
+</html>

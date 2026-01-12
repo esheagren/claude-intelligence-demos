@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fractal Music Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a0a2a 50%, #0a1a2a 100%);
+            color: #e0e0e0;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            font-weight: 300;
+            background: linear-gradient(135deg, #ff6b9d 0%, #c44569 50%, #6c5ce7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 1.1em;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 30px;
+        }
+
+        .controls {
+            background: rgba(20, 20, 40, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 20px;
+        }
+
+        .control-section {
+            margin-bottom: 25px;
+        }
+
+        .control-section h3 {
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group label {
+            display: block;
+            font-size: 0.85em;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 5px;
+        }
+
+        select, input[type="range"] {
+            width: 100%;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            color: #fff;
+            font-size: 0.9em;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: #c44569;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            height: 6px;
+            padding: 0;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ff6b9d, #c44569);
+            cursor: pointer;
+        }
+
+        .value-display {
+            text-align: right;
+            font-size: 0.8em;
+            color: #ff6b9d;
+            margin-top: 3px;
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        button {
+            padding: 12px 20px;
+            background: linear-gradient(135deg, rgba(196, 69, 105, 0.3), rgba(108, 92, 231, 0.3));
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: linear-gradient(135deg, rgba(196, 69, 105, 0.5), rgba(108, 92, 231, 0.5));
+            transform: translateY(-2px);
+        }
+
+        button.active {
+            background: linear-gradient(135deg, #c44569, #6c5ce7);
+            box-shadow: 0 0 20px rgba(196, 69, 105, 0.5);
+        }
+
+        button.full-width {
+            grid-column: span 2;
+        }
+
+        .visualization {
+            background: rgba(20, 20, 40, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 20px;
+        }
+
+        .viz-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .viz-header h2 {
+            font-size: 1.2em;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .viz-tabs {
+            display: flex;
+            gap: 10px;
+        }
+
+        .viz-tab {
+            padding: 6px 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            font-size: 0.8em;
+            color: rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .viz-tab:hover, .viz-tab.active {
+            background: rgba(196, 69, 105, 0.3);
+            border-color: rgba(196, 69, 105, 0.5);
+            color: #fff;
+        }
+
+        .canvas-container {
+            position: relative;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 400px;
+        }
+
+        .sequence-display {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+        }
+
+        .sequence-title {
+            font-size: 0.85em;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 10px;
+        }
+
+        .sequence-notes {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            max-height: 80px;
+            overflow-y: auto;
+        }
+
+        .note-block {
+            padding: 4px 8px;
+            background: rgba(196, 69, 105, 0.2);
+            border-radius: 4px;
+            font-size: 0.75em;
+            color: #ff6b9d;
+            font-family: monospace;
+        }
+
+        .note-block.playing {
+            background: rgba(196, 69, 105, 0.8);
+            color: #fff;
+        }
+
+        .info-panel {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+        }
+
+        .info-item {
+            text-align: center;
+        }
+
+        .info-value {
+            font-size: 1.5em;
+            font-weight: 300;
+            color: #ff6b9d;
+        }
+
+        .info-label {
+            font-size: 0.75em;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .scale-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 10px;
+        }
+
+        .scale-btn {
+            padding: 4px 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 4px;
+            font-size: 0.75em;
+            color: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .scale-btn:hover, .scale-btn.active {
+            background: rgba(196, 69, 105, 0.3);
+            border-color: rgba(196, 69, 105, 0.5);
+            color: #fff;
+        }
+
+        @media (max-width: 900px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .info-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Fractal Music Generator</h1>
+            <p class="subtitle">Create melodies from mathematical sequences and self-similar patterns</p>
+        </header>
+
+        <div class="main-layout">
+            <div class="controls">
+                <div class="control-section">
+                    <h3>Fractal Source</h3>
+                    <div class="control-group">
+                        <label>Sequence Type</label>
+                        <select id="sequenceType">
+                            <option value="mandelbrot">Mandelbrot Orbit</option>
+                            <option value="julia">Julia Set Orbit</option>
+                            <option value="fibonacci">Fibonacci Sequence</option>
+                            <option value="thue-morse">Thue-Morse Sequence</option>
+                            <option value="cantor">Cantor Set</option>
+                            <option value="sierpinski">Sierpinski Triangle</option>
+                            <option value="collatz">Collatz Sequence</option>
+                            <option value="logistic">Logistic Map</option>
+                            <option value="henon">Henon Map</option>
+                            <option value="prime-gaps">Prime Number Gaps</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label>Sequence Length</label>
+                        <input type="range" id="seqLength" min="16" max="256" value="64">
+                        <div class="value-display" id="seqLengthVal">64 notes</div>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h3>Musical Parameters</h3>
+                    <div class="control-group">
+                        <label>Scale / Mode</label>
+                        <select id="scaleType">
+                            <option value="major">Major (Ionian)</option>
+                            <option value="minor">Natural Minor (Aeolian)</option>
+                            <option value="dorian">Dorian</option>
+                            <option value="phrygian">Phrygian</option>
+                            <option value="lydian">Lydian</option>
+                            <option value="mixolydian">Mixolydian</option>
+                            <option value="pentatonic">Pentatonic Major</option>
+                            <option value="pentatonic-minor">Pentatonic Minor</option>
+                            <option value="blues">Blues Scale</option>
+                            <option value="whole-tone">Whole Tone</option>
+                            <option value="chromatic">Chromatic</option>
+                            <option value="harmonic-minor">Harmonic Minor</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label>Root Note</label>
+                        <div class="scale-selector" id="rootSelector">
+                            <span class="scale-btn active" data-note="C">C</span>
+                            <span class="scale-btn" data-note="C#">C#</span>
+                            <span class="scale-btn" data-note="D">D</span>
+                            <span class="scale-btn" data-note="D#">D#</span>
+                            <span class="scale-btn" data-note="E">E</span>
+                            <span class="scale-btn" data-note="F">F</span>
+                            <span class="scale-btn" data-note="F#">F#</span>
+                            <span class="scale-btn" data-note="G">G</span>
+                            <span class="scale-btn" data-note="G#">G#</span>
+                            <span class="scale-btn" data-note="A">A</span>
+                            <span class="scale-btn" data-note="A#">A#</span>
+                            <span class="scale-btn" data-note="B">B</span>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label>Octave Range</label>
+                        <input type="range" id="octaveRange" min="1" max="4" value="2">
+                        <div class="value-display" id="octaveRangeVal">2 octaves</div>
+                    </div>
+                    <div class="control-group">
+                        <label>Base Octave</label>
+                        <input type="range" id="baseOctave" min="2" max="5" value="3">
+                        <div class="value-display" id="baseOctaveVal">Octave 3</div>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h3>Playback</h3>
+                    <div class="control-group">
+                        <label>Tempo (BPM)</label>
+                        <input type="range" id="tempo" min="40" max="240" value="120">
+                        <div class="value-display" id="tempoVal">120 BPM</div>
+                    </div>
+                    <div class="control-group">
+                        <label>Note Duration</label>
+                        <select id="noteDuration">
+                            <option value="16">Sixteenth Note</option>
+                            <option value="8" selected>Eighth Note</option>
+                            <option value="4">Quarter Note</option>
+                            <option value="2">Half Note</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label>Wave Type</label>
+                        <select id="waveType">
+                            <option value="sine">Sine</option>
+                            <option value="triangle" selected>Triangle</option>
+                            <option value="square">Square</option>
+                            <option value="sawtooth">Sawtooth</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label>Volume</label>
+                        <input type="range" id="volume" min="0" max="100" value="50">
+                        <div class="value-display" id="volumeVal">50%</div>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h3>Fractal Parameters</h3>
+                    <div class="control-group">
+                        <label>Parameter A</label>
+                        <input type="range" id="paramA" min="-200" max="200" value="0">
+                        <div class="value-display" id="paramAVal">0.00</div>
+                    </div>
+                    <div class="control-group">
+                        <label>Parameter B</label>
+                        <input type="range" id="paramB" min="-200" max="200" value="0">
+                        <div class="value-display" id="paramBVal">0.00</div>
+                    </div>
+                </div>
+
+                <div class="buttons">
+                    <button id="generateBtn">Generate</button>
+                    <button id="playBtn">Play</button>
+                    <button id="stopBtn">Stop</button>
+                    <button id="randomBtn">Random</button>
+                </div>
+            </div>
+
+            <div class="visualization">
+                <div class="viz-header">
+                    <h2>Visualization</h2>
+                    <div class="viz-tabs">
+                        <span class="viz-tab active" data-viz="waveform">Waveform</span>
+                        <span class="viz-tab" data-viz="spectrum">Spectrum</span>
+                        <span class="viz-tab" data-viz="fractal">Fractal</span>
+                        <span class="viz-tab" data-viz="piano">Piano Roll</span>
+                    </div>
+                </div>
+                <div class="canvas-container">
+                    <canvas id="vizCanvas"></canvas>
+                </div>
+
+                <div class="sequence-display">
+                    <div class="sequence-title">Generated Sequence</div>
+                    <div class="sequence-notes" id="sequenceNotes"></div>
+                </div>
+
+                <div class="info-panel">
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <div class="info-value" id="infoNotes">0</div>
+                            <div class="info-label">Notes</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-value" id="infoDuration">0:00</div>
+                            <div class="info-label">Duration</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-value" id="infoRange">0</div>
+                            <div class="info-label">Pitch Range</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-value" id="infoEntropy">0.00</div>
+                            <div class="info-label">Entropy</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Audio context
+        let audioCtx = null;
+        let analyser = null;
+        let gainNode = null;
+        let isPlaying = false;
+        let playbackTimeout = null;
+        let currentNoteIndex = 0;
+
+        // Sequence data
+        let generatedSequence = [];
+        let noteSequence = [];
+
+        // Visualization
+        const canvas = document.getElementById('vizCanvas');
+        const ctx = canvas.getContext('2d');
+        let vizMode = 'waveform';
+        let animationId = null;
+
+        // Scales (intervals from root)
+        const scales = {
+            'major': [0, 2, 4, 5, 7, 9, 11],
+            'minor': [0, 2, 3, 5, 7, 8, 10],
+            'dorian': [0, 2, 3, 5, 7, 9, 10],
+            'phrygian': [0, 1, 3, 5, 7, 8, 10],
+            'lydian': [0, 2, 4, 6, 7, 9, 11],
+            'mixolydian': [0, 2, 4, 5, 7, 9, 10],
+            'pentatonic': [0, 2, 4, 7, 9],
+            'pentatonic-minor': [0, 3, 5, 7, 10],
+            'blues': [0, 3, 5, 6, 7, 10],
+            'whole-tone': [0, 2, 4, 6, 8, 10],
+            'chromatic': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+            'harmonic-minor': [0, 2, 3, 5, 7, 8, 11]
+        };
+
+        const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+
+        // Initialize audio context
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioCtx.createAnalyser();
+                analyser.fftSize = 2048;
+                gainNode = audioCtx.createGain();
+                gainNode.connect(analyser);
+                analyser.connect(audioCtx.destination);
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // Resize canvas
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = 400;
+        }
+
+        // Generate fractal sequences
+        function generateMandelbrotOrbit(cx, cy, maxIter) {
+            const sequence = [];
+            let x = 0, y = 0;
+            for (let i = 0; i < maxIter; i++) {
+                const x2 = x * x - y * y + cx;
+                const y2 = 2 * x * y + cy;
+                x = x2;
+                y = y2;
+                if (x * x + y * y > 4) break;
+                sequence.push(Math.atan2(y, x) / Math.PI); // -1 to 1
+            }
+            return sequence;
+        }
+
+        function generateJuliaOrbit(startX, startY, cx, cy, maxIter) {
+            const sequence = [];
+            let x = startX, y = startY;
+            for (let i = 0; i < maxIter; i++) {
+                const x2 = x * x - y * y + cx;
+                const y2 = 2 * x * y + cy;
+                x = x2;
+                y = y2;
+                if (x * x + y * y > 4) break;
+                sequence.push(Math.atan2(y, x) / Math.PI);
+            }
+            return sequence;
+        }
+
+        function generateFibonacci(length) {
+            const sequence = [0, 1];
+            for (let i = 2; i < length; i++) {
+                sequence.push(sequence[i - 1] + sequence[i - 2]);
+            }
+            const max = Math.max(...sequence);
+            return sequence.map(n => (n / max) * 2 - 1);
+        }
+
+        function generateThueMorse(length) {
+            let sequence = [0];
+            while (sequence.length < length) {
+                sequence = sequence.concat(sequence.map(x => 1 - x));
+            }
+            return sequence.slice(0, length).map(x => x * 2 - 1);
+        }
+
+        function generateCantor(depth) {
+            const sequence = [];
+            function recurse(start, end, d) {
+                if (d === 0 || sequence.length >= 256) {
+                    sequence.push((start + end) / 2);
+                    return;
+                }
+                const third = (end - start) / 3;
+                recurse(start, start + third, d - 1);
+                recurse(start + 2 * third, end, d - 1);
+            }
+            recurse(0, 1, depth);
+            return sequence.map(x => x * 2 - 1);
+        }
+
+        function generateSierpinski(depth) {
+            const sequence = [];
+            function recurse(x, y, size, d) {
+                if (d === 0 || sequence.length >= 256) {
+                    sequence.push(x, y);
+                    return;
+                }
+                const newSize = size / 2;
+                recurse(x, y - newSize, newSize, d - 1);
+                recurse(x - newSize, y + newSize, newSize, d - 1);
+                recurse(x + newSize, y + newSize, newSize, d - 1);
+            }
+            recurse(0, 0, 1, depth);
+            return sequence.map(x => Math.max(-1, Math.min(1, x)));
+        }
+
+        function generateCollatz(start) {
+            const sequence = [start];
+            let n = start;
+            while (n !== 1 && sequence.length < 256) {
+                n = n % 2 === 0 ? n / 2 : 3 * n + 1;
+                sequence.push(n);
+            }
+            const max = Math.max(...sequence);
+            return sequence.map(x => (x / max) * 2 - 1);
+        }
+
+        function generateLogisticMap(r, length) {
+            const sequence = [];
+            let x = 0.5;
+            for (let i = 0; i < length; i++) {
+                x = r * x * (1 - x);
+                sequence.push(x * 2 - 1);
+            }
+            return sequence;
+        }
+
+        function generateHenonMap(a, b, length) {
+            const sequence = [];
+            let x = 0, y = 0;
+            for (let i = 0; i < length; i++) {
+                const newX = 1 - a * x * x + y;
+                const newY = b * x;
+                x = newX;
+                y = newY;
+                sequence.push(Math.max(-1, Math.min(1, x)));
+            }
+            return sequence;
+        }
+
+        function generatePrimeGaps(count) {
+            const primes = [2];
+            let n = 3;
+            while (primes.length < count + 1) {
+                let isPrime = true;
+                for (let i = 0; i < primes.length && primes[i] * primes[i] <= n; i++) {
+                    if (n % primes[i] === 0) {
+                        isPrime = false;
+                        break;
+                    }
+                }
+                if (isPrime) primes.push(n);
+                n += 2;
+            }
+            const gaps = [];
+            for (let i = 1; i < primes.length; i++) {
+                gaps.push(primes[i] - primes[i - 1]);
+            }
+            const max = Math.max(...gaps);
+            return gaps.map(g => (g / max) * 2 - 1);
+        }
+
+        // Generate sequence based on type
+        function generateSequence() {
+            const type = document.getElementById('sequenceType').value;
+            const length = parseInt(document.getElementById('seqLength').value);
+            const paramA = parseInt(document.getElementById('paramA').value) / 100;
+            const paramB = parseInt(document.getElementById('paramB').value) / 100;
+
+            let sequence = [];
+
+            switch (type) {
+                case 'mandelbrot':
+                    const mcx = paramA * 2 - 0.5;
+                    const mcy = paramB * 1.5;
+                    sequence = generateMandelbrotOrbit(mcx, mcy, length);
+                    break;
+                case 'julia':
+                    sequence = generateJuliaOrbit(paramA, paramB, -0.7, 0.27, length);
+                    break;
+                case 'fibonacci':
+                    sequence = generateFibonacci(length);
+                    break;
+                case 'thue-morse':
+                    sequence = generateThueMorse(length);
+                    break;
+                case 'cantor':
+                    sequence = generateCantor(Math.floor(Math.log2(length)));
+                    break;
+                case 'sierpinski':
+                    sequence = generateSierpinski(Math.floor(Math.log2(length) / 2));
+                    break;
+                case 'collatz':
+                    const startN = Math.max(2, Math.floor(Math.abs(paramA * 100) + 2));
+                    sequence = generateCollatz(startN);
+                    break;
+                case 'logistic':
+                    const r = 3.5 + paramA * 0.5;
+                    sequence = generateLogisticMap(r, length);
+                    break;
+                case 'henon':
+                    const a = 1.4 + paramA * 0.2;
+                    const b = 0.3 + paramB * 0.1;
+                    sequence = generateHenonMap(a, b, length);
+                    break;
+                case 'prime-gaps':
+                    sequence = generatePrimeGaps(length);
+                    break;
+            }
+
+            // Ensure we have enough values
+            while (sequence.length < length) {
+                sequence.push(sequence[sequence.length % Math.max(1, sequence.length - 1)] || 0);
+            }
+
+            generatedSequence = sequence.slice(0, length);
+            convertToNotes();
+            updateDisplay();
+        }
+
+        // Convert sequence values to musical notes
+        function convertToNotes() {
+            const scaleType = document.getElementById('scaleType').value;
+            const rootNote = document.querySelector('#rootSelector .scale-btn.active').dataset.note;
+            const octaveRange = parseInt(document.getElementById('octaveRange').value);
+            const baseOctave = parseInt(document.getElementById('baseOctave').value);
+
+            const scale = scales[scaleType];
+            const rootIndex = noteNames.indexOf(rootNote);
+
+            // Build available notes
+            const availableNotes = [];
+            for (let oct = 0; oct < octaveRange; oct++) {
+                for (const interval of scale) {
+                    const midiNote = (baseOctave + oct) * 12 + rootIndex + interval;
+                    availableNotes.push(midiNote);
+                }
+            }
+
+            noteSequence = generatedSequence.map(value => {
+                // Map value (-1 to 1) to note index
+                const normalizedValue = (value + 1) / 2; // 0 to 1
+                const noteIndex = Math.floor(normalizedValue * (availableNotes.length - 1));
+                return availableNotes[Math.max(0, Math.min(availableNotes.length - 1, noteIndex))];
+            });
+        }
+
+        // MIDI note to frequency
+        function midiToFreq(midi) {
+            return 440 * Math.pow(2, (midi - 69) / 12);
+        }
+
+        // MIDI note to name
+        function midiToName(midi) {
+            const noteName = noteNames[midi % 12];
+            const octave = Math.floor(midi / 12) - 1;
+            return noteName + octave;
+        }
+
+        // Update display
+        function updateDisplay() {
+            // Update sequence display
+            const container = document.getElementById('sequenceNotes');
+            container.innerHTML = noteSequence.map((midi, i) =>
+                `<span class="note-block" data-index="${i}">${midiToName(midi)}</span>`
+            ).join('');
+
+            // Update info
+            document.getElementById('infoNotes').textContent = noteSequence.length;
+
+            const tempo = parseInt(document.getElementById('tempo').value);
+            const noteDur = parseInt(document.getElementById('noteDuration').value);
+            const beatDuration = 60 / tempo;
+            const noteDuration = beatDuration * (4 / noteDur);
+            const totalDuration = noteSequence.length * noteDuration;
+            const minutes = Math.floor(totalDuration / 60);
+            const seconds = Math.floor(totalDuration % 60);
+            document.getElementById('infoDuration').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+            if (noteSequence.length > 0) {
+                const range = Math.max(...noteSequence) - Math.min(...noteSequence);
+                document.getElementById('infoRange').textContent = range + ' st';
+
+                // Calculate entropy
+                const counts = {};
+                noteSequence.forEach(n => counts[n] = (counts[n] || 0) + 1);
+                let entropy = 0;
+                const len = noteSequence.length;
+                Object.values(counts).forEach(c => {
+                    const p = c / len;
+                    entropy -= p * Math.log2(p);
+                });
+                document.getElementById('infoEntropy').textContent = entropy.toFixed(2);
+            }
+        }
+
+        // Play note
+        function playNote(freq, duration, time) {
+            const waveType = document.getElementById('waveType').value;
+            const volume = parseInt(document.getElementById('volume').value) / 100;
+
+            const osc = audioCtx.createOscillator();
+            const noteGain = audioCtx.createGain();
+
+            osc.type = waveType;
+            osc.frequency.value = freq;
+
+            noteGain.gain.setValueAtTime(0, time);
+            noteGain.gain.linearRampToValueAtTime(volume * 0.3, time + 0.01);
+            noteGain.gain.linearRampToValueAtTime(volume * 0.2, time + duration * 0.3);
+            noteGain.gain.linearRampToValueAtTime(0, time + duration);
+
+            osc.connect(noteGain);
+            noteGain.connect(gainNode);
+
+            osc.start(time);
+            osc.stop(time + duration);
+        }
+
+        // Play sequence
+        function playSequence() {
+            if (noteSequence.length === 0) return;
+
+            initAudio();
+            isPlaying = true;
+            document.getElementById('playBtn').classList.add('active');
+
+            const tempo = parseInt(document.getElementById('tempo').value);
+            const noteDur = parseInt(document.getElementById('noteDuration').value);
+            const beatDuration = 60 / tempo;
+            const noteDuration = beatDuration * (4 / noteDur);
+
+            currentNoteIndex = 0;
+            const startTime = audioCtx.currentTime;
+
+            noteSequence.forEach((midi, i) => {
+                const noteTime = startTime + i * noteDuration;
+                playNote(midiToFreq(midi), noteDuration * 0.9, noteTime);
+            });
+
+            // Visual feedback
+            function updateVisual() {
+                if (!isPlaying) return;
+
+                const elapsed = audioCtx.currentTime - startTime;
+                const newIndex = Math.floor(elapsed / noteDuration);
+
+                if (newIndex !== currentNoteIndex && newIndex < noteSequence.length) {
+                    document.querySelectorAll('.note-block').forEach(el => el.classList.remove('playing'));
+                    const noteEl = document.querySelector(`.note-block[data-index="${newIndex}"]`);
+                    if (noteEl) {
+                        noteEl.classList.add('playing');
+                        noteEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }
+                    currentNoteIndex = newIndex;
+                }
+
+                if (elapsed < noteSequence.length * noteDuration) {
+                    requestAnimationFrame(updateVisual);
+                } else {
+                    stopPlayback();
+                }
+            }
+
+            updateVisual();
+        }
+
+        // Stop playback
+        function stopPlayback() {
+            isPlaying = false;
+            document.getElementById('playBtn').classList.remove('active');
+            document.querySelectorAll('.note-block').forEach(el => el.classList.remove('playing'));
+        }
+
+        // Visualization loop
+        function visualize() {
+            ctx.fillStyle = 'rgba(10, 10, 26, 0.3)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (vizMode === 'waveform' && analyser) {
+                const bufferLength = analyser.fftSize;
+                const dataArray = new Uint8Array(bufferLength);
+                analyser.getByteTimeDomainData(dataArray);
+
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#ff6b9d';
+                ctx.beginPath();
+
+                const sliceWidth = canvas.width / bufferLength;
+                let x = 0;
+
+                for (let i = 0; i < bufferLength; i++) {
+                    const v = dataArray[i] / 128.0;
+                    const y = v * canvas.height / 2;
+
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                    x += sliceWidth;
+                }
+
+                ctx.lineTo(canvas.width, canvas.height / 2);
+                ctx.stroke();
+            } else if (vizMode === 'spectrum' && analyser) {
+                const bufferLength = analyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+                analyser.getByteFrequencyData(dataArray);
+
+                const barWidth = canvas.width / bufferLength * 2.5;
+                let x = 0;
+
+                for (let i = 0; i < bufferLength; i++) {
+                    const barHeight = (dataArray[i] / 255) * canvas.height;
+
+                    const hue = (i / bufferLength) * 60 + 330;
+                    ctx.fillStyle = `hsl(${hue}, 80%, 50%)`;
+                    ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+
+                    x += barWidth + 1;
+                    if (x > canvas.width) break;
+                }
+            } else if (vizMode === 'fractal') {
+                // Draw the fractal sequence as a line graph
+                if (generatedSequence.length > 0) {
+                    ctx.strokeStyle = '#6c5ce7';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+
+                    for (let i = 0; i < generatedSequence.length; i++) {
+                        const x = (i / (generatedSequence.length - 1)) * canvas.width;
+                        const y = ((1 - generatedSequence[i]) / 2) * canvas.height;
+
+                        if (i === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                    ctx.stroke();
+
+                    // Highlight current note
+                    if (isPlaying && currentNoteIndex < generatedSequence.length) {
+                        const x = (currentNoteIndex / (generatedSequence.length - 1)) * canvas.width;
+                        const y = ((1 - generatedSequence[currentNoteIndex]) / 2) * canvas.height;
+
+                        ctx.fillStyle = '#ff6b9d';
+                        ctx.beginPath();
+                        ctx.arc(x, y, 8, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            } else if (vizMode === 'piano') {
+                // Piano roll visualization
+                if (noteSequence.length > 0) {
+                    const minNote = Math.min(...noteSequence);
+                    const maxNote = Math.max(...noteSequence);
+                    const range = maxNote - minNote + 1;
+                    const noteHeight = canvas.height / range;
+                    const noteWidth = canvas.width / noteSequence.length;
+
+                    for (let i = 0; i < noteSequence.length; i++) {
+                        const midi = noteSequence[i];
+                        const x = i * noteWidth;
+                        const y = canvas.height - ((midi - minNote + 1) * noteHeight);
+
+                        const isPlaying = i === currentNoteIndex;
+                        const hue = ((midi - minNote) / range) * 60 + 300;
+                        ctx.fillStyle = isPlaying ? '#ff6b9d' : `hsla(${hue}, 70%, 50%, 0.8)`;
+                        ctx.fillRect(x, y, noteWidth - 1, noteHeight - 1);
+                    }
+
+                    // Draw note lines
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+                    ctx.lineWidth = 1;
+                    for (let i = 0; i <= range; i++) {
+                        const y = i * noteHeight;
+                        ctx.beginPath();
+                        ctx.moveTo(0, y);
+                        ctx.lineTo(canvas.width, y);
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            animationId = requestAnimationFrame(visualize);
+        }
+
+        // Randomize parameters
+        function randomize() {
+            document.getElementById('sequenceType').value =
+                ['mandelbrot', 'julia', 'fibonacci', 'thue-morse', 'cantor', 'sierpinski',
+                 'collatz', 'logistic', 'henon', 'prime-gaps'][Math.floor(Math.random() * 10)];
+
+            document.getElementById('scaleType').value =
+                Object.keys(scales)[Math.floor(Math.random() * Object.keys(scales).length)];
+
+            document.getElementById('paramA').value = Math.floor(Math.random() * 400 - 200);
+            document.getElementById('paramB').value = Math.floor(Math.random() * 400 - 200);
+            document.getElementById('tempo').value = Math.floor(Math.random() * 100 + 80);
+            document.getElementById('baseOctave').value = Math.floor(Math.random() * 3 + 2);
+            document.getElementById('octaveRange').value = Math.floor(Math.random() * 3 + 1);
+
+            const rootBtns = document.querySelectorAll('#rootSelector .scale-btn');
+            rootBtns.forEach(btn => btn.classList.remove('active'));
+            rootBtns[Math.floor(Math.random() * 12)].classList.add('active');
+
+            updateDisplayValues();
+            generateSequence();
+        }
+
+        // Update display values
+        function updateDisplayValues() {
+            document.getElementById('seqLengthVal').textContent = document.getElementById('seqLength').value + ' notes';
+            document.getElementById('octaveRangeVal').textContent = document.getElementById('octaveRange').value + ' octaves';
+            document.getElementById('baseOctaveVal').textContent = 'Octave ' + document.getElementById('baseOctave').value;
+            document.getElementById('tempoVal').textContent = document.getElementById('tempo').value + ' BPM';
+            document.getElementById('volumeVal').textContent = document.getElementById('volume').value + '%';
+            document.getElementById('paramAVal').textContent = (parseInt(document.getElementById('paramA').value) / 100).toFixed(2);
+            document.getElementById('paramBVal').textContent = (parseInt(document.getElementById('paramB').value) / 100).toFixed(2);
+        }
+
+        // Event listeners
+        document.getElementById('generateBtn').addEventListener('click', generateSequence);
+        document.getElementById('playBtn').addEventListener('click', playSequence);
+        document.getElementById('stopBtn').addEventListener('click', stopPlayback);
+        document.getElementById('randomBtn').addEventListener('click', randomize);
+
+        document.querySelectorAll('input[type="range"]').forEach(input => {
+            input.addEventListener('input', updateDisplayValues);
+        });
+
+        document.getElementById('scaleType').addEventListener('change', convertToNotes);
+        document.getElementById('scaleType').addEventListener('change', updateDisplay);
+        document.getElementById('octaveRange').addEventListener('change', () => { convertToNotes(); updateDisplay(); });
+        document.getElementById('baseOctave').addEventListener('change', () => { convertToNotes(); updateDisplay(); });
+
+        document.querySelectorAll('#rootSelector .scale-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('#rootSelector .scale-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                convertToNotes();
+                updateDisplay();
+            });
+        });
+
+        document.querySelectorAll('.viz-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.viz-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                vizMode = tab.dataset.viz;
+            });
+        });
+
+        // Initialize
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        updateDisplayValues();
+        generateSequence();
+        visualize();
+    </script>
+</body>
+</html>

@@ -1,0 +1,1258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Graph Visualizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a1a;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .sidebar {
+            width: 320px;
+            background: rgba(15, 15, 30, 0.95);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            overflow-y: auto;
+            z-index: 10;
+        }
+
+        header {
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        h1 {
+            font-size: 1.5em;
+            font-weight: 300;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.85em;
+        }
+
+        .section {
+            margin-bottom: 25px;
+        }
+
+        .section h3 {
+            font-size: 0.75em;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 12px;
+        }
+
+        .preset-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .preset-btn {
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.85em;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: left;
+        }
+
+        .preset-btn:hover {
+            background: rgba(102, 126, 234, 0.1);
+            border-color: rgba(102, 126, 234, 0.3);
+        }
+
+        .preset-btn.active {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2));
+            border-color: rgba(102, 126, 234, 0.5);
+            color: #fff;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group label {
+            display: block;
+            font-size: 0.8em;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 6px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            -webkit-appearance: none;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            cursor: pointer;
+        }
+
+        select {
+            width: 100%;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 6px;
+            color: #fff;
+            font-size: 0.85em;
+        }
+
+        .value-display {
+            text-align: right;
+            font-size: 0.75em;
+            color: #667eea;
+            margin-top: 3px;
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        button {
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 0.8em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .stat-item {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.2em;
+            font-weight: 300;
+            color: #667eea;
+            font-family: monospace;
+        }
+
+        .stat-label {
+            font-size: 0.65em;
+            color: rgba(255, 255, 255, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .node-info {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.85em;
+        }
+
+        .node-info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .node-info-row:last-child {
+            border-bottom: none;
+        }
+
+        .node-info-label {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .node-info-value {
+            color: #fff;
+            font-family: monospace;
+        }
+
+        .canvas-container {
+            flex: 1;
+            position: relative;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .legend {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(15, 15, 30, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 0.8em;
+        }
+
+        .legend-title {
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 10px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 5px;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .instructions {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.6);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 0.75em;
+            color: rgba(255, 255, 255, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <header>
+                <h1>Network Graph</h1>
+                <p class="subtitle">Force-directed graph visualization</p>
+            </header>
+
+            <div class="section">
+                <h3>Presets</h3>
+                <div class="preset-list">
+                    <div class="preset-btn active" data-preset="random">Random Network</div>
+                    <div class="preset-btn" data-preset="small-world">Small World</div>
+                    <div class="preset-btn" data-preset="scale-free">Scale-Free (Barabasi-Albert)</div>
+                    <div class="preset-btn" data-preset="tree">Tree Structure</div>
+                    <div class="preset-btn" data-preset="grid">Grid Lattice</div>
+                    <div class="preset-btn" data-preset="complete">Complete Graph</div>
+                    <div class="preset-btn" data-preset="bipartite">Bipartite Graph</div>
+                    <div class="preset-btn" data-preset="karate">Zachary's Karate Club</div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>Layout</h3>
+                <div class="control-group">
+                    <label>Repulsion Force</label>
+                    <input type="range" id="repulsion" min="100" max="2000" value="500">
+                    <div class="value-display" id="repulsionVal">500</div>
+                </div>
+                <div class="control-group">
+                    <label>Link Distance</label>
+                    <input type="range" id="linkDistance" min="20" max="200" value="80">
+                    <div class="value-display" id="linkDistVal">80</div>
+                </div>
+                <div class="control-group">
+                    <label>Gravity</label>
+                    <input type="range" id="gravity" min="0" max="100" value="30">
+                    <div class="value-display" id="gravityVal">0.30</div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>Visualization</h3>
+                <div class="control-group">
+                    <label>Color By</label>
+                    <select id="colorBy">
+                        <option value="community">Community</option>
+                        <option value="degree">Degree</option>
+                        <option value="betweenness">Betweenness</option>
+                        <option value="closeness">Closeness</option>
+                        <option value="pagerank">PageRank</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Node Size</label>
+                    <select id="sizeBy">
+                        <option value="fixed">Fixed</option>
+                        <option value="degree">Degree</option>
+                        <option value="betweenness">Betweenness</option>
+                        <option value="pagerank">PageRank</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>Graph Statistics</h3>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value" id="nodeCount">0</div>
+                        <div class="stat-label">Nodes</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="edgeCount">0</div>
+                        <div class="stat-label">Edges</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="density">0.00</div>
+                        <div class="stat-label">Density</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="avgDegree">0.0</div>
+                        <div class="stat-label">Avg Degree</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="communities">0</div>
+                        <div class="stat-label">Communities</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="clustering">0.00</div>
+                        <div class="stat-label">Clustering</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>Selected Node</h3>
+                <div class="node-info" id="nodeInfo">
+                    <div class="node-info-row">
+                        <span class="node-info-label">ID</span>
+                        <span class="node-info-value" id="selectedId">-</span>
+                    </div>
+                    <div class="node-info-row">
+                        <span class="node-info-label">Degree</span>
+                        <span class="node-info-value" id="selectedDegree">-</span>
+                    </div>
+                    <div class="node-info-row">
+                        <span class="node-info-label">Betweenness</span>
+                        <span class="node-info-value" id="selectedBetweenness">-</span>
+                    </div>
+                    <div class="node-info-row">
+                        <span class="node-info-label">PageRank</span>
+                        <span class="node-info-value" id="selectedPagerank">-</span>
+                    </div>
+                    <div class="node-info-row">
+                        <span class="node-info-label">Community</span>
+                        <span class="node-info-value" id="selectedCommunity">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="buttons">
+                <button id="resetBtn">Reset Layout</button>
+                <button id="freezeBtn">Freeze</button>
+                <button id="exportBtn">Export SVG</button>
+                <button id="randomizeBtn">Randomize</button>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="canvas"></canvas>
+            <div class="legend" id="legend"></div>
+            <div class="instructions">Drag nodes | Scroll to zoom | Double-click to pin</div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Graph data
+        let nodes = [];
+        let edges = [];
+        let simulation = { alpha: 1 };
+
+        // Interaction state
+        let selectedNode = null;
+        let draggedNode = null;
+        let hoveredNode = null;
+        let zoom = 1;
+        let panX = 0, panY = 0;
+        let isDragging = false;
+        let lastMouseX = 0, lastMouseY = 0;
+        let isPanning = false;
+        let frozen = false;
+
+        // Layout parameters
+        let repulsion = 500;
+        let linkDistance = 80;
+        let gravity = 0.3;
+
+        // Visualization options
+        let colorBy = 'community';
+        let sizeBy = 'fixed';
+
+        // Community colors
+        const communityColors = [
+            '#667eea', '#764ba2', '#f093fb', '#f5576c',
+            '#4facfe', '#00f2fe', '#43e97b', '#38f9d7',
+            '#fa709a', '#fee140', '#a8edea', '#fed6e3'
+        ];
+
+        // Resize canvas
+        function resize() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+            panX = canvas.width / 2;
+            panY = canvas.height / 2;
+        }
+
+        // Generate random graph
+        function generateRandomGraph(n = 50, p = 0.1) {
+            nodes = [];
+            edges = [];
+
+            for (let i = 0; i < n; i++) {
+                nodes.push({
+                    id: i,
+                    x: Math.random() * 400 - 200,
+                    y: Math.random() * 400 - 200,
+                    vx: 0, vy: 0,
+                    pinned: false
+                });
+            }
+
+            for (let i = 0; i < n; i++) {
+                for (let j = i + 1; j < n; j++) {
+                    if (Math.random() < p) {
+                        edges.push({ source: i, target: j });
+                    }
+                }
+            }
+
+            calculateMetrics();
+        }
+
+        // Generate small world graph (Watts-Strogatz)
+        function generateSmallWorld(n = 50, k = 4, p = 0.1) {
+            nodes = [];
+            edges = [];
+
+            for (let i = 0; i < n; i++) {
+                const angle = (2 * Math.PI * i) / n;
+                nodes.push({
+                    id: i,
+                    x: Math.cos(angle) * 200,
+                    y: Math.sin(angle) * 200,
+                    vx: 0, vy: 0,
+                    pinned: false
+                });
+            }
+
+            // Ring lattice
+            for (let i = 0; i < n; i++) {
+                for (let j = 1; j <= k / 2; j++) {
+                    edges.push({ source: i, target: (i + j) % n });
+                }
+            }
+
+            // Rewire
+            for (let i = 0; i < edges.length; i++) {
+                if (Math.random() < p) {
+                    const newTarget = Math.floor(Math.random() * n);
+                    if (newTarget !== edges[i].source) {
+                        edges[i].target = newTarget;
+                    }
+                }
+            }
+
+            calculateMetrics();
+        }
+
+        // Generate scale-free graph (Barabasi-Albert)
+        function generateScaleFree(n = 50, m = 2) {
+            nodes = [];
+            edges = [];
+
+            // Start with m connected nodes
+            for (let i = 0; i < m; i++) {
+                nodes.push({
+                    id: i,
+                    x: Math.random() * 400 - 200,
+                    y: Math.random() * 400 - 200,
+                    vx: 0, vy: 0,
+                    pinned: false
+                });
+            }
+            for (let i = 0; i < m; i++) {
+                for (let j = i + 1; j < m; j++) {
+                    edges.push({ source: i, target: j });
+                }
+            }
+
+            // Add nodes with preferential attachment
+            for (let i = m; i < n; i++) {
+                nodes.push({
+                    id: i,
+                    x: Math.random() * 400 - 200,
+                    y: Math.random() * 400 - 200,
+                    vx: 0, vy: 0,
+                    pinned: false
+                });
+
+                const degrees = nodes.map((_, idx) => {
+                    let deg = 0;
+                    edges.forEach(e => {
+                        if (e.source === idx || e.target === idx) deg++;
+                    });
+                    return deg;
+                });
+
+                const totalDegree = degrees.reduce((a, b) => a + b, 0);
+                const targets = new Set();
+
+                while (targets.size < m) {
+                    let r = Math.random() * totalDegree;
+                    for (let j = 0; j < i; j++) {
+                        r -= degrees[j];
+                        if (r <= 0) {
+                            targets.add(j);
+                            break;
+                        }
+                    }
+                }
+
+                targets.forEach(t => edges.push({ source: i, target: t }));
+            }
+
+            calculateMetrics();
+        }
+
+        // Generate tree
+        function generateTree(depth = 4, branching = 3) {
+            nodes = [];
+            edges = [];
+            let id = 0;
+
+            function addNode(parentId, level, x, y) {
+                const nodeId = id++;
+                nodes.push({
+                    id: nodeId,
+                    x: x,
+                    y: y,
+                    vx: 0, vy: 0,
+                    pinned: false
+                });
+
+                if (parentId !== null) {
+                    edges.push({ source: parentId, target: nodeId });
+                }
+
+                if (level < depth) {
+                    const spread = 300 / Math.pow(2, level);
+                    for (let i = 0; i < branching; i++) {
+                        const childX = x + (i - (branching - 1) / 2) * spread;
+                        const childY = y + 80;
+                        addNode(nodeId, level + 1, childX, childY);
+                    }
+                }
+            }
+
+            addNode(null, 0, 0, -200);
+            calculateMetrics();
+        }
+
+        // Generate grid
+        function generateGrid(rows = 7, cols = 7) {
+            nodes = [];
+            edges = [];
+
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const id = r * cols + c;
+                    nodes.push({
+                        id: id,
+                        x: (c - cols / 2) * 60,
+                        y: (r - rows / 2) * 60,
+                        vx: 0, vy: 0,
+                        pinned: false
+                    });
+
+                    if (c > 0) edges.push({ source: id, target: id - 1 });
+                    if (r > 0) edges.push({ source: id, target: id - cols });
+                }
+            }
+
+            calculateMetrics();
+        }
+
+        // Generate complete graph
+        function generateComplete(n = 10) {
+            nodes = [];
+            edges = [];
+
+            for (let i = 0; i < n; i++) {
+                const angle = (2 * Math.PI * i) / n;
+                nodes.push({
+                    id: i,
+                    x: Math.cos(angle) * 150,
+                    y: Math.sin(angle) * 150,
+                    vx: 0, vy: 0,
+                    pinned: false
+                });
+            }
+
+            for (let i = 0; i < n; i++) {
+                for (let j = i + 1; j < n; j++) {
+                    edges.push({ source: i, target: j });
+                }
+            }
+
+            calculateMetrics();
+        }
+
+        // Generate bipartite graph
+        function generateBipartite(n1 = 5, n2 = 8, p = 0.5) {
+            nodes = [];
+            edges = [];
+
+            for (let i = 0; i < n1; i++) {
+                nodes.push({
+                    id: i,
+                    x: -150,
+                    y: (i - n1 / 2) * 50,
+                    vx: 0, vy: 0,
+                    pinned: false,
+                    group: 0
+                });
+            }
+
+            for (let i = 0; i < n2; i++) {
+                nodes.push({
+                    id: n1 + i,
+                    x: 150,
+                    y: (i - n2 / 2) * 50,
+                    vx: 0, vy: 0,
+                    pinned: false,
+                    group: 1
+                });
+            }
+
+            for (let i = 0; i < n1; i++) {
+                for (let j = 0; j < n2; j++) {
+                    if (Math.random() < p) {
+                        edges.push({ source: i, target: n1 + j });
+                    }
+                }
+            }
+
+            calculateMetrics();
+        }
+
+        // Zachary's Karate Club
+        function generateKarate() {
+            nodes = [];
+            edges = [];
+
+            for (let i = 0; i < 34; i++) {
+                nodes.push({
+                    id: i,
+                    x: Math.random() * 400 - 200,
+                    y: Math.random() * 400 - 200,
+                    vx: 0, vy: 0,
+                    pinned: false
+                });
+            }
+
+            const edgeList = [
+                [0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7],[0,8],[0,10],[0,11],[0,12],[0,13],[0,17],[0,19],[0,21],[0,31],
+                [1,2],[1,3],[1,7],[1,13],[1,17],[1,19],[1,21],[1,30],
+                [2,3],[2,7],[2,8],[2,9],[2,13],[2,27],[2,28],[2,32],
+                [3,7],[3,12],[3,13],
+                [4,6],[4,10],
+                [5,6],[5,10],[5,16],
+                [6,16],
+                [8,30],[8,32],[8,33],
+                [9,33],
+                [13,33],
+                [14,32],[14,33],
+                [15,32],[15,33],
+                [18,32],[18,33],
+                [19,33],
+                [20,32],[20,33],
+                [22,32],[22,33],
+                [23,25],[23,27],[23,29],[23,32],[23,33],
+                [24,25],[24,27],[24,31],
+                [25,31],
+                [26,29],[26,33],
+                [27,33],
+                [28,31],[28,33],
+                [29,32],[29,33],
+                [30,32],[30,33],
+                [31,32],[31,33],
+                [32,33]
+            ];
+
+            edgeList.forEach(([s, t]) => edges.push({ source: s, target: t }));
+            calculateMetrics();
+        }
+
+        // Calculate graph metrics
+        function calculateMetrics() {
+            // Degree
+            nodes.forEach(node => {
+                node.degree = edges.filter(e => e.source === node.id || e.target === node.id).length;
+            });
+
+            // PageRank (simplified)
+            const d = 0.85;
+            const iterations = 20;
+            nodes.forEach(n => n.pagerank = 1 / nodes.length);
+
+            for (let iter = 0; iter < iterations; iter++) {
+                const newRanks = nodes.map(() => (1 - d) / nodes.length);
+                edges.forEach(e => {
+                    const sourceDegree = nodes[e.source].degree || 1;
+                    newRanks[e.target] += d * nodes[e.source].pagerank / sourceDegree;
+                    newRanks[e.source] += d * nodes[e.target].pagerank / (nodes[e.target].degree || 1);
+                });
+                nodes.forEach((n, i) => n.pagerank = newRanks[i]);
+            }
+
+            // Betweenness (simplified approximation)
+            nodes.forEach(n => n.betweenness = 0);
+            const sample = Math.min(20, nodes.length);
+            for (let i = 0; i < sample; i++) {
+                const start = Math.floor(Math.random() * nodes.length);
+                const distances = bfs(start);
+                distances.forEach((dist, j) => {
+                    if (dist > 1) nodes[j].betweenness += 1 / dist;
+                });
+            }
+
+            // Closeness
+            nodes.forEach((node, i) => {
+                const distances = bfs(i);
+                const totalDist = distances.reduce((a, b) => a + (b === Infinity ? 0 : b), 0);
+                node.closeness = totalDist > 0 ? (nodes.length - 1) / totalDist : 0;
+            });
+
+            // Community detection (Louvain-inspired greedy)
+            detectCommunities();
+
+            // Update stats
+            updateStats();
+        }
+
+        // BFS for distances
+        function bfs(start) {
+            const distances = nodes.map(() => Infinity);
+            distances[start] = 0;
+            const queue = [start];
+
+            while (queue.length > 0) {
+                const current = queue.shift();
+                edges.forEach(e => {
+                    let neighbor = null;
+                    if (e.source === current) neighbor = e.target;
+                    else if (e.target === current) neighbor = e.source;
+
+                    if (neighbor !== null && distances[neighbor] === Infinity) {
+                        distances[neighbor] = distances[current] + 1;
+                        queue.push(neighbor);
+                    }
+                });
+            }
+
+            return distances;
+        }
+
+        // Simple community detection
+        function detectCommunities() {
+            // Initialize each node in its own community
+            nodes.forEach((n, i) => n.community = i);
+
+            // Greedy optimization
+            let improved = true;
+            let iterations = 0;
+
+            while (improved && iterations < 10) {
+                improved = false;
+                iterations++;
+
+                nodes.forEach(node => {
+                    const neighborCommunities = {};
+
+                    edges.forEach(e => {
+                        let neighbor = null;
+                        if (e.source === node.id) neighbor = nodes[e.target];
+                        else if (e.target === node.id) neighbor = nodes[e.source];
+
+                        if (neighbor) {
+                            neighborCommunities[neighbor.community] =
+                                (neighborCommunities[neighbor.community] || 0) + 1;
+                        }
+                    });
+
+                    let bestCommunity = node.community;
+                    let maxCount = 0;
+
+                    Object.entries(neighborCommunities).forEach(([comm, count]) => {
+                        if (count > maxCount) {
+                            maxCount = count;
+                            bestCommunity = parseInt(comm);
+                        }
+                    });
+
+                    if (bestCommunity !== node.community) {
+                        node.community = bestCommunity;
+                        improved = true;
+                    }
+                });
+            }
+
+            // Renumber communities
+            const communities = [...new Set(nodes.map(n => n.community))];
+            const communityMap = {};
+            communities.forEach((c, i) => communityMap[c] = i);
+            nodes.forEach(n => n.community = communityMap[n.community]);
+        }
+
+        // Update statistics display
+        function updateStats() {
+            document.getElementById('nodeCount').textContent = nodes.length;
+            document.getElementById('edgeCount').textContent = edges.length;
+
+            const maxEdges = nodes.length * (nodes.length - 1) / 2;
+            const density = maxEdges > 0 ? (edges.length / maxEdges).toFixed(3) : 0;
+            document.getElementById('density').textContent = density;
+
+            const avgDegree = nodes.length > 0 ?
+                (nodes.reduce((sum, n) => sum + n.degree, 0) / nodes.length).toFixed(1) : 0;
+            document.getElementById('avgDegree').textContent = avgDegree;
+
+            const numCommunities = new Set(nodes.map(n => n.community)).size;
+            document.getElementById('communities').textContent = numCommunities;
+
+            // Calculate clustering coefficient
+            let totalClustering = 0;
+            nodes.forEach(node => {
+                const neighbors = [];
+                edges.forEach(e => {
+                    if (e.source === node.id) neighbors.push(e.target);
+                    else if (e.target === node.id) neighbors.push(e.source);
+                });
+
+                if (neighbors.length < 2) return;
+
+                let triangles = 0;
+                for (let i = 0; i < neighbors.length; i++) {
+                    for (let j = i + 1; j < neighbors.length; j++) {
+                        if (edges.some(e =>
+                            (e.source === neighbors[i] && e.target === neighbors[j]) ||
+                            (e.source === neighbors[j] && e.target === neighbors[i])
+                        )) {
+                            triangles++;
+                        }
+                    }
+                }
+
+                const maxTriangles = neighbors.length * (neighbors.length - 1) / 2;
+                totalClustering += triangles / maxTriangles;
+            });
+
+            const clustering = nodes.length > 0 ? (totalClustering / nodes.length).toFixed(3) : 0;
+            document.getElementById('clustering').textContent = clustering;
+
+            updateLegend();
+        }
+
+        // Update legend
+        function updateLegend() {
+            const legend = document.getElementById('legend');
+            const numCommunities = new Set(nodes.map(n => n.community)).size;
+
+            let html = `<div class="legend-title">${colorBy.charAt(0).toUpperCase() + colorBy.slice(1)}</div>`;
+
+            if (colorBy === 'community') {
+                for (let i = 0; i < Math.min(numCommunities, 6); i++) {
+                    html += `<div class="legend-item">
+                        <div class="legend-color" style="background: ${communityColors[i % communityColors.length]};"></div>
+                        <span>Community ${i + 1}</span>
+                    </div>`;
+                }
+            } else {
+                html += `<div class="legend-item">
+                    <div class="legend-color" style="background: linear-gradient(to right, #667eea, #f5576c);"></div>
+                    <span>Low → High</span>
+                </div>`;
+            }
+
+            legend.innerHTML = html;
+        }
+
+        // Force simulation step
+        function simulate() {
+            if (frozen || simulation.alpha < 0.001) return;
+
+            simulation.alpha *= 0.99;
+
+            // Repulsion (all pairs)
+            for (let i = 0; i < nodes.length; i++) {
+                for (let j = i + 1; j < nodes.length; j++) {
+                    const dx = nodes[j].x - nodes[i].x;
+                    const dy = nodes[j].y - nodes[i].y;
+                    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                    const force = repulsion / (dist * dist);
+
+                    const fx = (dx / dist) * force * simulation.alpha;
+                    const fy = (dy / dist) * force * simulation.alpha;
+
+                    if (!nodes[i].pinned) { nodes[i].vx -= fx; nodes[i].vy -= fy; }
+                    if (!nodes[j].pinned) { nodes[j].vx += fx; nodes[j].vy += fy; }
+                }
+            }
+
+            // Attraction (edges)
+            edges.forEach(e => {
+                const source = nodes[e.source];
+                const target = nodes[e.target];
+
+                const dx = target.x - source.x;
+                const dy = target.y - source.y;
+                const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                const force = (dist - linkDistance) * 0.1 * simulation.alpha;
+
+                const fx = (dx / dist) * force;
+                const fy = (dy / dist) * force;
+
+                if (!source.pinned) { source.vx += fx; source.vy += fy; }
+                if (!target.pinned) { target.vx -= fx; target.vy -= fy; }
+            });
+
+            // Gravity (center attraction)
+            nodes.forEach(node => {
+                if (!node.pinned) {
+                    node.vx -= node.x * gravity * 0.01 * simulation.alpha;
+                    node.vy -= node.y * gravity * 0.01 * simulation.alpha;
+                }
+            });
+
+            // Update positions
+            nodes.forEach(node => {
+                if (!node.pinned) {
+                    node.vx *= 0.9;
+                    node.vy *= 0.9;
+                    node.x += node.vx;
+                    node.y += node.vy;
+                }
+            });
+        }
+
+        // Get node color
+        function getNodeColor(node) {
+            if (colorBy === 'community') {
+                return communityColors[node.community % communityColors.length];
+            }
+
+            const metric = node[colorBy] || 0;
+            const maxMetric = Math.max(...nodes.map(n => n[colorBy] || 0));
+            const ratio = maxMetric > 0 ? metric / maxMetric : 0;
+
+            // Gradient from blue to red
+            const r = Math.floor(ratio * 245 + (1 - ratio) * 102);
+            const g = Math.floor(ratio * 87 + (1 - ratio) * 126);
+            const b = Math.floor(ratio * 108 + (1 - ratio) * 234);
+
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        // Get node size
+        function getNodeSize(node) {
+            if (sizeBy === 'fixed') return 8;
+
+            const metric = node[sizeBy] || 0;
+            const maxMetric = Math.max(...nodes.map(n => n[sizeBy] || 0));
+            const ratio = maxMetric > 0 ? metric / maxMetric : 0;
+
+            return 5 + ratio * 20;
+        }
+
+        // Draw
+        function draw() {
+            ctx.fillStyle = '#0a0a1a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.save();
+            ctx.translate(panX, panY);
+            ctx.scale(zoom, zoom);
+
+            // Draw edges
+            ctx.strokeStyle = 'rgba(102, 126, 234, 0.2)';
+            ctx.lineWidth = 1 / zoom;
+            edges.forEach(e => {
+                const source = nodes[e.source];
+                const target = nodes[e.target];
+
+                // Highlight edges of selected/hovered node
+                if ((selectedNode && (e.source === selectedNode.id || e.target === selectedNode.id)) ||
+                    (hoveredNode && (e.source === hoveredNode.id || e.target === hoveredNode.id))) {
+                    ctx.strokeStyle = 'rgba(102, 126, 234, 0.8)';
+                    ctx.lineWidth = 2 / zoom;
+                } else {
+                    ctx.strokeStyle = 'rgba(102, 126, 234, 0.2)';
+                    ctx.lineWidth = 1 / zoom;
+                }
+
+                ctx.beginPath();
+                ctx.moveTo(source.x, source.y);
+                ctx.lineTo(target.x, target.y);
+                ctx.stroke();
+            });
+
+            // Draw nodes
+            nodes.forEach(node => {
+                const size = getNodeSize(node);
+                const color = getNodeColor(node);
+
+                // Highlight selected/hovered
+                if (node === selectedNode || node === hoveredNode) {
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                    ctx.beginPath();
+                    ctx.arc(node.x, node.y, size + 4, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, size, 0, Math.PI * 2);
+                ctx.fill();
+
+                if (node.pinned) {
+                    ctx.strokeStyle = '#fff';
+                    ctx.lineWidth = 2 / zoom;
+                    ctx.stroke();
+                }
+            });
+
+            ctx.restore();
+        }
+
+        // Animation loop
+        function animate() {
+            simulate();
+            draw();
+            requestAnimationFrame(animate);
+        }
+
+        // Mouse event handling
+        function getMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: (e.clientX - rect.left - panX) / zoom,
+                y: (e.clientY - rect.top - panY) / zoom
+            };
+        }
+
+        function findNodeAt(pos) {
+            for (let i = nodes.length - 1; i >= 0; i--) {
+                const node = nodes[i];
+                const size = getNodeSize(node);
+                const dx = pos.x - node.x;
+                const dy = pos.y - node.y;
+                if (dx * dx + dy * dy < size * size) {
+                    return node;
+                }
+            }
+            return null;
+        }
+
+        canvas.addEventListener('mousedown', e => {
+            const pos = getMousePos(e);
+            const node = findNodeAt(pos);
+
+            if (node) {
+                draggedNode = node;
+                selectedNode = node;
+                updateSelectedInfo();
+            } else {
+                isPanning = true;
+            }
+
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+        });
+
+        canvas.addEventListener('mousemove', e => {
+            const pos = getMousePos(e);
+
+            if (draggedNode) {
+                draggedNode.x = pos.x;
+                draggedNode.y = pos.y;
+                draggedNode.vx = 0;
+                draggedNode.vy = 0;
+                simulation.alpha = 0.3;
+            } else if (isPanning) {
+                panX += e.clientX - lastMouseX;
+                panY += e.clientY - lastMouseY;
+                lastMouseX = e.clientX;
+                lastMouseY = e.clientY;
+            } else {
+                hoveredNode = findNodeAt(pos);
+                canvas.style.cursor = hoveredNode ? 'pointer' : 'default';
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            draggedNode = null;
+            isPanning = false;
+        });
+
+        canvas.addEventListener('dblclick', e => {
+            const pos = getMousePos(e);
+            const node = findNodeAt(pos);
+            if (node) {
+                node.pinned = !node.pinned;
+            }
+        });
+
+        canvas.addEventListener('wheel', e => {
+            e.preventDefault();
+            const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+            zoom *= zoomFactor;
+            zoom = Math.max(0.1, Math.min(5, zoom));
+        });
+
+        // Update selected node info
+        function updateSelectedInfo() {
+            if (!selectedNode) {
+                document.getElementById('selectedId').textContent = '-';
+                document.getElementById('selectedDegree').textContent = '-';
+                document.getElementById('selectedBetweenness').textContent = '-';
+                document.getElementById('selectedPagerank').textContent = '-';
+                document.getElementById('selectedCommunity').textContent = '-';
+                return;
+            }
+
+            document.getElementById('selectedId').textContent = selectedNode.id;
+            document.getElementById('selectedDegree').textContent = selectedNode.degree;
+            document.getElementById('selectedBetweenness').textContent = selectedNode.betweenness.toFixed(3);
+            document.getElementById('selectedPagerank').textContent = selectedNode.pagerank.toFixed(4);
+            document.getElementById('selectedCommunity').textContent = selectedNode.community + 1;
+        }
+
+        // Event listeners
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                const preset = btn.dataset.preset;
+                switch (preset) {
+                    case 'random': generateRandomGraph(); break;
+                    case 'small-world': generateSmallWorld(); break;
+                    case 'scale-free': generateScaleFree(); break;
+                    case 'tree': generateTree(); break;
+                    case 'grid': generateGrid(); break;
+                    case 'complete': generateComplete(); break;
+                    case 'bipartite': generateBipartite(); break;
+                    case 'karate': generateKarate(); break;
+                }
+                simulation.alpha = 1;
+            });
+        });
+
+        document.getElementById('repulsion').addEventListener('input', e => {
+            repulsion = parseInt(e.target.value);
+            document.getElementById('repulsionVal').textContent = repulsion;
+            simulation.alpha = 0.3;
+        });
+
+        document.getElementById('linkDistance').addEventListener('input', e => {
+            linkDistance = parseInt(e.target.value);
+            document.getElementById('linkDistVal').textContent = linkDistance;
+            simulation.alpha = 0.3;
+        });
+
+        document.getElementById('gravity').addEventListener('input', e => {
+            gravity = parseInt(e.target.value) / 100;
+            document.getElementById('gravityVal').textContent = gravity.toFixed(2);
+            simulation.alpha = 0.3;
+        });
+
+        document.getElementById('colorBy').addEventListener('change', e => {
+            colorBy = e.target.value;
+            updateLegend();
+        });
+
+        document.getElementById('sizeBy').addEventListener('change', e => {
+            sizeBy = e.target.value;
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            nodes.forEach(node => {
+                node.x = Math.random() * 400 - 200;
+                node.y = Math.random() * 400 - 200;
+                node.vx = 0;
+                node.vy = 0;
+                node.pinned = false;
+            });
+            simulation.alpha = 1;
+        });
+
+        document.getElementById('freezeBtn').addEventListener('click', () => {
+            frozen = !frozen;
+            document.getElementById('freezeBtn').textContent = frozen ? 'Unfreeze' : 'Freeze';
+        });
+
+        document.getElementById('randomizeBtn').addEventListener('click', () => {
+            generateRandomGraph(50, 0.08 + Math.random() * 0.12);
+            simulation.alpha = 1;
+        });
+
+        // Initialize
+        window.addEventListener('resize', resize);
+        resize();
+        generateRandomGraph();
+        animate();
+    </script>
+</body>
+</html>

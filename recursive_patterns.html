@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recursive Pattern Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #00ff88, #00ffff, #0088ff, #8800ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 30px;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 20px;
+        }
+
+        .panel {
+            background: rgba(20, 20, 30, 0.8);
+            border: 1px solid #333;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .panel h2 {
+            color: #00ff88;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+
+        .canvas-container {
+            position: relative;
+            background: #000;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        #mainCanvas {
+            width: 100%;
+            height: 800px;
+        }
+
+        .pattern-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .pattern-btn {
+            padding: 12px 8px;
+            background: rgba(100, 100, 100, 0.2);
+            border: 1px solid #444;
+            border-radius: 8px;
+            color: #aaa;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.8em;
+            text-align: center;
+        }
+
+        .pattern-btn:hover {
+            background: rgba(0, 255, 136, 0.2);
+            border-color: #00ff88;
+        }
+
+        .pattern-btn.active {
+            background: rgba(0, 255, 136, 0.2);
+            border-color: #00ff88;
+            color: #fff;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .controls button {
+            flex: 1;
+            padding: 12px;
+            background: linear-gradient(90deg, #00ff88, #00ffff);
+            border: none;
+            border-radius: 5px;
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .controls button:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.4);
+        }
+
+        .controls button.secondary {
+            background: linear-gradient(90deg, #444, #666);
+            color: #fff;
+        }
+
+        .param-section {
+            margin-bottom: 20px;
+        }
+
+        .param-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .param-row label {
+            flex: 0 0 80px;
+            color: #aaa;
+            font-size: 0.85em;
+        }
+
+        .param-row input[type="range"] {
+            flex: 1;
+        }
+
+        .param-row span {
+            width: 45px;
+            text-align: right;
+            font-size: 0.85em;
+            color: #00ff88;
+        }
+
+        .color-scheme {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .color-btn {
+            height: 30px;
+            border: 2px solid transparent;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .color-btn.active {
+            border-color: #fff;
+            transform: scale(1.1);
+        }
+
+        .info-box {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            font-size: 0.85em;
+            line-height: 1.6;
+            color: #aaa;
+        }
+
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+            margin-bottom: 8px;
+        }
+
+        .stats-label {
+            color: #888;
+        }
+
+        .stats-value {
+            color: #00ff88;
+        }
+
+        .animation-toggle {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .toggle-btn {
+            flex: 1;
+            padding: 8px;
+            background: rgba(100, 100, 100, 0.2);
+            border: 1px solid #444;
+            border-radius: 5px;
+            color: #aaa;
+            cursor: pointer;
+            font-size: 0.8em;
+        }
+
+        .toggle-btn.active {
+            background: rgba(0, 255, 136, 0.2);
+            border-color: #00ff88;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Recursive Pattern Generator</h1>
+        <p class="subtitle">Self-Similar Fractals | L-Systems | Infinite Complexity from Simple Rules</p>
+
+        <div class="main-layout">
+            <div class="panel">
+                <h2>Recursive Canvas</h2>
+                <div class="canvas-container">
+                    <canvas id="mainCanvas"></canvas>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>Pattern Type</h2>
+                <div class="pattern-grid">
+                    <button class="pattern-btn active" data-pattern="sierpinski">Sierpinski</button>
+                    <button class="pattern-btn" data-pattern="koch">Koch Snowflake</button>
+                    <button class="pattern-btn" data-pattern="tree">Fractal Tree</button>
+                    <button class="pattern-btn" data-pattern="dragon">Dragon Curve</button>
+                    <button class="pattern-btn" data-pattern="hilbert">Hilbert Curve</button>
+                    <button class="pattern-btn" data-pattern="pentagon">Penrose</button>
+                    <button class="pattern-btn" data-pattern="carpet">Sierpinski Carpet</button>
+                    <button class="pattern-btn" data-pattern="cantor">Cantor Set</button>
+                    <button class="pattern-btn" data-pattern="barnsley">Barnsley Fern</button>
+                    <button class="pattern-btn" data-pattern="spiral">Golden Spiral</button>
+                </div>
+
+                <div class="controls">
+                    <button onclick="generate()">Generate</button>
+                    <button onclick="animate()" class="secondary">Animate</button>
+                </div>
+
+                <h2>Parameters</h2>
+                <div class="param-section">
+                    <div class="param-row">
+                        <label>Depth:</label>
+                        <input type="range" id="depth" min="1" max="12" value="6">
+                        <span id="depthValue">6</span>
+                    </div>
+                    <div class="param-row">
+                        <label>Scale:</label>
+                        <input type="range" id="scale" min="50" max="150" value="100">
+                        <span id="scaleValue">100%</span>
+                    </div>
+                    <div class="param-row">
+                        <label>Rotation:</label>
+                        <input type="range" id="rotation" min="0" max="360" value="0">
+                        <span id="rotationValue">0°</span>
+                    </div>
+                    <div class="param-row">
+                        <label>Angle:</label>
+                        <input type="range" id="angle" min="10" max="90" value="30">
+                        <span id="angleValue">30°</span>
+                    </div>
+                    <div class="param-row">
+                        <label>Line Width:</label>
+                        <input type="range" id="lineWidth" min="1" max="5" value="1" step="0.5">
+                        <span id="lineWidthValue">1</span>
+                    </div>
+                </div>
+
+                <h2>Animation</h2>
+                <div class="animation-toggle">
+                    <button class="toggle-btn active" data-anim="none">Static</button>
+                    <button class="toggle-btn" data-anim="grow">Grow</button>
+                    <button class="toggle-btn" data-anim="rotate">Rotate</button>
+                    <button class="toggle-btn" data-anim="pulse">Pulse</button>
+                </div>
+
+                <h2>Color Scheme</h2>
+                <div class="color-scheme">
+                    <div class="color-btn active" data-scheme="neon" style="background: linear-gradient(135deg, #00ff88, #00ffff);"></div>
+                    <div class="color-btn" data-scheme="fire" style="background: linear-gradient(135deg, #ff0000, #ffff00);"></div>
+                    <div class="color-btn" data-scheme="ocean" style="background: linear-gradient(135deg, #0066ff, #00ffff);"></div>
+                    <div class="color-btn" data-scheme="purple" style="background: linear-gradient(135deg, #8800ff, #ff00ff);"></div>
+                    <div class="color-btn" data-scheme="rainbow" style="background: linear-gradient(90deg, red, orange, yellow, green, blue, purple);"></div>
+                    <div class="color-btn" data-scheme="mono" style="background: linear-gradient(135deg, #fff, #888);"></div>
+                    <div class="color-btn" data-scheme="earth" style="background: linear-gradient(135deg, #8b4513, #228b22);"></div>
+                    <div class="color-btn" data-scheme="gold" style="background: linear-gradient(135deg, #ffd700, #ff8c00);"></div>
+                </div>
+
+                <h2>Statistics</h2>
+                <div class="stats-row">
+                    <span class="stats-label">Elements:</span>
+                    <span class="stats-value" id="elementCount">0</span>
+                </div>
+                <div class="stats-row">
+                    <span class="stats-label">Render Time:</span>
+                    <span class="stats-value" id="renderTime">0 ms</span>
+                </div>
+                <div class="stats-row">
+                    <span class="stats-label">Recursion Depth:</span>
+                    <span class="stats-value" id="recursionDepth">0</span>
+                </div>
+
+                <h2>About</h2>
+                <div class="info-box">
+                    <p>Recursive patterns exhibit self-similarity at every scale. Each part contains a smaller copy of the whole, creating infinite complexity from simple rules.</p>
+                    <p style="margin-top: 10px;">These patterns appear throughout nature: coastlines, trees, lungs, galaxies, and more.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = 800;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', () => { resizeCanvas(); generate(); });
+
+        let currentPattern = 'sierpinski';
+        let colorScheme = 'neon';
+        let animationType = 'none';
+        let animationFrame = null;
+        let elementCount = 0;
+        let animationProgress = 0;
+
+        const colorSchemes = {
+            neon: depth => `hsl(${160 + depth * 20}, 100%, 60%)`,
+            fire: depth => `hsl(${60 - depth * 8}, 100%, 55%)`,
+            ocean: depth => `hsl(${200 + depth * 10}, 100%, 55%)`,
+            purple: depth => `hsl(${280 + depth * 15}, 100%, 60%)`,
+            rainbow: depth => `hsl(${depth * 30}, 100%, 55%)`,
+            mono: depth => `hsl(0, 0%, ${90 - depth * 8}%)`,
+            earth: depth => `hsl(${30 + depth * 15}, 60%, ${40 + depth * 5}%)`,
+            gold: depth => `hsl(${45 - depth * 3}, 100%, ${55 + depth * 3}%)`
+        };
+
+        function getColor(depth, maxDepth) {
+            return colorSchemes[colorScheme](depth);
+        }
+
+        // Sierpinski Triangle
+        function sierpinski(x, y, size, depth, maxDepth) {
+            if (depth === 0) {
+                ctx.beginPath();
+                ctx.moveTo(x, y - size);
+                ctx.lineTo(x - size * 0.866, y + size * 0.5);
+                ctx.lineTo(x + size * 0.866, y + size * 0.5);
+                ctx.closePath();
+                ctx.fillStyle = getColor(maxDepth - depth, maxDepth);
+                ctx.fill();
+                elementCount++;
+                return;
+            }
+
+            const newSize = size / 2;
+            sierpinski(x, y - newSize, newSize, depth - 1, maxDepth);
+            sierpinski(x - newSize * 0.866, y + newSize * 0.5, newSize, depth - 1, maxDepth);
+            sierpinski(x + newSize * 0.866, y + newSize * 0.5, newSize, depth - 1, maxDepth);
+        }
+
+        // Koch Snowflake
+        function kochLine(x1, y1, x2, y2, depth, maxDepth) {
+            if (depth === 0) {
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.strokeStyle = getColor(maxDepth - depth, maxDepth);
+                ctx.stroke();
+                elementCount++;
+                return;
+            }
+
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const len = Math.sqrt(dx * dx + dy * dy) / 3;
+            const angle = Math.atan2(dy, dx);
+
+            const p1 = { x: x1 + dx / 3, y: y1 + dy / 3 };
+            const p3 = { x: x1 + dx * 2 / 3, y: y1 + dy * 2 / 3 };
+            const p2 = {
+                x: p1.x + len * Math.cos(angle - Math.PI / 3),
+                y: p1.y + len * Math.sin(angle - Math.PI / 3)
+            };
+
+            kochLine(x1, y1, p1.x, p1.y, depth - 1, maxDepth);
+            kochLine(p1.x, p1.y, p2.x, p2.y, depth - 1, maxDepth);
+            kochLine(p2.x, p2.y, p3.x, p3.y, depth - 1, maxDepth);
+            kochLine(p3.x, p3.y, x2, y2, depth - 1, maxDepth);
+        }
+
+        function kochSnowflake(cx, cy, size, depth) {
+            const angle = parseFloat(document.getElementById('rotation').value) * Math.PI / 180;
+            const points = [];
+
+            for (let i = 0; i < 3; i++) {
+                points.push({
+                    x: cx + size * Math.cos(angle + i * Math.PI * 2 / 3 - Math.PI / 2),
+                    y: cy + size * Math.sin(angle + i * Math.PI * 2 / 3 - Math.PI / 2)
+                });
+            }
+
+            kochLine(points[0].x, points[0].y, points[1].x, points[1].y, depth, depth);
+            kochLine(points[1].x, points[1].y, points[2].x, points[2].y, depth, depth);
+            kochLine(points[2].x, points[2].y, points[0].x, points[0].y, depth, depth);
+        }
+
+        // Fractal Tree
+        function fractalTree(x, y, length, angle, depth, maxDepth) {
+            if (depth === 0 || length < 2) return;
+
+            const branchAngle = parseFloat(document.getElementById('angle').value) * Math.PI / 180;
+            const x2 = x + length * Math.cos(angle);
+            const y2 = y + length * Math.sin(angle);
+
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x2, y2);
+            ctx.strokeStyle = getColor(maxDepth - depth, maxDepth);
+            ctx.lineWidth = depth * 0.5 + 0.5;
+            ctx.stroke();
+            elementCount++;
+
+            const newLength = length * 0.7;
+            fractalTree(x2, y2, newLength, angle - branchAngle, depth - 1, maxDepth);
+            fractalTree(x2, y2, newLength, angle + branchAngle, depth - 1, maxDepth);
+        }
+
+        // Dragon Curve
+        function dragonCurve(depth) {
+            let sequence = 'R';
+
+            for (let i = 1; i < depth; i++) {
+                let newSeq = 'R';
+                for (let j = sequence.length - 1; j >= 0; j--) {
+                    newSeq += sequence[j] === 'R' ? 'L' : 'R';
+                }
+                sequence = sequence + newSeq;
+            }
+
+            const len = Math.min(canvas.width, canvas.height) / (Math.pow(2, depth / 2) * 1.5);
+            let x = canvas.width * 0.3;
+            let y = canvas.height * 0.6;
+            let angle = 0;
+
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+
+            for (let i = 0; i < sequence.length; i++) {
+                x += len * Math.cos(angle);
+                y += len * Math.sin(angle);
+                ctx.lineTo(x, y);
+                ctx.strokeStyle = getColor(i % 10, 10);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+
+                angle += (sequence[i] === 'R' ? 1 : -1) * Math.PI / 2;
+                elementCount++;
+            }
+        }
+
+        // Hilbert Curve
+        function hilbertCurve(depth) {
+            const size = Math.min(canvas.width, canvas.height) - 100;
+            const n = Math.pow(2, depth);
+            const cellSize = size / n;
+
+            function d2xy(n, d) {
+                let x = 0, y = 0;
+                let s = 1;
+                let rx, ry, t = d;
+
+                while (s < n) {
+                    rx = 1 & (t / 2);
+                    ry = 1 & (t ^ rx);
+
+                    if (ry === 0) {
+                        if (rx === 1) {
+                            x = s - 1 - x;
+                            y = s - 1 - y;
+                        }
+                        [x, y] = [y, x];
+                    }
+
+                    x += s * rx;
+                    y += s * ry;
+                    t = Math.floor(t / 4);
+                    s *= 2;
+                }
+
+                return { x, y };
+            }
+
+            const offsetX = (canvas.width - size) / 2;
+            const offsetY = (canvas.height - size) / 2;
+
+            ctx.beginPath();
+            const total = n * n;
+
+            for (let i = 0; i < total; i++) {
+                const { x, y } = d2xy(n, i);
+                const px = offsetX + x * cellSize + cellSize / 2;
+                const py = offsetY + y * cellSize + cellSize / 2;
+
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+
+                if (i % 100 === 0) {
+                    ctx.strokeStyle = getColor((i / total) * 10, 10);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(px, py);
+                }
+                elementCount++;
+            }
+            ctx.stroke();
+        }
+
+        // Sierpinski Carpet
+        function sierpinskiCarpet(x, y, size, depth, maxDepth) {
+            if (depth === 0) {
+                ctx.fillStyle = getColor(maxDepth, maxDepth);
+                ctx.fillRect(x, y, size, size);
+                elementCount++;
+                return;
+            }
+
+            const newSize = size / 3;
+
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    if (i === 1 && j === 1) {
+                        ctx.fillStyle = '#000';
+                        ctx.fillRect(x + newSize, y + newSize, newSize, newSize);
+                    } else {
+                        sierpinskiCarpet(x + i * newSize, y + j * newSize, newSize, depth - 1, maxDepth);
+                    }
+                }
+            }
+        }
+
+        // Cantor Set
+        function cantorSet(x, y, width, depth, maxDepth) {
+            if (depth === 0 || width < 1) return;
+
+            const height = 15;
+            ctx.fillStyle = getColor(maxDepth - depth, maxDepth);
+            ctx.fillRect(x, y, width, height);
+            elementCount++;
+
+            const newWidth = width / 3;
+            const newY = y + height + 10;
+
+            cantorSet(x, newY, newWidth, depth - 1, maxDepth);
+            cantorSet(x + 2 * newWidth, newY, newWidth, depth - 1, maxDepth);
+        }
+
+        // Barnsley Fern
+        function barnsleyFern(iterations) {
+            let x = 0, y = 0;
+            const scale = canvas.height / 12;
+            const offsetX = canvas.width / 2;
+            const offsetY = canvas.height - 50;
+
+            for (let i = 0; i < iterations; i++) {
+                const r = Math.random();
+                let newX, newY;
+
+                if (r < 0.01) {
+                    newX = 0;
+                    newY = 0.16 * y;
+                } else if (r < 0.86) {
+                    newX = 0.85 * x + 0.04 * y;
+                    newY = -0.04 * x + 0.85 * y + 1.6;
+                } else if (r < 0.93) {
+                    newX = 0.2 * x - 0.26 * y;
+                    newY = 0.23 * x + 0.22 * y + 1.6;
+                } else {
+                    newX = -0.15 * x + 0.28 * y;
+                    newY = 0.26 * x + 0.24 * y + 0.44;
+                }
+
+                x = newX;
+                y = newY;
+
+                const px = offsetX + x * scale;
+                const py = offsetY - y * scale;
+
+                ctx.fillStyle = getColor((i / iterations) * 10, 10);
+                ctx.fillRect(px, py, 1, 1);
+                elementCount++;
+            }
+        }
+
+        // Golden Spiral
+        function goldenSpiral(cx, cy, size, depth, maxDepth) {
+            const phi = (1 + Math.sqrt(5)) / 2;
+            let currentSize = size;
+            let x = cx - size / 2;
+            let y = cy - size / 2;
+            let angle = 0;
+
+            for (let i = 0; i < depth * 4; i++) {
+                ctx.strokeStyle = getColor(i % maxDepth, maxDepth);
+                ctx.lineWidth = 2;
+
+                // Draw arc
+                ctx.beginPath();
+                const arcX = x + (angle === 0 || angle === 3 ? currentSize : 0);
+                const arcY = y + (angle === 0 || angle === 1 ? currentSize : 0);
+                ctx.arc(arcX, arcY, currentSize, Math.PI * (angle + 2) / 2, Math.PI * (angle + 3) / 2);
+                ctx.stroke();
+
+                // Draw rectangle
+                ctx.strokeStyle = `rgba(255,255,255,0.2)`;
+                ctx.strokeRect(x, y, currentSize, currentSize);
+                elementCount++;
+
+                // Move to next position
+                switch (angle) {
+                    case 0: x += currentSize; break;
+                    case 1: y += currentSize; break;
+                    case 2: x -= currentSize / phi; break;
+                    case 3: y -= currentSize / phi; break;
+                }
+
+                currentSize /= phi;
+                angle = (angle + 1) % 4;
+            }
+        }
+
+        // Penrose-like tiling
+        function penroseTiling(cx, cy, size, depth) {
+            function drawPentagon(x, y, r, level) {
+                if (level === 0) {
+                    ctx.beginPath();
+                    for (let i = 0; i < 5; i++) {
+                        const angle = (i * 2 * Math.PI / 5) - Math.PI / 2;
+                        const px = x + r * Math.cos(angle);
+                        const py = y + r * Math.sin(angle);
+                        if (i === 0) ctx.moveTo(px, py);
+                        else ctx.lineTo(px, py);
+                    }
+                    ctx.closePath();
+                    ctx.strokeStyle = getColor(level, depth);
+                    ctx.stroke();
+                    elementCount++;
+                    return;
+                }
+
+                const newR = r / (1 + (1 + Math.sqrt(5)) / 2);
+
+                // Central pentagon
+                drawPentagon(x, y, newR, level - 1);
+
+                // Surrounding pentagons
+                for (let i = 0; i < 5; i++) {
+                    const angle = (i * 2 * Math.PI / 5) - Math.PI / 2;
+                    const nx = x + (r - newR) * Math.cos(angle);
+                    const ny = y + (r - newR) * Math.sin(angle);
+                    drawPentagon(nx, ny, newR, level - 1);
+                }
+            }
+
+            drawPentagon(cx, cy, size, depth);
+        }
+
+        function generate() {
+            const startTime = performance.now();
+            elementCount = 0;
+
+            ctx.fillStyle = '#0a0a0a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const depth = parseInt(document.getElementById('depth').value);
+            const scale = parseInt(document.getElementById('scale').value) / 100;
+            const lineWidth = parseFloat(document.getElementById('lineWidth').value);
+
+            ctx.lineWidth = lineWidth;
+            ctx.lineCap = 'round';
+
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            const baseSize = Math.min(canvas.width, canvas.height) * 0.4 * scale;
+
+            switch (currentPattern) {
+                case 'sierpinski':
+                    sierpinski(cx, cy, baseSize, depth, depth);
+                    break;
+                case 'koch':
+                    kochSnowflake(cx, cy, baseSize, depth);
+                    break;
+                case 'tree':
+                    fractalTree(cx, canvas.height - 50, baseSize * 1.5, -Math.PI / 2, depth, depth);
+                    break;
+                case 'dragon':
+                    dragonCurve(depth);
+                    break;
+                case 'hilbert':
+                    hilbertCurve(Math.min(depth, 7));
+                    break;
+                case 'carpet':
+                    sierpinskiCarpet(cx - baseSize, cy - baseSize, baseSize * 2, Math.min(depth, 5), depth);
+                    break;
+                case 'cantor':
+                    cantorSet(50, 50, canvas.width - 100, depth, depth);
+                    break;
+                case 'barnsley':
+                    barnsleyFern(depth * 10000);
+                    break;
+                case 'spiral':
+                    goldenSpiral(cx, cy, baseSize * 1.5, depth, depth);
+                    break;
+                case 'pentagon':
+                    penroseTiling(cx, cy, baseSize, Math.min(depth, 5));
+                    break;
+            }
+
+            const endTime = performance.now();
+            document.getElementById('elementCount').textContent = elementCount.toLocaleString();
+            document.getElementById('renderTime').textContent = (endTime - startTime).toFixed(1) + ' ms';
+            document.getElementById('recursionDepth').textContent = depth;
+        }
+
+        function animate() {
+            if (animationType === 'none') return;
+
+            if (animationFrame) cancelAnimationFrame(animationFrame);
+
+            function step() {
+                animationProgress += 0.02;
+
+                if (animationType === 'rotate') {
+                    document.getElementById('rotation').value =
+                        (parseFloat(document.getElementById('rotation').value) + 1) % 360;
+                    document.getElementById('rotationValue').textContent =
+                        document.getElementById('rotation').value + '°';
+                } else if (animationType === 'grow') {
+                    const depth = Math.floor((Math.sin(animationProgress) + 1) * 3) + 1;
+                    document.getElementById('depth').value = depth;
+                    document.getElementById('depthValue').textContent = depth;
+                } else if (animationType === 'pulse') {
+                    const scale = 80 + Math.sin(animationProgress) * 20;
+                    document.getElementById('scale').value = scale;
+                    document.getElementById('scaleValue').textContent = Math.round(scale) + '%';
+                }
+
+                generate();
+                animationFrame = requestAnimationFrame(step);
+            }
+
+            step();
+        }
+
+        // Event Listeners
+        document.querySelectorAll('.pattern-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.pattern-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentPattern = btn.dataset.pattern;
+                generate();
+            });
+        });
+
+        document.querySelectorAll('.color-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                colorScheme = btn.dataset.scheme;
+                generate();
+            });
+        });
+
+        document.querySelectorAll('.toggle-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                animationType = btn.dataset.anim;
+                if (animationFrame) cancelAnimationFrame(animationFrame);
+                if (animationType !== 'none') animate();
+            });
+        });
+
+        ['depth', 'scale', 'rotation', 'angle', 'lineWidth'].forEach(id => {
+            document.getElementById(id).addEventListener('input', (e) => {
+                const suffix = id === 'scale' ? '%' : (id === 'rotation' || id === 'angle' ? '°' : '');
+                document.getElementById(id + 'Value').textContent = e.target.value + suffix;
+                generate();
+            });
+        });
+
+        // Initialize
+        generate();
+    </script>
+</body>
+</html>

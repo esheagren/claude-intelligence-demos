@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Number Theory Visualizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a2e 100%);
+            color: #e0e0e0;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            font-weight: 300;
+            background: linear-gradient(135deg, #ffd700 0%, #ff8c00 50%, #ff6347 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 1.1em;
+        }
+
+        .tabs {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 30px;
+            color: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.9em;
+        }
+
+        .tab:hover {
+            background: rgba(255, 215, 0, 0.1);
+            border-color: rgba(255, 215, 0, 0.3);
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 140, 0, 0.2));
+            border-color: rgba(255, 215, 0, 0.5);
+            color: #fff;
+        }
+
+        .visualization-area {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 30px;
+        }
+
+        .main-panel {
+            background: rgba(20, 20, 40, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 20px;
+        }
+
+        .canvas-container {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .panel {
+            background: rgba(20, 20, 40, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 20px;
+        }
+
+        .panel h3 {
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group label {
+            display: block;
+            font-size: 0.8em;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 6px;
+        }
+
+        input[type="range"], input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 6px;
+            color: #fff;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            height: 6px;
+            padding: 0;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ffd700, #ff8c00);
+            cursor: pointer;
+        }
+
+        .value-display {
+            text-align: right;
+            font-size: 0.75em;
+            color: #ffd700;
+            margin-top: 4px;
+            font-family: monospace;
+        }
+
+        .number-grid {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 2px;
+            max-height: 200px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .number-cell {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.65em;
+            font-family: monospace;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .number-cell:hover {
+            transform: scale(1.2);
+            z-index: 10;
+        }
+
+        .number-cell.prime {
+            background: linear-gradient(135deg, #ffd700, #ff8c00);
+            color: #000;
+        }
+
+        .number-cell.composite {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .number-cell.perfect {
+            background: linear-gradient(135deg, #00ff88, #00d4ff);
+            color: #000;
+        }
+
+        .number-cell.fibonacci {
+            background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+            color: #000;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .stat-item {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.4em;
+            font-weight: 300;
+            color: #ffd700;
+            font-family: monospace;
+        }
+
+        .stat-label {
+            font-size: 0.7em;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 4px;
+        }
+
+        .info-box {
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            font-size: 0.85em;
+            line-height: 1.6;
+        }
+
+        .info-box h4 {
+            color: #ffd700;
+            margin-bottom: 8px;
+        }
+
+        .sequence-display {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+        }
+
+        .sequence-title {
+            font-size: 0.8em;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 10px;
+        }
+
+        .sequence-numbers {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .seq-num {
+            padding: 4px 10px;
+            background: rgba(255, 215, 0, 0.1);
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.85em;
+            color: #ffd700;
+        }
+
+        .factorization {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+        }
+
+        .factor-display {
+            font-family: monospace;
+            font-size: 1.1em;
+            color: #fff;
+        }
+
+        .factor-prime {
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        .factor-exp {
+            font-size: 0.7em;
+            vertical-align: super;
+            color: #ff8c00;
+        }
+
+        @media (max-width: 900px) {
+            .visualization-area {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Number Theory Visualizer</h1>
+            <p class="subtitle">Explore the hidden patterns in integers</p>
+        </header>
+
+        <div class="tabs">
+            <div class="tab active" data-view="sieve">Sieve of Eratosthenes</div>
+            <div class="tab" data-view="ulam">Ulam Spiral</div>
+            <div class="tab" data-view="goldbach">Goldbach Comet</div>
+            <div class="tab" data-view="collatz">Collatz Graph</div>
+            <div class="tab" data-view="divisors">Divisor Function</div>
+            <div class="tab" data-view="totient">Euler's Totient</div>
+        </div>
+
+        <div class="visualization-area">
+            <div class="main-panel">
+                <div class="canvas-container">
+                    <canvas id="mainCanvas" height="500"></canvas>
+                </div>
+                <div class="sequence-display" id="sequenceDisplay">
+                    <div class="sequence-title">Prime Numbers</div>
+                    <div class="sequence-numbers" id="sequenceNumbers"></div>
+                </div>
+            </div>
+
+            <div class="sidebar">
+                <div class="panel">
+                    <h3>Parameters</h3>
+                    <div class="control-group">
+                        <label>Range Maximum</label>
+                        <input type="range" id="rangeMax" min="100" max="10000" value="1000">
+                        <div class="value-display" id="rangeMaxVal">1,000</div>
+                    </div>
+                    <div class="control-group">
+                        <label>Inspect Number</label>
+                        <input type="number" id="inspectNum" min="1" value="42">
+                    </div>
+                    <div class="factorization" id="factorization">
+                        <div class="factor-display">42 = <span class="factor-prime">2</span> <span class="factor-exp"></span> × <span class="factor-prime">3</span> <span class="factor-exp"></span> × <span class="factor-prime">7</span></div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h3>Statistics</h3>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-value" id="primeCount">168</div>
+                            <div class="stat-label">Primes</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="primeDensity">16.8%</div>
+                            <div class="stat-label">Density</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="twinPrimes">35</div>
+                            <div class="stat-label">Twin Pairs</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="maxGap">20</div>
+                            <div class="stat-label">Max Gap</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h3>Number Grid</h3>
+                    <div class="number-grid" id="numberGrid"></div>
+                </div>
+
+                <div class="info-box" id="infoBox">
+                    <h4>Sieve of Eratosthenes</h4>
+                    <p>An ancient algorithm for finding all primes up to a given limit. It works by iteratively marking the multiples of each prime as composite.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let currentView = 'sieve';
+        let rangeMax = 1000;
+        let primes = [];
+        let animationId = null;
+
+        // Resize canvas
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = 500;
+        }
+
+        // Prime sieve
+        function sieveOfEratosthenes(max) {
+            const sieve = new Array(max + 1).fill(true);
+            sieve[0] = sieve[1] = false;
+
+            for (let i = 2; i * i <= max; i++) {
+                if (sieve[i]) {
+                    for (let j = i * i; j <= max; j += i) {
+                        sieve[j] = false;
+                    }
+                }
+            }
+
+            return sieve.map((isPrime, i) => isPrime ? i : null).filter(n => n !== null);
+        }
+
+        // Prime factorization
+        function factorize(n) {
+            const factors = [];
+            let d = 2;
+            while (d * d <= n) {
+                let count = 0;
+                while (n % d === 0) {
+                    n /= d;
+                    count++;
+                }
+                if (count > 0) factors.push({ prime: d, exp: count });
+                d++;
+            }
+            if (n > 1) factors.push({ prime: n, exp: 1 });
+            return factors;
+        }
+
+        // Check if prime
+        function isPrime(n) {
+            if (n < 2) return false;
+            if (n === 2) return true;
+            if (n % 2 === 0) return false;
+            for (let i = 3; i * i <= n; i += 2) {
+                if (n % i === 0) return false;
+            }
+            return true;
+        }
+
+        // Divisor count
+        function divisorCount(n) {
+            let count = 0;
+            for (let i = 1; i * i <= n; i++) {
+                if (n % i === 0) {
+                    count++;
+                    if (i !== n / i) count++;
+                }
+            }
+            return count;
+        }
+
+        // Euler's totient
+        function totient(n) {
+            let result = n;
+            for (let p = 2; p * p <= n; p++) {
+                if (n % p === 0) {
+                    while (n % p === 0) n /= p;
+                    result -= result / p;
+                }
+            }
+            if (n > 1) result -= result / n;
+            return result;
+        }
+
+        // Goldbach partitions
+        function goldbachPartitions(n) {
+            if (n < 4 || n % 2 !== 0) return 0;
+            let count = 0;
+            for (let i = 2; i <= n / 2; i++) {
+                if (isPrime(i) && isPrime(n - i)) count++;
+            }
+            return count;
+        }
+
+        // Collatz sequence
+        function collatzSequence(n) {
+            const seq = [n];
+            while (n !== 1) {
+                n = n % 2 === 0 ? n / 2 : 3 * n + 1;
+                seq.push(n);
+            }
+            return seq;
+        }
+
+        // Draw sieve visualization
+        function drawSieve() {
+            ctx.fillStyle = '#0a0a1a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            primes = sieveOfEratosthenes(rangeMax);
+
+            const cols = Math.ceil(Math.sqrt(rangeMax));
+            const cellSize = Math.min(canvas.width / cols, canvas.height / cols);
+
+            for (let n = 1; n <= rangeMax; n++) {
+                const x = ((n - 1) % cols) * cellSize;
+                const y = Math.floor((n - 1) / cols) * cellSize;
+
+                if (isPrime(n)) {
+                    const hue = (n / rangeMax) * 60 + 30;
+                    ctx.fillStyle = `hsl(${hue}, 80%, 50%)`;
+                } else {
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+                }
+
+                ctx.fillRect(x + 0.5, y + 0.5, cellSize - 1, cellSize - 1);
+            }
+
+            updateStats();
+            updateSequence('Prime Numbers', primes.slice(0, 50));
+        }
+
+        // Draw Ulam spiral
+        function drawUlam() {
+            ctx.fillStyle = '#0a0a1a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const cellSize = Math.min(canvas.width, canvas.height) / Math.sqrt(rangeMax) * 0.8;
+
+            let x = 0, y = 0;
+            let dx = 1, dy = 0;
+            let steps = 1, stepCount = 0, turnCount = 0;
+
+            for (let n = 1; n <= rangeMax; n++) {
+                const px = centerX + x * cellSize;
+                const py = centerY + y * cellSize;
+
+                if (isPrime(n)) {
+                    const hue = (n / rangeMax) * 60 + 30;
+                    ctx.fillStyle = `hsl(${hue}, 80%, 50%)`;
+                    ctx.beginPath();
+                    ctx.arc(px, py, cellSize * 0.3, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // Spiral movement
+                x += dx;
+                y += dy;
+                stepCount++;
+
+                if (stepCount === steps) {
+                    stepCount = 0;
+                    [dx, dy] = [-dy, dx]; // Turn left
+                    turnCount++;
+                    if (turnCount === 2) {
+                        turnCount = 0;
+                        steps++;
+                    }
+                }
+            }
+
+            updateStats();
+            updateSequence('Prime Numbers (Ulam Spiral)', primes.slice(0, 50));
+        }
+
+        // Draw Goldbach comet
+        function drawGoldbach() {
+            ctx.fillStyle = '#0a0a1a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const data = [];
+            let maxPartitions = 0;
+
+            for (let n = 4; n <= rangeMax; n += 2) {
+                const partitions = goldbachPartitions(n);
+                data.push({ n, partitions });
+                maxPartitions = Math.max(maxPartitions, partitions);
+            }
+
+            // Draw axes
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.beginPath();
+            ctx.moveTo(50, canvas.height - 30);
+            ctx.lineTo(canvas.width - 20, canvas.height - 30);
+            ctx.moveTo(50, canvas.height - 30);
+            ctx.lineTo(50, 20);
+            ctx.stroke();
+
+            // Draw points
+            const scaleX = (canvas.width - 70) / rangeMax;
+            const scaleY = (canvas.height - 60) / maxPartitions;
+
+            data.forEach(({ n, partitions }) => {
+                const x = 50 + n * scaleX;
+                const y = canvas.height - 30 - partitions * scaleY;
+
+                const hue = (partitions / maxPartitions) * 60 + 30;
+                ctx.fillStyle = `hsl(${hue}, 70%, 50%)`;
+                ctx.beginPath();
+                ctx.arc(x, y, 2, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Labels
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.font = '11px sans-serif';
+            ctx.fillText('Even number n', canvas.width / 2, canvas.height - 5);
+            ctx.save();
+            ctx.translate(15, canvas.height / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('Goldbach partitions', 0, 0);
+            ctx.restore();
+
+            updateSequence('Goldbach Partition Counts', data.slice(0, 25).map(d => `${d.n}:${d.partitions}`));
+        }
+
+        // Draw Collatz graph
+        function drawCollatz() {
+            ctx.fillStyle = '#0a0a1a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const maxN = Math.min(rangeMax, 200);
+            const maxLen = 500;
+
+            // Find maximum sequence length for scaling
+            let maxSeqLen = 0;
+            let maxVal = 0;
+            for (let n = 1; n <= maxN; n++) {
+                const seq = collatzSequence(n);
+                maxSeqLen = Math.max(maxSeqLen, seq.length);
+                maxVal = Math.max(maxVal, Math.max(...seq));
+            }
+
+            const scaleX = (canvas.width - 60) / maxSeqLen;
+            const scaleY = (canvas.height - 60) / Math.log(maxVal + 1);
+
+            // Draw sequences
+            for (let n = 1; n <= maxN; n++) {
+                const seq = collatzSequence(n);
+                const hue = (n / maxN) * 60 + 30;
+                ctx.strokeStyle = `hsla(${hue}, 70%, 50%, 0.3)`;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+
+                seq.forEach((val, i) => {
+                    const x = 40 + i * scaleX;
+                    const y = canvas.height - 30 - Math.log(val + 1) * scaleY;
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                });
+
+                ctx.stroke();
+            }
+
+            // Axes
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.beginPath();
+            ctx.moveTo(40, canvas.height - 30);
+            ctx.lineTo(canvas.width - 20, canvas.height - 30);
+            ctx.moveTo(40, canvas.height - 30);
+            ctx.lineTo(40, 20);
+            ctx.stroke();
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.font = '11px sans-serif';
+            ctx.fillText('Steps', canvas.width / 2, canvas.height - 5);
+
+            const inspectNum = parseInt(document.getElementById('inspectNum').value) || 27;
+            const seq = collatzSequence(inspectNum);
+            updateSequence(`Collatz Sequence for ${inspectNum} (${seq.length} steps)`, seq.slice(0, 30));
+        }
+
+        // Draw divisor function
+        function drawDivisors() {
+            ctx.fillStyle = '#0a0a1a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const data = [];
+            let maxDivisors = 0;
+
+            for (let n = 1; n <= rangeMax; n++) {
+                const d = divisorCount(n);
+                data.push({ n, divisors: d });
+                maxDivisors = Math.max(maxDivisors, d);
+            }
+
+            const scaleX = (canvas.width - 60) / rangeMax;
+            const scaleY = (canvas.height - 60) / maxDivisors;
+
+            // Draw bars/points
+            data.forEach(({ n, divisors }) => {
+                const x = 40 + n * scaleX;
+                const y = canvas.height - 30 - divisors * scaleY;
+                const height = divisors * scaleY;
+
+                const isPrimeN = divisors === 2;
+                const hue = isPrimeN ? 45 : (divisors / maxDivisors) * 200 + 180;
+                ctx.fillStyle = `hsl(${hue}, 70%, 50%)`;
+
+                if (rangeMax <= 200) {
+                    ctx.fillRect(x - 2, y, 4, height);
+                } else {
+                    ctx.beginPath();
+                    ctx.arc(x, y, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            });
+
+            // Axes
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.beginPath();
+            ctx.moveTo(40, canvas.height - 30);
+            ctx.lineTo(canvas.width - 20, canvas.height - 30);
+            ctx.moveTo(40, canvas.height - 30);
+            ctx.lineTo(40, 20);
+            ctx.stroke();
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.font = '11px sans-serif';
+            ctx.fillText('n', canvas.width / 2, canvas.height - 5);
+
+            // Find highly composite numbers
+            const hcn = [];
+            let currentMax = 0;
+            data.forEach(({ n, divisors }) => {
+                if (divisors > currentMax) {
+                    currentMax = divisors;
+                    hcn.push(`${n}(${divisors})`);
+                }
+            });
+
+            updateSequence('Highly Composite Numbers (n:divisors)', hcn.slice(0, 20));
+        }
+
+        // Draw Euler's totient
+        function drawTotient() {
+            ctx.fillStyle = '#0a0a1a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const data = [];
+
+            for (let n = 1; n <= rangeMax; n++) {
+                const phi = totient(n);
+                data.push({ n, phi });
+            }
+
+            const scaleX = (canvas.width - 60) / rangeMax;
+            const scaleY = (canvas.height - 60) / rangeMax;
+
+            // Draw phi(n) vs n
+            data.forEach(({ n, phi }) => {
+                const x = 40 + n * scaleX;
+                const y = canvas.height - 30 - phi * scaleY;
+
+                const isPrimeN = phi === n - 1;
+                const hue = isPrimeN ? 45 : ((phi / n) * 180 + 180);
+                ctx.fillStyle = `hsl(${hue}, 70%, 50%)`;
+                ctx.beginPath();
+                ctx.arc(x, y, isPrimeN ? 3 : 1.5, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Draw n line
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.beginPath();
+            ctx.moveTo(40, canvas.height - 30);
+            ctx.lineTo(canvas.width - 20, 30);
+            ctx.stroke();
+
+            // Axes
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.beginPath();
+            ctx.moveTo(40, canvas.height - 30);
+            ctx.lineTo(canvas.width - 20, canvas.height - 30);
+            ctx.moveTo(40, canvas.height - 30);
+            ctx.lineTo(40, 20);
+            ctx.stroke();
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.font = '11px sans-serif';
+            ctx.fillText('n', canvas.width / 2, canvas.height - 5);
+
+            updateSequence('Totient Values', data.slice(0, 30).map(d => `${d.n}:${d.phi}`));
+        }
+
+        // Update statistics
+        function updateStats() {
+            primes = sieveOfEratosthenes(rangeMax);
+
+            document.getElementById('primeCount').textContent = primes.length;
+            document.getElementById('primeDensity').textContent =
+                ((primes.length / rangeMax) * 100).toFixed(1) + '%';
+
+            // Twin primes
+            let twinCount = 0;
+            for (let i = 0; i < primes.length - 1; i++) {
+                if (primes[i + 1] - primes[i] === 2) twinCount++;
+            }
+            document.getElementById('twinPrimes').textContent = twinCount;
+
+            // Max gap
+            let maxGap = 0;
+            for (let i = 1; i < primes.length; i++) {
+                maxGap = Math.max(maxGap, primes[i] - primes[i - 1]);
+            }
+            document.getElementById('maxGap').textContent = maxGap;
+        }
+
+        // Update sequence display
+        function updateSequence(title, numbers) {
+            document.querySelector('.sequence-title').textContent = title;
+            const container = document.getElementById('sequenceNumbers');
+            container.innerHTML = numbers.map(n => `<span class="seq-num">${n}</span>`).join('');
+        }
+
+        // Update number grid
+        function updateNumberGrid() {
+            const grid = document.getElementById('numberGrid');
+            const limit = Math.min(100, rangeMax);
+            let html = '';
+
+            const fibSet = new Set();
+            let a = 1, b = 1;
+            while (a <= limit) {
+                fibSet.add(a);
+                [a, b] = [b, a + b];
+            }
+
+            for (let n = 1; n <= limit; n++) {
+                let className = 'number-cell ';
+                if (isPrime(n)) className += 'prime';
+                else if (fibSet.has(n)) className += 'fibonacci';
+                else className += 'composite';
+
+                html += `<div class="${className}" data-n="${n}">${n}</div>`;
+            }
+
+            grid.innerHTML = html;
+
+            grid.querySelectorAll('.number-cell').forEach(cell => {
+                cell.addEventListener('click', () => {
+                    document.getElementById('inspectNum').value = cell.dataset.n;
+                    updateFactorization(parseInt(cell.dataset.n));
+                });
+            });
+        }
+
+        // Update factorization display
+        function updateFactorization(n) {
+            const factors = factorize(n);
+            const container = document.getElementById('factorization');
+
+            if (factors.length === 0) {
+                container.innerHTML = `<div class="factor-display">${n} = 1</div>`;
+                return;
+            }
+
+            const factorStr = factors.map(f =>
+                f.exp === 1
+                    ? `<span class="factor-prime">${f.prime}</span>`
+                    : `<span class="factor-prime">${f.prime}</span><span class="factor-exp">${f.exp}</span>`
+            ).join(' × ');
+
+            container.innerHTML = `<div class="factor-display">${n} = ${factorStr}</div>`;
+        }
+
+        // Update info box
+        function updateInfoBox() {
+            const info = {
+                sieve: {
+                    title: 'Sieve of Eratosthenes',
+                    text: 'An ancient algorithm for finding all primes up to a given limit. It works by iteratively marking the multiples of each prime as composite. Named after the Greek mathematician Eratosthenes of Cyrene.'
+                },
+                ulam: {
+                    title: 'Ulam Spiral',
+                    text: 'Discovered by Stanislaw Ulam in 1963 during a boring meeting. When integers are arranged in a spiral and primes highlighted, diagonal patterns emerge—a phenomenon still not fully understood.'
+                },
+                goldbach: {
+                    title: 'Goldbach Comet',
+                    text: 'Visualizes Goldbach\'s conjecture: every even integer > 2 is the sum of two primes. The y-axis shows how many ways each even number can be written as such a sum, creating a comet-like pattern.'
+                },
+                collatz: {
+                    title: 'Collatz Conjecture',
+                    text: 'One of math\'s most famous unsolved problems. Start with any positive integer: if even, halve it; if odd, triple it and add 1. The conjecture says all sequences eventually reach 1.'
+                },
+                divisors: {
+                    title: 'Divisor Function',
+                    text: 'Shows the number of divisors for each integer. Primes have exactly 2 divisors. Highly composite numbers (with record divisor counts) appear as local maxima and are important in number theory.'
+                },
+                totient: {
+                    title: 'Euler\'s Totient Function',
+                    text: 'φ(n) counts integers from 1 to n that are coprime to n. For primes p, φ(p) = p-1. This function is crucial in cryptography, particularly in RSA encryption.'
+                }
+            };
+
+            const i = info[currentView];
+            document.getElementById('infoBox').innerHTML = `<h4>${i.title}</h4><p>${i.text}</p>`;
+        }
+
+        // Draw current view
+        function draw() {
+            switch (currentView) {
+                case 'sieve': drawSieve(); break;
+                case 'ulam': drawUlam(); break;
+                case 'goldbach': drawGoldbach(); break;
+                case 'collatz': drawCollatz(); break;
+                case 'divisors': drawDivisors(); break;
+                case 'totient': drawTotient(); break;
+            }
+        }
+
+        // Event listeners
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentView = tab.dataset.view;
+                updateInfoBox();
+                draw();
+            });
+        });
+
+        document.getElementById('rangeMax').addEventListener('input', e => {
+            rangeMax = parseInt(e.target.value);
+            document.getElementById('rangeMaxVal').textContent = rangeMax.toLocaleString();
+            updateNumberGrid();
+            draw();
+        });
+
+        document.getElementById('inspectNum').addEventListener('input', e => {
+            const n = parseInt(e.target.value) || 1;
+            updateFactorization(n);
+            if (currentView === 'collatz') draw();
+        });
+
+        // Initialize
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+            draw();
+        });
+
+        resizeCanvas();
+        updateNumberGrid();
+        updateFactorization(42);
+        updateInfoBox();
+        draw();
+    </script>
+</body>
+</html>

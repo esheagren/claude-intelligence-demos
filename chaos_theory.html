@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chaos Theory Visualizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #0a0510 0%, #150a20 50%, #0a1020 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #ff4444, #ff8844, #ffcc44, #44ff44, #44ffff, #4444ff, #ff44ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 30px;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 20px;
+        }
+
+        .panel {
+            background: rgba(20, 20, 40, 0.8);
+            border: 1px solid #333;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .panel h2 {
+            color: #ff8844;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+
+        .canvas-container {
+            position: relative;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        #mainCanvas {
+            width: 100%;
+            height: 700px;
+        }
+
+        .system-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .system-btn {
+            padding: 10px;
+            background: rgba(100, 100, 100, 0.2);
+            border: 1px solid #444;
+            border-radius: 5px;
+            color: #aaa;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.85em;
+        }
+
+        .system-btn:hover {
+            background: rgba(150, 100, 50, 0.3);
+            border-color: #ff8844;
+        }
+
+        .system-btn.active {
+            background: rgba(255, 136, 68, 0.2);
+            border-color: #ff8844;
+            color: #fff;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .controls button {
+            flex: 1;
+            padding: 10px;
+            background: linear-gradient(90deg, #ff8844, #ff4444);
+            border: none;
+            border-radius: 5px;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .controls button:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 20px rgba(255, 136, 68, 0.4);
+        }
+
+        .controls button.secondary {
+            background: linear-gradient(90deg, #444, #666);
+        }
+
+        .parameter-section {
+            margin-bottom: 20px;
+        }
+
+        .param-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .param-row label {
+            flex: 0 0 60px;
+            color: #aaa;
+            font-size: 0.9em;
+        }
+
+        .param-row input[type="range"] {
+            flex: 1;
+        }
+
+        .param-row span {
+            width: 50px;
+            text-align: right;
+            font-size: 0.9em;
+            color: #ff8844;
+        }
+
+        .info-box {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            font-size: 0.85em;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .info-box h3 {
+            color: #ff8844;
+            margin-bottom: 10px;
+        }
+
+        .equation {
+            font-family: serif;
+            font-style: italic;
+            text-align: center;
+            padding: 10px;
+            background: rgba(255, 136, 68, 0.1);
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .stat-box {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.3em;
+            color: #ff8844;
+        }
+
+        .stat-label {
+            font-size: 0.75em;
+            color: #888;
+        }
+
+        .divergence-meter {
+            height: 20px;
+            background: #222;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .divergence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #44ff44, #ffff44, #ff4444);
+            transition: width 0.3s;
+        }
+
+        .color-legend {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 0.75em;
+            color: #888;
+        }
+
+        .trajectory-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .traj-btn {
+            flex: 1;
+            padding: 8px;
+            background: rgba(100, 100, 100, 0.2);
+            border: 1px solid #444;
+            border-radius: 5px;
+            color: #aaa;
+            cursor: pointer;
+            font-size: 0.8em;
+        }
+
+        .traj-btn.active {
+            background: rgba(255, 136, 68, 0.2);
+            border-color: #ff8844;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Chaos Theory Visualizer</h1>
+        <p class="subtitle">Sensitive Dependence on Initial Conditions | Strange Attractors | The Butterfly Effect</p>
+
+        <div class="main-layout">
+            <div class="panel">
+                <h2>Phase Space Visualization</h2>
+                <div class="canvas-container">
+                    <canvas id="mainCanvas"></canvas>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>Dynamical Systems</h2>
+                <div class="system-buttons">
+                    <button class="system-btn active" data-system="lorenz">Lorenz</button>
+                    <button class="system-btn" data-system="rossler">Rössler</button>
+                    <button class="system-btn" data-system="double-pendulum">Double Pendulum</button>
+                    <button class="system-btn" data-system="logistic">Logistic Map</button>
+                    <button class="system-btn" data-system="henon">Hénon Map</button>
+                    <button class="system-btn" data-system="thomas">Thomas</button>
+                </div>
+
+                <div class="controls">
+                    <button onclick="toggleSimulation()">Start/Stop</button>
+                    <button onclick="resetSimulation()" class="secondary">Reset</button>
+                </div>
+
+                <h2>Butterfly Effect</h2>
+                <div class="trajectory-controls">
+                    <button class="traj-btn active" data-mode="single">Single</button>
+                    <button class="traj-btn" data-mode="dual">Compare</button>
+                    <button class="traj-btn" data-mode="swarm">Swarm</button>
+                </div>
+
+                <div class="parameter-section">
+                    <div class="param-row">
+                        <label>Δ Initial:</label>
+                        <input type="range" id="deltaInit" min="-6" max="-1" value="-4" step="0.5">
+                        <span id="deltaInitValue">10⁻⁴</span>
+                    </div>
+                    <div class="param-row">
+                        <label>Speed:</label>
+                        <input type="range" id="speed" min="1" max="20" value="5">
+                        <span id="speedValue">5</span>
+                    </div>
+                    <div class="param-row">
+                        <label>Trail:</label>
+                        <input type="range" id="trail" min="100" max="5000" value="1000">
+                        <span id="trailValue">1000</span>
+                    </div>
+                </div>
+
+                <h2>System Parameters</h2>
+                <div class="parameter-section" id="systemParams"></div>
+
+                <div class="info-box" id="systemInfo">
+                    <h3>Lorenz System</h3>
+                    <p>Discovered by Edward Lorenz in 1963 while modeling atmospheric convection.</p>
+                    <div class="equation">
+                        dx/dt = σ(y - x)<br>
+                        dy/dt = x(ρ - z) - y<br>
+                        dz/dt = xy - βz
+                    </div>
+                </div>
+
+                <h2>Divergence Analysis</h2>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-value" id="lyapunov">0.00</div>
+                        <div class="stat-label">Lyapunov λ</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="iterations">0</div>
+                        <div class="stat-label">Iterations</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="separation">0.00</div>
+                        <div class="stat-label">Separation</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="dimension">2.06</div>
+                        <div class="stat-label">Fractal Dim</div>
+                    </div>
+                </div>
+
+                <div class="divergence-meter">
+                    <div class="divergence-fill" id="divergenceFill" style="width: 0%"></div>
+                </div>
+                <div class="color-legend">
+                    <span>Convergent</span>
+                    <span>Divergent</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = 700;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // Dynamical systems definitions
+        const systems = {
+            lorenz: {
+                name: 'Lorenz System',
+                description: 'Discovered by Edward Lorenz in 1963 while modeling atmospheric convection.',
+                equation: 'dx/dt = σ(y - x)<br>dy/dt = x(ρ - z) - y<br>dz/dt = xy - βz',
+                params: { sigma: 10, rho: 28, beta: 8/3 },
+                paramRanges: {
+                    sigma: [0, 20, 10],
+                    rho: [0, 50, 28],
+                    beta: [0, 5, 2.667]
+                },
+                dimension: 2.06,
+                initial: [1, 1, 1],
+                derivative: (x, y, z, p) => [
+                    p.sigma * (y - x),
+                    x * (p.rho - z) - y,
+                    x * y - p.beta * z
+                ],
+                scale: 12,
+                center: [0, 0, 25]
+            },
+            rossler: {
+                name: 'Rössler Attractor',
+                description: 'Discovered by Otto Rössler in 1976, showing simpler chaotic behavior.',
+                equation: 'dx/dt = -y - z<br>dy/dt = x + ay<br>dz/dt = b + z(x - c)',
+                params: { a: 0.2, b: 0.2, c: 5.7 },
+                paramRanges: {
+                    a: [0, 0.5, 0.2],
+                    b: [0, 0.5, 0.2],
+                    c: [0, 10, 5.7]
+                },
+                dimension: 2.01,
+                initial: [1, 1, 1],
+                derivative: (x, y, z, p) => [
+                    -y - z,
+                    x + p.a * y,
+                    p.b + z * (x - p.c)
+                ],
+                scale: 8,
+                center: [0, 0, 5]
+            },
+            'double-pendulum': {
+                name: 'Double Pendulum',
+                description: 'A pendulum with another pendulum attached - classically chaotic.',
+                equation: 'θ₁\'\' = f(θ₁, θ₂, ω₁, ω₂)<br>θ₂\'\' = g(θ₁, θ₂, ω₁, ω₂)',
+                params: { g: 9.81, l1: 1, l2: 1, m1: 1, m2: 1 },
+                paramRanges: {
+                    g: [1, 20, 9.81],
+                    l1: [0.5, 2, 1],
+                    l2: [0.5, 2, 1]
+                },
+                dimension: 2.5,
+                initial: [Math.PI/2, Math.PI/2, 0, 0],
+                is2D: true,
+                update: function(state, dt, p) {
+                    const [θ1, θ2, ω1, ω2] = state;
+                    const { g, l1, l2, m1, m2 } = p;
+
+                    const Δθ = θ1 - θ2;
+                    const denom = 2*m1 + m2 - m2*Math.cos(2*Δθ);
+
+                    const α1 = (-g*(2*m1+m2)*Math.sin(θ1) - m2*g*Math.sin(θ1-2*θ2) -
+                               2*Math.sin(Δθ)*m2*(ω2*ω2*l2 + ω1*ω1*l1*Math.cos(Δθ))) / (l1*denom);
+
+                    const α2 = (2*Math.sin(Δθ)*(ω1*ω1*l1*(m1+m2) + g*(m1+m2)*Math.cos(θ1) +
+                               ω2*ω2*l2*m2*Math.cos(Δθ))) / (l2*denom);
+
+                    return [
+                        θ1 + ω1*dt,
+                        θ2 + ω2*dt,
+                        ω1 + α1*dt,
+                        ω2 + α2*dt
+                    ];
+                },
+                getPosition: function(state, p) {
+                    const [θ1, θ2] = state;
+                    const x1 = p.l1 * Math.sin(θ1);
+                    const y1 = p.l1 * Math.cos(θ1);
+                    const x2 = x1 + p.l2 * Math.sin(θ2);
+                    const y2 = y1 + p.l2 * Math.cos(θ2);
+                    return { x1, y1, x2, y2 };
+                },
+                scale: 100,
+                center: [0, 0, 0]
+            },
+            logistic: {
+                name: 'Logistic Map',
+                description: 'The classic example of period-doubling route to chaos.',
+                equation: 'xₙ₊₁ = r·xₙ·(1 - xₙ)',
+                params: { r: 3.9 },
+                paramRanges: {
+                    r: [2.5, 4, 3.9]
+                },
+                dimension: 0.538,
+                initial: [0.1],
+                isMap: true,
+                iterate: (x, p) => p.r * x * (1 - x),
+                scale: 1,
+                center: [0.5, 0.5, 0]
+            },
+            henon: {
+                name: 'Hénon Map',
+                description: 'A discrete-time dynamical system exhibiting chaotic behavior.',
+                equation: 'xₙ₊₁ = 1 - axₙ² + yₙ<br>yₙ₊₁ = bxₙ',
+                params: { a: 1.4, b: 0.3 },
+                paramRanges: {
+                    a: [0.5, 1.5, 1.4],
+                    b: [0, 0.5, 0.3]
+                },
+                dimension: 1.261,
+                initial: [0, 0],
+                isMap: true,
+                is2D: true,
+                iterate: (x, y, p) => [1 - p.a*x*x + y, p.b*x],
+                scale: 1,
+                center: [0, 0, 0]
+            },
+            thomas: {
+                name: 'Thomas Attractor',
+                description: 'A cyclically symmetric attractor discovered by René Thomas.',
+                equation: 'dx/dt = sin(y) - bx<br>dy/dt = sin(z) - by<br>dz/dt = sin(x) - bz',
+                params: { b: 0.208186 },
+                paramRanges: {
+                    b: [0.1, 0.3, 0.208186]
+                },
+                dimension: 2.0,
+                initial: [1, 0, 0],
+                derivative: (x, y, z, p) => [
+                    Math.sin(y) - p.b * x,
+                    Math.sin(z) - p.b * y,
+                    Math.sin(x) - p.b * z
+                ],
+                scale: 50,
+                center: [0, 0, 0]
+            }
+        };
+
+        let currentSystem = 'lorenz';
+        let trajectories = [];
+        let isRunning = false;
+        let mode = 'single';
+        let iterations = 0;
+        let rotationAngle = 0;
+
+        class Trajectory {
+            constructor(initial, color) {
+                this.state = [...initial];
+                this.color = color;
+                this.history = [];
+                this.maxHistory = 2000;
+            }
+
+            update(system, dt, steps) {
+                const sys = systems[system];
+
+                for (let i = 0; i < steps; i++) {
+                    if (sys.isMap) {
+                        if (sys.is2D) {
+                            const [newX, newY] = sys.iterate(this.state[0], this.state[1], sys.params);
+                            this.state = [newX, newY];
+                            this.history.push([newX, newY, 0]);
+                        } else {
+                            const newX = sys.iterate(this.state[0], sys.params);
+                            this.history.push([this.state[0], newX, 0]);
+                            this.state = [newX];
+                        }
+                    } else if (system === 'double-pendulum') {
+                        this.state = sys.update(this.state, dt, sys.params);
+                        const pos = sys.getPosition(this.state, sys.params);
+                        this.history.push([pos.x2, pos.y2, 0]);
+                    } else {
+                        // Runge-Kutta 4th order
+                        const [x, y, z] = this.state;
+                        const k1 = sys.derivative(x, y, z, sys.params);
+                        const k2 = sys.derivative(
+                            x + k1[0]*dt/2, y + k1[1]*dt/2, z + k1[2]*dt/2, sys.params
+                        );
+                        const k3 = sys.derivative(
+                            x + k2[0]*dt/2, y + k2[1]*dt/2, z + k2[2]*dt/2, sys.params
+                        );
+                        const k4 = sys.derivative(
+                            x + k3[0]*dt, y + k3[1]*dt, z + k3[2]*dt, sys.params
+                        );
+
+                        this.state = [
+                            x + (k1[0] + 2*k2[0] + 2*k3[0] + k4[0]) * dt / 6,
+                            y + (k1[1] + 2*k2[1] + 2*k3[1] + k4[1]) * dt / 6,
+                            z + (k1[2] + 2*k2[2] + 2*k3[2] + k4[2]) * dt / 6
+                        ];
+
+                        this.history.push([...this.state]);
+                    }
+                }
+
+                // Limit history
+                const maxHistory = parseInt(document.getElementById('trail').value);
+                while (this.history.length > maxHistory) {
+                    this.history.shift();
+                }
+            }
+        }
+
+        function initializeTrajectories() {
+            const sys = systems[currentSystem];
+            trajectories = [];
+            iterations = 0;
+
+            const delta = Math.pow(10, parseFloat(document.getElementById('deltaInit').value));
+
+            if (mode === 'single') {
+                trajectories.push(new Trajectory([...sys.initial], '#00ffff'));
+            } else if (mode === 'dual') {
+                trajectories.push(new Trajectory([...sys.initial], '#00ffff'));
+                const perturbed = sys.initial.map((v, i) => i === 0 ? v + delta : v);
+                trajectories.push(new Trajectory(perturbed, '#ff00ff'));
+            } else if (mode === 'swarm') {
+                const colors = ['#ff0000', '#ff8800', '#ffff00', '#00ff00', '#00ffff', '#0088ff', '#8800ff', '#ff00ff'];
+                for (let i = 0; i < 8; i++) {
+                    const perturbed = sys.initial.map((v, j) =>
+                        v + (Math.random() - 0.5) * delta * 2
+                    );
+                    trajectories.push(new Trajectory(perturbed, colors[i]));
+                }
+            }
+        }
+
+        function project3D(x, y, z, angle) {
+            const sys = systems[currentSystem];
+            const scale = canvas.height / (4 * sys.scale);
+
+            // Simple rotation around Y axis
+            const cosA = Math.cos(angle);
+            const sinA = Math.sin(angle);
+            const rx = (x - sys.center[0]) * cosA - (z - sys.center[2]) * sinA;
+            const ry = y - sys.center[1];
+            const rz = (x - sys.center[0]) * sinA + (z - sys.center[2]) * cosA;
+
+            // Simple perspective
+            const perspective = 1 + rz * 0.01;
+
+            return {
+                x: canvas.width/2 + rx * scale / perspective,
+                y: canvas.height/2 - ry * scale / perspective,
+                z: rz
+            };
+        }
+
+        function render() {
+            ctx.fillStyle = 'rgba(10, 5, 16, 0.15)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const sys = systems[currentSystem];
+
+            // Draw trajectories
+            for (const traj of trajectories) {
+                if (traj.history.length < 2) continue;
+
+                ctx.beginPath();
+                for (let i = 0; i < traj.history.length; i++) {
+                    const [x, y, z] = traj.history[i];
+                    const p = project3D(x, y, z, rotationAngle);
+
+                    const alpha = i / traj.history.length;
+
+                    if (i === 0) {
+                        ctx.moveTo(p.x, p.y);
+                    } else {
+                        ctx.lineTo(p.x, p.y);
+                    }
+                }
+
+                ctx.strokeStyle = traj.color;
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+
+                // Draw current position
+                if (traj.history.length > 0) {
+                    const last = traj.history[traj.history.length - 1];
+                    const p = project3D(last[0], last[1], last[2], rotationAngle);
+
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+                    ctx.fillStyle = traj.color;
+                    ctx.fill();
+                }
+            }
+
+            // Draw double pendulum arms if applicable
+            if (currentSystem === 'double-pendulum' && trajectories.length > 0) {
+                const traj = trajectories[0];
+                if (traj.state.length >= 2) {
+                    const pos = sys.getPosition(traj.state, sys.params);
+                    const scale = sys.scale;
+                    const cx = canvas.width / 2;
+                    const cy = canvas.height / 3;
+
+                    ctx.strokeStyle = '#666';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(cx, cy);
+                    ctx.lineTo(cx + pos.x1 * scale, cy + pos.y1 * scale);
+                    ctx.lineTo(cx + pos.x2 * scale, cy + pos.y2 * scale);
+                    ctx.stroke();
+
+                    // Joints
+                    ctx.fillStyle = '#888';
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(cx + pos.x1 * scale, cy + pos.y1 * scale, 8, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(cx + pos.x2 * scale, cy + pos.y2 * scale, 10, 0, Math.PI * 2);
+                    ctx.fillStyle = '#ff8844';
+                    ctx.fill();
+                }
+            }
+        }
+
+        function simulate() {
+            if (!isRunning) return;
+
+            const speed = parseInt(document.getElementById('speed').value);
+            const dt = systems[currentSystem].isMap ? 1 : 0.005;
+
+            for (const traj of trajectories) {
+                traj.update(currentSystem, dt, speed);
+            }
+
+            iterations += speed;
+            rotationAngle += 0.002;
+
+            updateStats();
+            render();
+            requestAnimationFrame(simulate);
+        }
+
+        function updateStats() {
+            document.getElementById('iterations').textContent = iterations;
+            document.getElementById('dimension').textContent = systems[currentSystem].dimension.toFixed(2);
+
+            if (trajectories.length >= 2) {
+                const t1 = trajectories[0];
+                const t2 = trajectories[1];
+
+                if (t1.history.length > 0 && t2.history.length > 0) {
+                    const last1 = t1.history[t1.history.length - 1];
+                    const last2 = t2.history[t2.history.length - 1];
+
+                    let separation = 0;
+                    for (let i = 0; i < Math.min(last1.length, last2.length); i++) {
+                        separation += Math.pow(last1[i] - last2[i], 2);
+                    }
+                    separation = Math.sqrt(separation);
+
+                    document.getElementById('separation').textContent = separation.toExponential(2);
+
+                    // Estimate Lyapunov exponent
+                    const delta0 = Math.pow(10, parseFloat(document.getElementById('deltaInit').value));
+                    const lyapunov = iterations > 0 ? Math.log(separation / delta0) / iterations : 0;
+                    document.getElementById('lyapunov').textContent = lyapunov.toFixed(4);
+
+                    // Update divergence meter
+                    const divergence = Math.min(100, Math.log10(separation / delta0 + 1) * 20);
+                    document.getElementById('divergenceFill').style.width = Math.max(0, divergence) + '%';
+                }
+            }
+        }
+
+        function updateSystemParams() {
+            const sys = systems[currentSystem];
+            const container = document.getElementById('systemParams');
+            container.innerHTML = '';
+
+            for (const [param, range] of Object.entries(sys.paramRanges || {})) {
+                const row = document.createElement('div');
+                row.className = 'param-row';
+                row.innerHTML = `
+                    <label>${param}:</label>
+                    <input type="range" id="param_${param}"
+                           min="${range[0]}" max="${range[1]}"
+                           value="${sys.params[param]}" step="0.001">
+                    <span id="param_${param}_value">${sys.params[param].toFixed(3)}</span>
+                `;
+                container.appendChild(row);
+
+                document.getElementById(`param_${param}`).addEventListener('input', (e) => {
+                    sys.params[param] = parseFloat(e.target.value);
+                    document.getElementById(`param_${param}_value`).textContent =
+                        parseFloat(e.target.value).toFixed(3);
+                });
+            }
+
+            // Update info box
+            const info = document.getElementById('systemInfo');
+            info.innerHTML = `
+                <h3>${sys.name}</h3>
+                <p>${sys.description}</p>
+                <div class="equation">${sys.equation}</div>
+            `;
+        }
+
+        function toggleSimulation() {
+            isRunning = !isRunning;
+            if (isRunning) simulate();
+        }
+
+        function resetSimulation() {
+            isRunning = false;
+            initializeTrajectories();
+            iterations = 0;
+            render();
+            updateStats();
+        }
+
+        // Event listeners
+        document.querySelectorAll('.system-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.system-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentSystem = btn.dataset.system;
+                updateSystemParams();
+                resetSimulation();
+            });
+        });
+
+        document.querySelectorAll('.traj-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.traj-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                mode = btn.dataset.mode;
+                resetSimulation();
+            });
+        });
+
+        document.getElementById('deltaInit').addEventListener('input', (e) => {
+            const exp = parseFloat(e.target.value);
+            document.getElementById('deltaInitValue').textContent = `10^${exp}`;
+        });
+
+        document.getElementById('speed').addEventListener('input', (e) => {
+            document.getElementById('speedValue').textContent = e.target.value;
+        });
+
+        document.getElementById('trail').addEventListener('input', (e) => {
+            document.getElementById('trailValue').textContent = e.target.value;
+        });
+
+        // Initialize
+        updateSystemParams();
+        initializeTrajectories();
+        render();
+    </script>
+</body>
+</html>

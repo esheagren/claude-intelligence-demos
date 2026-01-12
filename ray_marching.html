@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ray Marching Visualizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0a0a0a;
+            min-height: 100vh;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .sidebar {
+            width: 300px;
+            background: rgba(20, 20, 30, 0.95);
+            padding: 20px;
+            overflow-y: auto;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        h1 {
+            font-size: 1.4em;
+            margin-bottom: 5px;
+            background: linear-gradient(135deg, #ff6b6b, #feca57);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            font-size: 0.8em;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .section {
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .section:last-child {
+            border-bottom: none;
+        }
+
+        .section h3 {
+            font-size: 0.85em;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+
+        .scene-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .scene-btn {
+            padding: 10px 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .scene-btn:hover {
+            background: rgba(255, 107, 107, 0.2);
+            border-color: #ff6b6b;
+        }
+
+        .scene-btn.active {
+            background: rgba(255, 107, 107, 0.3);
+            border-color: #ff6b6b;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group label {
+            display: block;
+            font-size: 0.8em;
+            color: #aaa;
+            margin-bottom: 6px;
+        }
+
+        .control-group input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.1);
+            -webkit-appearance: none;
+        }
+
+        .control-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #ff6b6b;
+            cursor: pointer;
+        }
+
+        .value-display {
+            font-size: 0.75em;
+            color: #ff6b6b;
+            float: right;
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8em;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: #ff6b6b;
+        }
+
+        .color-picker {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .color-picker input[type="color"] {
+            width: 40px;
+            height: 30px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .color-picker span {
+            font-size: 0.8em;
+            color: #aaa;
+        }
+
+        .main-area {
+            flex: 1;
+            position: relative;
+        }
+
+        #glCanvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .info-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px 20px;
+            border-radius: 10px;
+            font-size: 0.8em;
+        }
+
+        .info-panel h4 {
+            color: #ff6b6b;
+            margin-bottom: 8px;
+        }
+
+        .info-panel p {
+            color: #aaa;
+            margin-bottom: 5px;
+        }
+
+        .fps-counter {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 8px 15px;
+            border-radius: 6px;
+            font-size: 0.85em;
+            color: #ff6b6b;
+        }
+
+        .help-text {
+            font-size: 0.75em;
+            color: #666;
+            line-height: 1.5;
+            margin-top: 15px;
+        }
+
+        .preset-colors {
+            display: flex;
+            gap: 6px;
+            margin-top: 10px;
+        }
+
+        .preset-color {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .preset-color:hover {
+            transform: scale(1.1);
+        }
+
+        .preset-color.active {
+            border-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h1>Ray Marching</h1>
+            <p class="subtitle">Real-time SDF Rendering</p>
+
+            <div class="section">
+                <h3>Scene</h3>
+                <div class="scene-grid">
+                    <button class="scene-btn active" data-scene="spheres">Spheres</button>
+                    <button class="scene-btn" data-scene="mandelbulb">Mandelbulb</button>
+                    <button class="scene-btn" data-scene="menger">Menger Sponge</button>
+                    <button class="scene-btn" data-scene="torus">Twisted Torus</button>
+                    <button class="scene-btn" data-scene="julia">Julia Set 3D</button>
+                    <button class="scene-btn" data-scene="columns">Infinite Columns</button>
+                    <button class="scene-btn" data-scene="terrain">Terrain</button>
+                    <button class="scene-btn" data-scene="blobs">Metaballs</button>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>Rendering</h3>
+                <div class="control-group">
+                    <label>Max Steps <span class="value-display" id="stepsVal">100</span></label>
+                    <input type="range" id="maxSteps" min="20" max="200" value="100">
+                </div>
+                <div class="control-group">
+                    <label>Epsilon <span class="value-display" id="epsilonVal">0.001</span></label>
+                    <input type="range" id="epsilon" min="1" max="100" value="10">
+                </div>
+                <div class="control-group">
+                    <label>Max Distance <span class="value-display" id="maxDistVal">100</span></label>
+                    <input type="range" id="maxDist" min="10" max="200" value="100">
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>Lighting</h3>
+                <div class="control-group">
+                    <label>Ambient <span class="value-display" id="ambientVal">0.1</span></label>
+                    <input type="range" id="ambient" min="0" max="50" value="10">
+                </div>
+                <div class="control-group">
+                    <label>Shadow Softness <span class="value-display" id="shadowVal">16</span></label>
+                    <input type="range" id="shadow" min="1" max="64" value="16">
+                </div>
+                <div class="control-group">
+                    <label>AO Intensity <span class="value-display" id="aoVal">0.5</span></label>
+                    <input type="range" id="ao" min="0" max="100" value="50">
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>Effects</h3>
+                <div class="checkbox-group">
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="shadows" checked>
+                        Soft Shadows
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="aoEnabled" checked>
+                        Ambient Occlusion
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="reflections">
+                        Reflections
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="glow">
+                        Glow
+                    </label>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>Colors</h3>
+                <div class="color-picker">
+                    <input type="color" id="objectColor" value="#ff6b6b">
+                    <span>Object</span>
+                    <input type="color" id="bgColor" value="#0a0a1a">
+                    <span>Background</span>
+                </div>
+                <div class="preset-colors">
+                    <div class="preset-color active" style="background: linear-gradient(135deg, #ff6b6b, #feca57);" data-colors="#ff6b6b,#0a0a1a"></div>
+                    <div class="preset-color" style="background: linear-gradient(135deg, #00d4ff, #7b2cbf);" data-colors="#00d4ff,#0f0f1f"></div>
+                    <div class="preset-color" style="background: linear-gradient(135deg, #00ff88, #0a2a1a);" data-colors="#00ff88,#0a1a0f"></div>
+                    <div class="preset-color" style="background: linear-gradient(135deg, #ffd700, #ff4500);" data-colors="#ffd700,#1a0a0a"></div>
+                    <div class="preset-color" style="background: linear-gradient(135deg, #ff00ff, #00ffff);" data-colors="#ff00ff,#0a0a1a"></div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>Animation</h3>
+                <div class="control-group">
+                    <label>Speed <span class="value-display" id="speedVal">1.0</span></label>
+                    <input type="range" id="speed" min="0" max="200" value="100">
+                </div>
+                <div class="checkbox-group">
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="autoRotate" checked>
+                        Auto Rotate Camera
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="animate" checked>
+                        Animate Scene
+                    </label>
+                </div>
+            </div>
+
+            <div class="help-text">
+                <strong>Controls:</strong><br>
+                Drag to rotate camera<br>
+                Scroll to zoom in/out<br>
+                Right-drag to pan
+            </div>
+        </div>
+
+        <div class="main-area">
+            <canvas id="glCanvas"></canvas>
+            <div class="fps-counter">FPS: <span id="fps">60</span></div>
+            <div class="info-panel">
+                <h4>Ray Marching</h4>
+                <p>Sphere tracing with signed distance functions</p>
+                <p id="sceneInfo">Scene: Spheres with smooth blending</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('glCanvas');
+        const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+
+        if (!gl) {
+            alert('WebGL not supported');
+        }
+
+        let currentScene = 'spheres';
+        let mouseX = 0, mouseY = 0;
+        let targetRotX = 0, targetRotY = 0;
+        let rotX = 0, rotY = 0;
+        let zoom = 5.0;
+        let isDragging = false;
+        let lastMouseX = 0, lastMouseY = 0;
+        let time = 0;
+        let lastTime = performance.now();
+        let frameCount = 0;
+        let fps = 60;
+
+        // Settings
+        const settings = {
+            maxSteps: 100,
+            epsilon: 0.001,
+            maxDist: 100,
+            ambient: 0.1,
+            shadowSoftness: 16,
+            aoIntensity: 0.5,
+            shadows: true,
+            ao: true,
+            reflections: false,
+            glow: false,
+            objectColor: [1.0, 0.42, 0.42],
+            bgColor: [0.04, 0.04, 0.1],
+            speed: 1.0,
+            autoRotate: true,
+            animate: true
+        };
+
+        const sceneInfo = {
+            spheres: 'Spheres with smooth blending',
+            mandelbulb: 'Mandelbulb fractal (power 8)',
+            menger: 'Menger sponge recursive fractal',
+            torus: 'Twisted torus with displacement',
+            julia: '3D Julia set quaternion fractal',
+            columns: 'Infinite repeating columns',
+            terrain: 'Procedural noise terrain',
+            blobs: 'Animated metaballs'
+        };
+
+        const vertexShaderSource = `#version 300 es
+            in vec4 aPosition;
+            void main() {
+                gl_Position = aPosition;
+            }
+        `;
+
+        function getFragmentShader() {
+            return `#version 300 es
+            precision highp float;
+
+            uniform vec2 uResolution;
+            uniform float uTime;
+            uniform vec3 uCameraPos;
+            uniform mat3 uCameraRot;
+            uniform int uMaxSteps;
+            uniform float uEpsilon;
+            uniform float uMaxDist;
+            uniform float uAmbient;
+            uniform float uShadowSoftness;
+            uniform float uAOIntensity;
+            uniform bool uShadows;
+            uniform bool uAO;
+            uniform bool uReflections;
+            uniform bool uGlow;
+            uniform vec3 uObjectColor;
+            uniform vec3 uBgColor;
+            uniform int uScene;
+            uniform bool uAnimate;
+
+            out vec4 fragColor;
+
+            float sdSphere(vec3 p, float r) {
+                return length(p) - r;
+            }
+
+            float sdBox(vec3 p, vec3 b) {
+                vec3 q = abs(p) - b;
+                return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0);
+            }
+
+            float sdTorus(vec3 p, vec2 t) {
+                vec2 q = vec2(length(p.xz) - t.x, p.y);
+                return length(q) - t.y;
+            }
+
+            float sdCross(vec3 p, float s) {
+                float a = sdBox(p, vec3(s, 1.0/s, 1.0/s));
+                float b = sdBox(p, vec3(1.0/s, s, 1.0/s));
+                float c = sdBox(p, vec3(1.0/s, 1.0/s, s));
+                return min(a, min(b, c));
+            }
+
+            float smin(float a, float b, float k) {
+                float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
+                return mix(b, a, h) - k * h * (1.0 - h);
+            }
+
+            mat2 rot2D(float a) {
+                float s = sin(a), c = cos(a);
+                return mat2(c, -s, s, c);
+            }
+
+            float noise(vec3 p) {
+                vec3 i = floor(p);
+                vec3 f = fract(p);
+                f = f * f * (3.0 - 2.0 * f);
+
+                float n = i.x + i.y * 157.0 + 113.0 * i.z;
+                return mix(
+                    mix(mix(fract(sin(n) * 43758.5453),
+                            fract(sin(n + 1.0) * 43758.5453), f.x),
+                        mix(fract(sin(n + 157.0) * 43758.5453),
+                            fract(sin(n + 158.0) * 43758.5453), f.x), f.y),
+                    mix(mix(fract(sin(n + 113.0) * 43758.5453),
+                            fract(sin(n + 114.0) * 43758.5453), f.x),
+                        mix(fract(sin(n + 270.0) * 43758.5453),
+                            fract(sin(n + 271.0) * 43758.5453), f.x), f.y), f.z);
+            }
+
+            float fbm(vec3 p) {
+                float f = 0.0;
+                float amp = 0.5;
+                for (int i = 0; i < 4; i++) {
+                    f += amp * noise(p);
+                    p *= 2.0;
+                    amp *= 0.5;
+                }
+                return f;
+            }
+
+            // Scene: Spheres
+            float sceneSpheres(vec3 p) {
+                float t = uAnimate ? uTime : 0.0;
+                float d = sdSphere(p - vec3(sin(t) * 1.5, 0.0, cos(t) * 1.5), 1.0);
+                d = smin(d, sdSphere(p - vec3(-sin(t) * 1.5, 0.0, -cos(t) * 1.5), 1.0), 0.5);
+                d = smin(d, sdSphere(p - vec3(0.0, sin(t * 1.3) * 1.5, 0.0), 0.8), 0.5);
+                d = min(d, p.y + 1.5);
+                return d;
+            }
+
+            // Scene: Mandelbulb
+            float sceneMandelbulb(vec3 p) {
+                vec3 z = p;
+                float dr = 1.0;
+                float r = 0.0;
+                float power = 8.0;
+
+                for (int i = 0; i < 10; i++) {
+                    r = length(z);
+                    if (r > 2.0) break;
+
+                    float theta = acos(z.z / r);
+                    float phi = atan(z.y, z.x);
+                    dr = pow(r, power - 1.0) * power * dr + 1.0;
+
+                    float zr = pow(r, power);
+                    theta = theta * power;
+                    phi = phi * power;
+
+                    z = zr * vec3(sin(theta) * cos(phi), sin(phi) * sin(theta), cos(theta));
+                    z += p;
+                }
+                return 0.5 * log(r) * r / dr;
+            }
+
+            // Scene: Menger Sponge
+            float sceneMenger(vec3 p) {
+                float d = sdBox(p, vec3(1.0));
+                float s = 1.0;
+
+                for (int m = 0; m < 4; m++) {
+                    vec3 a = mod(p * s, 2.0) - 1.0;
+                    s *= 3.0;
+                    vec3 r = abs(1.0 - 3.0 * abs(a));
+                    float da = max(r.x, r.y);
+                    float db = max(r.y, r.z);
+                    float dc = max(r.z, r.x);
+                    float c = (min(da, min(db, dc)) - 1.0) / s;
+                    d = max(d, c);
+                }
+                return d;
+            }
+
+            // Scene: Twisted Torus
+            float sceneTorus(vec3 p) {
+                float t = uAnimate ? uTime : 0.0;
+                p.xz *= rot2D(p.y * 0.5 + t * 0.3);
+                float d = sdTorus(p, vec2(1.5, 0.5));
+                d += sin(p.x * 10.0 + t * 2.0) * 0.05 * sin(p.y * 10.0 + t * 1.5) * 0.05;
+                return d;
+            }
+
+            // Scene: 3D Julia Set
+            float sceneJulia(vec3 p) {
+                float t = uAnimate ? uTime * 0.1 : 0.0;
+                vec4 c = vec4(-0.2 + sin(t) * 0.1, 0.6 + cos(t * 0.7) * 0.1, 0.2, 0.0);
+                vec4 z = vec4(p, 0.0);
+                float md2 = 1.0;
+                float mz2 = dot(z, z);
+
+                for (int i = 0; i < 11; i++) {
+                    md2 *= 4.0 * mz2;
+                    z = vec4(z.x * z.x - dot(z.yzw, z.yzw),
+                            2.0 * z.x * z.yzw) + c;
+                    mz2 = dot(z, z);
+                    if (mz2 > 4.0) break;
+                }
+                return 0.25 * sqrt(mz2 / md2) * log(mz2);
+            }
+
+            // Scene: Infinite Columns
+            float sceneColumns(vec3 p) {
+                float t = uAnimate ? uTime : 0.0;
+                vec3 q = p;
+                q.xz = mod(q.xz + 4.0, 8.0) - 4.0;
+
+                float d = length(q.xz) - 0.5 - 0.1 * sin(q.y * 2.0 + t);
+                d = max(d, abs(q.y) - 3.0);
+
+                // Add some variation
+                float cap = sdBox(q - vec3(0.0, 3.0, 0.0), vec3(0.7, 0.1, 0.7));
+                d = min(d, cap);
+                cap = sdBox(q - vec3(0.0, -3.0, 0.0), vec3(0.7, 0.1, 0.7));
+                d = min(d, cap);
+
+                d = min(d, p.y + 3.0);
+                return d;
+            }
+
+            // Scene: Terrain
+            float sceneTerrain(vec3 p) {
+                float t = uAnimate ? uTime * 0.5 : 0.0;
+                float h = fbm(p.xz * 0.5 + vec2(t * 0.1, 0.0)) * 2.0;
+                h += fbm(p.xz * 1.0 + vec2(0.0, t * 0.05)) * 0.5;
+                return p.y - h + 1.0;
+            }
+
+            // Scene: Metaballs
+            float sceneBlobs(vec3 p) {
+                float t = uAnimate ? uTime : 0.0;
+                float d = 1e10;
+
+                for (int i = 0; i < 5; i++) {
+                    float fi = float(i);
+                    vec3 center = vec3(
+                        sin(t + fi * 1.3) * 2.0,
+                        sin(t * 0.7 + fi * 0.9) * 1.5,
+                        cos(t * 0.5 + fi * 1.1) * 2.0
+                    );
+                    d = smin(d, sdSphere(p - center, 0.7 + 0.2 * sin(fi)), 0.5);
+                }
+
+                d = min(d, p.y + 2.0);
+                return d;
+            }
+
+            float map(vec3 p) {
+                if (uScene == 0) return sceneSpheres(p);
+                if (uScene == 1) return sceneMandelbulb(p * 1.5) / 1.5;
+                if (uScene == 2) return sceneMenger(p);
+                if (uScene == 3) return sceneTorus(p);
+                if (uScene == 4) return sceneJulia(p);
+                if (uScene == 5) return sceneColumns(p);
+                if (uScene == 6) return sceneTerrain(p);
+                if (uScene == 7) return sceneBlobs(p);
+                return sceneSpheres(p);
+            }
+
+            vec3 getNormal(vec3 p) {
+                vec2 e = vec2(uEpsilon, 0.0);
+                return normalize(vec3(
+                    map(p + e.xyy) - map(p - e.xyy),
+                    map(p + e.yxy) - map(p - e.yxy),
+                    map(p + e.yyx) - map(p - e.yyx)
+                ));
+            }
+
+            float softShadow(vec3 ro, vec3 rd, float mint, float maxt) {
+                float res = 1.0;
+                float t = mint;
+                for (int i = 0; i < 64; i++) {
+                    float h = map(ro + rd * t);
+                    if (h < uEpsilon) return 0.0;
+                    res = min(res, uShadowSoftness * h / t);
+                    t += h;
+                    if (t > maxt) break;
+                }
+                return clamp(res, 0.0, 1.0);
+            }
+
+            float calcAO(vec3 pos, vec3 nor) {
+                float occ = 0.0;
+                float sca = 1.0;
+                for (int i = 0; i < 5; i++) {
+                    float h = 0.01 + 0.12 * float(i);
+                    float d = map(pos + h * nor);
+                    occ += (h - d) * sca;
+                    sca *= 0.95;
+                }
+                return clamp(1.0 - 3.0 * occ * uAOIntensity, 0.0, 1.0);
+            }
+
+            vec3 render(vec3 ro, vec3 rd) {
+                float t = 0.0;
+                float glow = 0.0;
+
+                for (int i = 0; i < 200; i++) {
+                    if (i >= uMaxSteps) break;
+                    vec3 p = ro + rd * t;
+                    float d = map(p);
+
+                    if (uGlow) {
+                        glow += exp(-d * 5.0) * 0.01;
+                    }
+
+                    if (d < uEpsilon) {
+                        vec3 n = getNormal(p);
+                        vec3 lightDir = normalize(vec3(1.0, 1.0, -1.0));
+
+                        // Basic lighting
+                        float diff = max(dot(n, lightDir), 0.0);
+                        float spec = pow(max(dot(reflect(-lightDir, n), -rd), 0.0), 32.0);
+
+                        // Fresnel
+                        float fresnel = pow(1.0 - max(dot(n, -rd), 0.0), 3.0);
+
+                        // Shadow
+                        float shadow = 1.0;
+                        if (uShadows) {
+                            shadow = softShadow(p + n * uEpsilon * 10.0, lightDir, 0.02, 10.0);
+                        }
+
+                        // Ambient occlusion
+                        float ao = 1.0;
+                        if (uAO) {
+                            ao = calcAO(p, n);
+                        }
+
+                        vec3 col = uObjectColor;
+                        col = col * (uAmbient + diff * shadow) + vec3(1.0) * spec * shadow * 0.5;
+                        col *= ao;
+                        col += fresnel * 0.2;
+
+                        // Reflection
+                        if (uReflections) {
+                            vec3 refDir = reflect(rd, n);
+                            float refT = 0.0;
+                            for (int j = 0; j < 30; j++) {
+                                vec3 refP = p + n * uEpsilon * 10.0 + refDir * refT;
+                                float refD = map(refP);
+                                if (refD < uEpsilon) {
+                                    vec3 refN = getNormal(refP);
+                                    float refDiff = max(dot(refN, lightDir), 0.0);
+                                    col += uObjectColor * refDiff * 0.3 * fresnel;
+                                    break;
+                                }
+                                refT += refD;
+                                if (refT > 20.0) break;
+                            }
+                        }
+
+                        // Fog
+                        float fog = exp(-t * 0.05);
+                        col = mix(uBgColor, col, fog);
+
+                        if (uGlow) col += uObjectColor * glow;
+                        return col;
+                    }
+
+                    t += d;
+                    if (t > uMaxDist) break;
+                }
+
+                vec3 col = uBgColor;
+                if (uGlow) col += uObjectColor * glow;
+                return col;
+            }
+
+            void main() {
+                vec2 uv = (gl_FragCoord.xy - 0.5 * uResolution) / uResolution.y;
+
+                vec3 ro = uCameraPos;
+                vec3 rd = normalize(uCameraRot * vec3(uv, 1.0));
+
+                vec3 col = render(ro, rd);
+
+                // Gamma correction
+                col = pow(col, vec3(0.4545));
+
+                fragColor = vec4(col, 1.0);
+            }
+        `;
+        }
+
+        let program;
+        let positionBuffer;
+        let uniforms = {};
+
+        function createShader(gl, type, source) {
+            const shader = gl.createShader(type);
+            gl.shaderSource(shader, source);
+            gl.compileShader(shader);
+            if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+                console.error(gl.getShaderInfoLog(shader));
+                gl.deleteShader(shader);
+                return null;
+            }
+            return shader;
+        }
+
+        function createProgram(gl, vertexShader, fragmentShader) {
+            const program = gl.createProgram();
+            gl.attachShader(program, vertexShader);
+            gl.attachShader(program, fragmentShader);
+            gl.linkProgram(program);
+            if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+                console.error(gl.getProgramInfoLog(program));
+                gl.deleteProgram(program);
+                return null;
+            }
+            return program;
+        }
+
+        function init() {
+            // Use WebGL 1 fallback if necessary
+            let fragSource = getFragmentShader();
+            let vertSource = vertexShaderSource;
+
+            if (!gl.getParameter(gl.VERSION).includes('WebGL 2')) {
+                fragSource = fragSource.replace('#version 300 es', '')
+                    .replace('in vec4 aPosition;', 'attribute vec4 aPosition;')
+                    .replace('out vec4 fragColor;', '')
+                    .replace('fragColor =', 'gl_FragColor =');
+                vertSource = vertSource.replace('#version 300 es', '')
+                    .replace('in vec4 aPosition;', 'attribute vec4 aPosition;');
+            }
+
+            const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertSource);
+            const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragSource);
+            program = createProgram(gl, vertexShader, fragmentShader);
+
+            positionBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+                -1, -1, 1, -1, -1, 1,
+                -1, 1, 1, -1, 1, 1
+            ]), gl.STATIC_DRAW);
+
+            uniforms = {
+                uResolution: gl.getUniformLocation(program, 'uResolution'),
+                uTime: gl.getUniformLocation(program, 'uTime'),
+                uCameraPos: gl.getUniformLocation(program, 'uCameraPos'),
+                uCameraRot: gl.getUniformLocation(program, 'uCameraRot'),
+                uMaxSteps: gl.getUniformLocation(program, 'uMaxSteps'),
+                uEpsilon: gl.getUniformLocation(program, 'uEpsilon'),
+                uMaxDist: gl.getUniformLocation(program, 'uMaxDist'),
+                uAmbient: gl.getUniformLocation(program, 'uAmbient'),
+                uShadowSoftness: gl.getUniformLocation(program, 'uShadowSoftness'),
+                uAOIntensity: gl.getUniformLocation(program, 'uAOIntensity'),
+                uShadows: gl.getUniformLocation(program, 'uShadows'),
+                uAO: gl.getUniformLocation(program, 'uAO'),
+                uReflections: gl.getUniformLocation(program, 'uReflections'),
+                uGlow: gl.getUniformLocation(program, 'uGlow'),
+                uObjectColor: gl.getUniformLocation(program, 'uObjectColor'),
+                uBgColor: gl.getUniformLocation(program, 'uBgColor'),
+                uScene: gl.getUniformLocation(program, 'uScene'),
+                uAnimate: gl.getUniformLocation(program, 'uAnimate')
+            };
+        }
+
+        function resize() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            gl.viewport(0, 0, canvas.width, canvas.height);
+        }
+
+        function hexToRGB(hex) {
+            const r = parseInt(hex.slice(1, 3), 16) / 255;
+            const g = parseInt(hex.slice(3, 5), 16) / 255;
+            const b = parseInt(hex.slice(5, 7), 16) / 255;
+            return [r, g, b];
+        }
+
+        function getSceneIndex(scene) {
+            const scenes = ['spheres', 'mandelbulb', 'menger', 'torus', 'julia', 'columns', 'terrain', 'blobs'];
+            return scenes.indexOf(scene);
+        }
+
+        function render(timestamp) {
+            const dt = (timestamp - lastTime) / 1000;
+            lastTime = timestamp;
+            time += dt * settings.speed;
+
+            frameCount++;
+            if (frameCount % 30 === 0) {
+                fps = Math.round(30 / (dt * 30));
+                document.getElementById('fps').textContent = fps;
+            }
+
+            // Auto rotate
+            if (settings.autoRotate) {
+                targetRotY += dt * 0.3;
+            }
+
+            // Smooth camera movement
+            rotX += (targetRotX - rotX) * 0.1;
+            rotY += (targetRotY - rotY) * 0.1;
+
+            // Camera position and rotation
+            const camDist = zoom;
+            const camX = Math.sin(rotY) * Math.cos(rotX) * camDist;
+            const camY = Math.sin(rotX) * camDist;
+            const camZ = Math.cos(rotY) * Math.cos(rotX) * camDist;
+
+            // Camera rotation matrix
+            const forward = [-camX / camDist, -camY / camDist, -camZ / camDist];
+            const right = [Math.cos(rotY), 0, -Math.sin(rotY)];
+            const up = [
+                right[1] * forward[2] - right[2] * forward[1],
+                right[2] * forward[0] - right[0] * forward[2],
+                right[0] * forward[1] - right[1] * forward[0]
+            ];
+
+            const rotMatrix = [
+                right[0], up[0], -forward[0],
+                right[1], up[1], -forward[1],
+                right[2], up[2], -forward[2]
+            ];
+
+            gl.useProgram(program);
+
+            const positionLocation = gl.getAttribLocation(program, 'aPosition');
+            gl.enableVertexAttribArray(positionLocation);
+            gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+            gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+
+            gl.uniform2f(uniforms.uResolution, canvas.width, canvas.height);
+            gl.uniform1f(uniforms.uTime, time);
+            gl.uniform3f(uniforms.uCameraPos, camX, camY, camZ);
+            gl.uniformMatrix3fv(uniforms.uCameraRot, false, rotMatrix);
+            gl.uniform1i(uniforms.uMaxSteps, settings.maxSteps);
+            gl.uniform1f(uniforms.uEpsilon, settings.epsilon);
+            gl.uniform1f(uniforms.uMaxDist, settings.maxDist);
+            gl.uniform1f(uniforms.uAmbient, settings.ambient);
+            gl.uniform1f(uniforms.uShadowSoftness, settings.shadowSoftness);
+            gl.uniform1f(uniforms.uAOIntensity, settings.aoIntensity);
+            gl.uniform1i(uniforms.uShadows, settings.shadows);
+            gl.uniform1i(uniforms.uAO, settings.ao);
+            gl.uniform1i(uniforms.uReflections, settings.reflections);
+            gl.uniform1i(uniforms.uGlow, settings.glow);
+            gl.uniform3fv(uniforms.uObjectColor, settings.objectColor);
+            gl.uniform3fv(uniforms.uBgColor, settings.bgColor);
+            gl.uniform1i(uniforms.uScene, getSceneIndex(currentScene));
+            gl.uniform1i(uniforms.uAnimate, settings.animate);
+
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+            requestAnimationFrame(render);
+        }
+
+        // Event listeners
+        canvas.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                const dx = e.clientX - lastMouseX;
+                const dy = e.clientY - lastMouseY;
+                targetRotY += dx * 0.01;
+                targetRotX += dy * 0.01;
+                targetRotX = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, targetRotX));
+                lastMouseX = e.clientX;
+                lastMouseY = e.clientY;
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => isDragging = false);
+        canvas.addEventListener('mouseleave', () => isDragging = false);
+
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            zoom *= 1 + e.deltaY * 0.001;
+            zoom = Math.max(2, Math.min(20, zoom));
+        });
+
+        // Scene buttons
+        document.querySelectorAll('.scene-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.scene-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentScene = btn.dataset.scene;
+                document.getElementById('sceneInfo').textContent = 'Scene: ' + sceneInfo[currentScene];
+            });
+        });
+
+        // Controls
+        document.getElementById('maxSteps').addEventListener('input', (e) => {
+            settings.maxSteps = parseInt(e.target.value);
+            document.getElementById('stepsVal').textContent = settings.maxSteps;
+        });
+
+        document.getElementById('epsilon').addEventListener('input', (e) => {
+            settings.epsilon = e.target.value / 10000;
+            document.getElementById('epsilonVal').textContent = settings.epsilon.toFixed(4);
+        });
+
+        document.getElementById('maxDist').addEventListener('input', (e) => {
+            settings.maxDist = parseInt(e.target.value);
+            document.getElementById('maxDistVal').textContent = settings.maxDist;
+        });
+
+        document.getElementById('ambient').addEventListener('input', (e) => {
+            settings.ambient = e.target.value / 100;
+            document.getElementById('ambientVal').textContent = settings.ambient.toFixed(2);
+        });
+
+        document.getElementById('shadow').addEventListener('input', (e) => {
+            settings.shadowSoftness = parseInt(e.target.value);
+            document.getElementById('shadowVal').textContent = settings.shadowSoftness;
+        });
+
+        document.getElementById('ao').addEventListener('input', (e) => {
+            settings.aoIntensity = e.target.value / 100;
+            document.getElementById('aoVal').textContent = settings.aoIntensity.toFixed(2);
+        });
+
+        document.getElementById('speed').addEventListener('input', (e) => {
+            settings.speed = e.target.value / 100;
+            document.getElementById('speedVal').textContent = settings.speed.toFixed(1);
+        });
+
+        document.getElementById('shadows').addEventListener('change', (e) => {
+            settings.shadows = e.target.checked;
+        });
+
+        document.getElementById('aoEnabled').addEventListener('change', (e) => {
+            settings.ao = e.target.checked;
+        });
+
+        document.getElementById('reflections').addEventListener('change', (e) => {
+            settings.reflections = e.target.checked;
+        });
+
+        document.getElementById('glow').addEventListener('change', (e) => {
+            settings.glow = e.target.checked;
+        });
+
+        document.getElementById('autoRotate').addEventListener('change', (e) => {
+            settings.autoRotate = e.target.checked;
+        });
+
+        document.getElementById('animate').addEventListener('change', (e) => {
+            settings.animate = e.target.checked;
+        });
+
+        document.getElementById('objectColor').addEventListener('input', (e) => {
+            settings.objectColor = hexToRGB(e.target.value);
+        });
+
+        document.getElementById('bgColor').addEventListener('input', (e) => {
+            settings.bgColor = hexToRGB(e.target.value);
+        });
+
+        document.querySelectorAll('.preset-color').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.preset-color').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const colors = btn.dataset.colors.split(',');
+                settings.objectColor = hexToRGB(colors[0]);
+                settings.bgColor = hexToRGB(colors[1]);
+                document.getElementById('objectColor').value = colors[0];
+                document.getElementById('bgColor').value = colors[1];
+            });
+        });
+
+        window.addEventListener('resize', resize);
+
+        init();
+        resize();
+        requestAnimationFrame(render);
+    </script>
+</body>
+</html>

@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ray Tracing Renderer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a2e 50%, #0a0a1a 100%);
+            min-height: 100vh;
+            font-family: 'Courier New', monospace;
+            color: #e0e0e0;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #ff7e5f, #feb47b, #86a8e7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 20px;
+        }
+
+        .render-area {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(255, 126, 95, 0.2);
+        }
+
+        .canvas-container {
+            position: relative;
+            background: #000;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            image-rendering: pixelated;
+        }
+
+        .progress-overlay {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff7e5f, #feb47b);
+            width: 0%;
+            transition: width 0.1s;
+        }
+
+        .progress-text {
+            text-align: center;
+            margin-top: 5px;
+            font-size: 0.85em;
+            color: #feb47b;
+        }
+
+        .controls {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(255, 126, 95, 0.2);
+        }
+
+        .control-section {
+            margin-bottom: 25px;
+        }
+
+        .control-section h3 {
+            color: #ff7e5f;
+            margin-bottom: 15px;
+            font-size: 1em;
+            border-bottom: 1px solid rgba(255, 126, 95, 0.3);
+            padding-bottom: 8px;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #aaa;
+            font-size: 0.85em;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            background: rgba(255, 126, 95, 0.2);
+            border-radius: 3px;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #ff7e5f;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .control-value {
+            text-align: right;
+            color: #feb47b;
+            font-size: 0.8em;
+            margin-top: 3px;
+        }
+
+        select {
+            width: 100%;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 126, 95, 0.3);
+            border-radius: 8px;
+            color: #fff;
+            font-family: inherit;
+            cursor: pointer;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #ff7e5f;
+        }
+
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        button {
+            background: linear-gradient(135deg, rgba(255, 126, 95, 0.3), rgba(254, 180, 123, 0.3));
+            border: 1px solid rgba(255, 126, 95, 0.5);
+            color: #fff;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: linear-gradient(135deg, rgba(255, 126, 95, 0.5), rgba(254, 180, 123, 0.5));
+            box-shadow: 0 0 15px rgba(255, 126, 95, 0.3);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .stats {
+            background: rgba(0, 50, 100, 0.2);
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 0.85em;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            color: #feb47b;
+        }
+
+        .scene-objects {
+            max-height: 200px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .scene-object {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            margin-bottom: 5px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 5px;
+        }
+
+        .object-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .object-name {
+            flex: 1;
+            font-size: 0.85em;
+        }
+
+        .info-panel {
+            background: rgba(134, 168, 231, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            font-size: 0.85em;
+            line-height: 1.6;
+            color: #aaa;
+        }
+
+        .info-panel h4 {
+            color: #86a8e7;
+            margin-bottom: 10px;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #ff7e5f;
+            text-decoration: none;
+            font-size: 0.9em;
+            opacity: 0.8;
+            transition: opacity 0.3s;
+        }
+
+        .back-link:hover {
+            opacity: 1;
+        }
+
+        .color-picker-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        input[type="color"] {
+            width: 40px;
+            height: 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-link">← Back to Index</a>
+
+        <h1>Ray Tracing Renderer</h1>
+        <p class="subtitle">Real-time software ray tracer with reflections and lighting</p>
+
+        <div class="main-content">
+            <div class="render-area">
+                <div class="canvas-container">
+                    <canvas id="renderCanvas" width="640" height="480"></canvas>
+                    <div class="progress-overlay" id="progressOverlay">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <div class="progress-text" id="progressText">Rendering... 0%</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <div class="control-section">
+                    <h3>Render Settings</h3>
+
+                    <div class="control-group">
+                        <label>Resolution Scale</label>
+                        <select id="resolution">
+                            <option value="0.25">Quarter (Fast)</option>
+                            <option value="0.5" selected>Half (Balanced)</option>
+                            <option value="1">Full (Slow)</option>
+                        </select>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Max Reflections</label>
+                        <input type="range" id="maxReflections" min="0" max="8" value="3">
+                        <div class="control-value" id="maxReflectionsValue">3</div>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Shadow Softness</label>
+                        <input type="range" id="shadowSoftness" min="0" max="10" value="0">
+                        <div class="control-value" id="shadowSoftnessValue">0 (Hard)</div>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h3>Camera</h3>
+
+                    <div class="control-group">
+                        <label>Field of View</label>
+                        <input type="range" id="fov" min="30" max="120" value="60">
+                        <div class="control-value" id="fovValue">60°</div>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Camera Height</label>
+                        <input type="range" id="cameraHeight" min="0" max="10" step="0.5" value="2">
+                        <div class="control-value" id="cameraHeightValue">2</div>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Camera Distance</label>
+                        <input type="range" id="cameraDistance" min="5" max="20" step="0.5" value="10">
+                        <div class="control-value" id="cameraDistanceValue">10</div>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h3>Lighting</h3>
+
+                    <div class="control-group">
+                        <label>Light Intensity</label>
+                        <input type="range" id="lightIntensity" min="0.1" max="2" step="0.1" value="1">
+                        <div class="control-value" id="lightIntensityValue">1.0</div>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Ambient Light</label>
+                        <input type="range" id="ambientLight" min="0" max="0.5" step="0.05" value="0.1">
+                        <div class="control-value" id="ambientLightValue">0.1</div>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h3>Scene</h3>
+                    <select id="sceneSelect">
+                        <option value="classic">Classic Spheres</option>
+                        <option value="mirrors">Hall of Mirrors</option>
+                        <option value="planets">Planets</option>
+                        <option value="random">Random Spheres</option>
+                    </select>
+                </div>
+
+                <div class="control-section">
+                    <h3>Actions</h3>
+                    <div class="action-buttons">
+                        <button id="renderBtn">Render Scene</button>
+                        <button id="animateBtn">Animate Camera</button>
+                        <button id="stopBtn" disabled>Stop</button>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h3>Statistics</h3>
+                    <div class="stats">
+                        <div class="stat-row">
+                            <span>Rays Cast:</span>
+                            <span class="stat-value" id="raysCast">0</span>
+                        </div>
+                        <div class="stat-row">
+                            <span>Render Time:</span>
+                            <span class="stat-value" id="renderTime">0ms</span>
+                        </div>
+                        <div class="stat-row">
+                            <span>Resolution:</span>
+                            <span class="stat-value" id="resolutionStat">320×240</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-panel">
+                    <h4>About Ray Tracing</h4>
+                    <p>
+                        Ray tracing simulates light by casting rays from the camera through each pixel.
+                        For each ray, we calculate intersections with objects, apply lighting models,
+                        and recursively trace reflected rays.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('renderCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Vector class
+        class Vec3 {
+            constructor(x = 0, y = 0, z = 0) {
+                this.x = x;
+                this.y = y;
+                this.z = z;
+            }
+
+            add(v) { return new Vec3(this.x + v.x, this.y + v.y, this.z + v.z); }
+            sub(v) { return new Vec3(this.x - v.x, this.y - v.y, this.z - v.z); }
+            mul(s) { return new Vec3(this.x * s, this.y * s, this.z * s); }
+            div(s) { return new Vec3(this.x / s, this.y / s, this.z / s); }
+            dot(v) { return this.x * v.x + this.y * v.y + this.z * v.z; }
+            cross(v) {
+                return new Vec3(
+                    this.y * v.z - this.z * v.y,
+                    this.z * v.x - this.x * v.z,
+                    this.x * v.y - this.y * v.x
+                );
+            }
+            length() { return Math.sqrt(this.dot(this)); }
+            normalize() { return this.div(this.length() || 1); }
+            reflect(n) { return this.sub(n.mul(2 * this.dot(n))); }
+            mulVec(v) { return new Vec3(this.x * v.x, this.y * v.y, this.z * v.z); }
+
+            static random() {
+                return new Vec3(Math.random(), Math.random(), Math.random());
+            }
+        }
+
+        // Ray class
+        class Ray {
+            constructor(origin, direction) {
+                this.origin = origin;
+                this.direction = direction.normalize();
+            }
+
+            at(t) { return this.origin.add(this.direction.mul(t)); }
+        }
+
+        // Material class
+        class Material {
+            constructor(color, reflectivity = 0, specular = 0.5, shininess = 32) {
+                this.color = color;
+                this.reflectivity = reflectivity;
+                this.specular = specular;
+                this.shininess = shininess;
+            }
+        }
+
+        // Sphere class
+        class Sphere {
+            constructor(center, radius, material) {
+                this.center = center;
+                this.radius = radius;
+                this.material = material;
+            }
+
+            intersect(ray) {
+                const oc = ray.origin.sub(this.center);
+                const a = ray.direction.dot(ray.direction);
+                const b = 2 * oc.dot(ray.direction);
+                const c = oc.dot(oc) - this.radius * this.radius;
+                const discriminant = b * b - 4 * a * c;
+
+                if (discriminant < 0) return null;
+
+                const t = (-b - Math.sqrt(discriminant)) / (2 * a);
+                if (t < 0.001) return null;
+
+                const point = ray.at(t);
+                const normal = point.sub(this.center).normalize();
+
+                return { t, point, normal, material: this.material };
+            }
+        }
+
+        // Plane class
+        class Plane {
+            constructor(point, normal, material) {
+                this.point = point;
+                this.normal = normal.normalize();
+                this.material = material;
+            }
+
+            intersect(ray) {
+                const denom = this.normal.dot(ray.direction);
+                if (Math.abs(denom) < 0.0001) return null;
+
+                const t = this.point.sub(ray.origin).dot(this.normal) / denom;
+                if (t < 0.001) return null;
+
+                const point = ray.at(t);
+
+                // Checkerboard pattern for floor
+                let material = this.material;
+                if (this.normal.y > 0.9) {
+                    const checker = (Math.floor(point.x) + Math.floor(point.z)) % 2 === 0;
+                    material = new Material(
+                        checker ? new Vec3(0.9, 0.9, 0.9) : new Vec3(0.1, 0.1, 0.1),
+                        0.3, 0.3, 16
+                    );
+                }
+
+                return { t, point, normal: this.normal, material };
+            }
+        }
+
+        // Scene setup
+        let objects = [];
+        let lights = [];
+        let camera = {
+            position: new Vec3(0, 2, 10),
+            lookAt: new Vec3(0, 0, 0),
+            fov: 60
+        };
+
+        // Settings
+        let settings = {
+            maxReflections: 3,
+            shadowSoftness: 0,
+            lightIntensity: 1,
+            ambientLight: 0.1,
+            resolution: 0.5
+        };
+
+        let isRendering = false;
+        let isAnimating = false;
+        let animationFrame = null;
+        let rayCount = 0;
+
+        // Scene presets
+        function setupScene(sceneName) {
+            objects = [];
+            lights = [];
+
+            // Ground plane
+            objects.push(new Plane(
+                new Vec3(0, -1, 0),
+                new Vec3(0, 1, 0),
+                new Material(new Vec3(0.5, 0.5, 0.5), 0.2, 0.3, 16)
+            ));
+
+            switch (sceneName) {
+                case 'classic':
+                    objects.push(new Sphere(new Vec3(0, 0, 0), 1,
+                        new Material(new Vec3(1, 0.2, 0.2), 0.3, 0.8, 64)));
+                    objects.push(new Sphere(new Vec3(-2.5, 0, -1), 1,
+                        new Material(new Vec3(0.2, 1, 0.2), 0.5, 0.9, 128)));
+                    objects.push(new Sphere(new Vec3(2.5, 0, -1), 1,
+                        new Material(new Vec3(0.2, 0.2, 1), 0.5, 0.9, 128)));
+                    objects.push(new Sphere(new Vec3(0, 0, -3), 1.5,
+                        new Material(new Vec3(0.9, 0.9, 0.9), 0.9, 1, 256)));
+                    lights.push({ position: new Vec3(5, 10, 5), intensity: 1 });
+                    lights.push({ position: new Vec3(-5, 8, 3), intensity: 0.6 });
+                    break;
+
+                case 'mirrors':
+                    objects.push(new Sphere(new Vec3(0, 0.5, 0), 1.5,
+                        new Material(new Vec3(1, 0.8, 0.3), 0.1, 0.9, 64)));
+                    objects.push(new Sphere(new Vec3(-3, 0, 2), 1,
+                        new Material(new Vec3(0.95, 0.95, 0.95), 0.95, 1, 256)));
+                    objects.push(new Sphere(new Vec3(3, 0, 2), 1,
+                        new Material(new Vec3(0.95, 0.95, 0.95), 0.95, 1, 256)));
+                    objects.push(new Sphere(new Vec3(-3, 0, -2), 1,
+                        new Material(new Vec3(0.95, 0.95, 0.95), 0.95, 1, 256)));
+                    objects.push(new Sphere(new Vec3(3, 0, -2), 1,
+                        new Material(new Vec3(0.95, 0.95, 0.95), 0.95, 1, 256)));
+                    lights.push({ position: new Vec3(0, 10, 0), intensity: 1.5 });
+                    break;
+
+                case 'planets':
+                    objects.push(new Sphere(new Vec3(0, 1, 0), 2,
+                        new Material(new Vec3(0.8, 0.6, 0.2), 0.1, 0.5, 32)));
+                    objects.push(new Sphere(new Vec3(4, 0, 2), 0.8,
+                        new Material(new Vec3(0.6, 0.3, 0.2), 0.05, 0.4, 16)));
+                    objects.push(new Sphere(new Vec3(-3.5, -0.3, 1), 0.7,
+                        new Material(new Vec3(0.3, 0.5, 0.8), 0.2, 0.6, 48)));
+                    objects.push(new Sphere(new Vec3(2, -0.5, -2), 0.5,
+                        new Material(new Vec3(0.5, 0.5, 0.5), 0.1, 0.3, 16)));
+                    objects.push(new Sphere(new Vec3(-2, -0.6, -3), 0.4,
+                        new Material(new Vec3(0.9, 0.4, 0.1), 0.05, 0.5, 32)));
+                    lights.push({ position: new Vec3(10, 15, 10), intensity: 1.2 });
+                    break;
+
+                case 'random':
+                    for (let i = 0; i < 10; i++) {
+                        const x = (Math.random() - 0.5) * 8;
+                        const z = (Math.random() - 0.5) * 8 - 2;
+                        const r = 0.3 + Math.random() * 0.7;
+                        const color = new Vec3(
+                            0.3 + Math.random() * 0.7,
+                            0.3 + Math.random() * 0.7,
+                            0.3 + Math.random() * 0.7
+                        );
+                        const reflectivity = Math.random() * 0.8;
+                        objects.push(new Sphere(
+                            new Vec3(x, r - 1, z), r,
+                            new Material(color, reflectivity, 0.5 + Math.random() * 0.5, 32 + Math.random() * 96)
+                        ));
+                    }
+                    lights.push({ position: new Vec3(5, 10, 5), intensity: 1 });
+                    lights.push({ position: new Vec3(-5, 8, -3), intensity: 0.5 });
+                    break;
+            }
+        }
+
+        // Ray-scene intersection
+        function intersectScene(ray) {
+            let closest = null;
+            let minT = Infinity;
+
+            for (const obj of objects) {
+                const hit = obj.intersect(ray);
+                if (hit && hit.t < minT) {
+                    minT = hit.t;
+                    closest = hit;
+                }
+            }
+
+            return closest;
+        }
+
+        // Check if point is in shadow
+        function isInShadow(point, lightPos) {
+            const toLight = lightPos.sub(point);
+            const distance = toLight.length();
+            const ray = new Ray(point, toLight.normalize());
+
+            for (const obj of objects) {
+                const hit = obj.intersect(ray);
+                if (hit && hit.t < distance) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // Trace ray
+        function traceRay(ray, depth = 0) {
+            rayCount++;
+
+            if (depth > settings.maxReflections) {
+                return new Vec3(0, 0, 0);
+            }
+
+            const hit = intersectScene(ray);
+
+            if (!hit) {
+                // Sky gradient
+                const t = 0.5 * (ray.direction.y + 1);
+                const sky1 = new Vec3(0.5, 0.7, 1.0);
+                const sky2 = new Vec3(0.1, 0.2, 0.4);
+                return sky1.mul(1 - t).add(sky2.mul(t));
+            }
+
+            const material = hit.material;
+            let color = material.color.mul(settings.ambientLight);
+
+            // Lighting
+            for (const light of lights) {
+                const toLight = light.position.sub(hit.point).normalize();
+                const lightDistance = light.position.sub(hit.point).length();
+
+                // Shadow check
+                if (!isInShadow(hit.point, light.position)) {
+                    // Diffuse
+                    const diff = Math.max(0, hit.normal.dot(toLight));
+                    color = color.add(material.color.mul(diff * light.intensity * settings.lightIntensity));
+
+                    // Specular
+                    const viewDir = ray.direction.mul(-1);
+                    const reflectDir = toLight.mul(-1).reflect(hit.normal);
+                    const spec = Math.pow(Math.max(0, viewDir.dot(reflectDir)), material.shininess);
+                    color = color.add(new Vec3(1, 1, 1).mul(spec * material.specular * light.intensity));
+                }
+            }
+
+            // Reflection
+            if (material.reflectivity > 0 && depth < settings.maxReflections) {
+                const reflectDir = ray.direction.reflect(hit.normal);
+                const reflectRay = new Ray(hit.point, reflectDir);
+                const reflectColor = traceRay(reflectRay, depth + 1);
+                color = color.mul(1 - material.reflectivity).add(reflectColor.mul(material.reflectivity));
+            }
+
+            return color;
+        }
+
+        // Render scene
+        async function render() {
+            if (isRendering) return;
+            isRendering = true;
+
+            const startTime = performance.now();
+            rayCount = 0;
+
+            const scale = settings.resolution;
+            const width = Math.floor(canvas.width * scale);
+            const height = Math.floor(canvas.height * scale);
+
+            document.getElementById('resolutionStat').textContent = `${width}×${height}`;
+            document.getElementById('progressOverlay').style.display = 'block';
+            document.getElementById('renderBtn').disabled = true;
+
+            const imageData = ctx.createImageData(width, height);
+            const data = imageData.data;
+
+            const aspectRatio = width / height;
+            const fovRad = camera.fov * Math.PI / 180;
+            const halfHeight = Math.tan(fovRad / 2);
+            const halfWidth = aspectRatio * halfHeight;
+
+            const forward = camera.lookAt.sub(camera.position).normalize();
+            const right = new Vec3(0, 1, 0).cross(forward).normalize();
+            const up = forward.cross(right);
+
+            const rowsPerChunk = 10;
+            let currentRow = 0;
+
+            const renderChunk = () => {
+                const endRow = Math.min(currentRow + rowsPerChunk, height);
+
+                for (let y = currentRow; y < endRow; y++) {
+                    for (let x = 0; x < width; x++) {
+                        const u = (2 * (x + 0.5) / width - 1) * halfWidth;
+                        const v = (1 - 2 * (y + 0.5) / height) * halfHeight;
+
+                        const direction = forward.add(right.mul(u)).add(up.mul(v)).normalize();
+                        const ray = new Ray(camera.position, direction);
+
+                        const color = traceRay(ray);
+
+                        // Clamp and gamma correct
+                        const idx = (y * width + x) * 4;
+                        data[idx] = Math.min(255, Math.pow(color.x, 0.45) * 255);
+                        data[idx + 1] = Math.min(255, Math.pow(color.y, 0.45) * 255);
+                        data[idx + 2] = Math.min(255, Math.pow(color.z, 0.45) * 255);
+                        data[idx + 3] = 255;
+                    }
+                }
+
+                currentRow = endRow;
+                const progress = currentRow / height * 100;
+                document.getElementById('progressFill').style.width = `${progress}%`;
+                document.getElementById('progressText').textContent = `Rendering... ${Math.floor(progress)}%`;
+
+                if (currentRow < height && isRendering) {
+                    requestAnimationFrame(renderChunk);
+                } else {
+                    // Create temporary canvas for scaling
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = width;
+                    tempCanvas.height = height;
+                    const tempCtx = tempCanvas.getContext('2d');
+                    tempCtx.putImageData(imageData, 0, 0);
+
+                    // Scale up to full canvas
+                    ctx.imageSmoothingEnabled = false;
+                    ctx.drawImage(tempCanvas, 0, 0, canvas.width, canvas.height);
+
+                    const endTime = performance.now();
+                    document.getElementById('raysCast').textContent = rayCount.toLocaleString();
+                    document.getElementById('renderTime').textContent = `${Math.floor(endTime - startTime)}ms`;
+                    document.getElementById('progressOverlay').style.display = 'none';
+                    document.getElementById('renderBtn').disabled = false;
+                    isRendering = false;
+                }
+            };
+
+            renderChunk();
+        }
+
+        // Animate camera
+        function animate() {
+            if (!isAnimating) return;
+
+            const time = performance.now() / 2000;
+            const distance = parseFloat(document.getElementById('cameraDistance').value);
+            const height = parseFloat(document.getElementById('cameraHeight').value);
+
+            camera.position = new Vec3(
+                Math.sin(time) * distance,
+                height,
+                Math.cos(time) * distance
+            );
+
+            render();
+            animationFrame = requestAnimationFrame(() => {
+                if (isAnimating && !isRendering) {
+                    animate();
+                }
+            });
+        }
+
+        // Event listeners
+        document.getElementById('renderBtn').addEventListener('click', render);
+
+        document.getElementById('animateBtn').addEventListener('click', () => {
+            isAnimating = true;
+            document.getElementById('animateBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+            animate();
+        });
+
+        document.getElementById('stopBtn').addEventListener('click', () => {
+            isAnimating = false;
+            if (animationFrame) cancelAnimationFrame(animationFrame);
+            document.getElementById('animateBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+        });
+
+        document.getElementById('sceneSelect').addEventListener('change', (e) => {
+            setupScene(e.target.value);
+            if (!isAnimating) render();
+        });
+
+        document.getElementById('resolution').addEventListener('change', (e) => {
+            settings.resolution = parseFloat(e.target.value);
+        });
+
+        // Slider controls
+        const sliderControls = [
+            { id: 'maxReflections', setting: 'maxReflections', suffix: '' },
+            { id: 'shadowSoftness', setting: 'shadowSoftness', suffix: '', format: v => v == 0 ? '0 (Hard)' : v },
+            { id: 'fov', setting: null, suffix: '°', update: v => camera.fov = v },
+            { id: 'cameraHeight', setting: null, suffix: '', update: v => camera.position.y = v },
+            { id: 'cameraDistance', setting: null, suffix: '', update: v => {
+                const angle = Math.atan2(camera.position.x, camera.position.z);
+                camera.position.x = Math.sin(angle) * v;
+                camera.position.z = Math.cos(angle) * v;
+            }},
+            { id: 'lightIntensity', setting: 'lightIntensity', suffix: '' },
+            { id: 'ambientLight', setting: 'ambientLight', suffix: '' }
+        ];
+
+        sliderControls.forEach(ctrl => {
+            const slider = document.getElementById(ctrl.id);
+            const valueDisplay = document.getElementById(ctrl.id + 'Value');
+
+            slider.addEventListener('input', () => {
+                const value = parseFloat(slider.value);
+                if (ctrl.setting) settings[ctrl.setting] = value;
+                if (ctrl.update) ctrl.update(value);
+
+                const displayValue = ctrl.format ? ctrl.format(value) : value + ctrl.suffix;
+                valueDisplay.textContent = displayValue;
+            });
+        });
+
+        // Initialize
+        setupScene('classic');
+        render();
+    </script>
+</body>
+</html>

@@ -1,0 +1,2228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demonstrations of Intelligence</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0a;
+            color: #e0e0e0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 4s infinite ease-in-out;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.2); }
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 60px 40px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 80px;
+        }
+
+        .logo {
+            font-size: 14px;
+            letter-spacing: 8px;
+            color: rgba(255, 255, 255, 0.3);
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            font-size: 56px;
+            font-weight: 300;
+            letter-spacing: 2px;
+            background: linear-gradient(135deg, #fff 0%, #64b5f6 50%, #81c784 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+            line-height: 1.2;
+        }
+
+        .subtitle {
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.5);
+            font-weight: 300;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .manifesto {
+            max-width: 800px;
+            margin: 60px auto;
+            padding: 40px;
+            background: linear-gradient(135deg, rgba(100, 181, 246, 0.05) 0%, rgba(129, 199, 132, 0.05) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            text-align: center;
+        }
+
+        .manifesto p {
+            font-size: 16px;
+            line-height: 1.8;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 15px;
+        }
+
+        .manifesto p:last-child {
+            margin-bottom: 0;
+        }
+
+        .manifesto em {
+            color: #81c784;
+            font-style: italic;
+        }
+
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-top: 60px;
+        }
+
+        .project-card {
+            background: rgba(20, 20, 30, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 30px;
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+            text-decoration: none;
+            display: block;
+        }
+
+        .project-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-1), var(--accent-2));
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .project-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255, 255, 255, 0.15);
+            background: rgba(30, 30, 45, 0.8);
+        }
+
+        .project-card:hover::before {
+            opacity: 1;
+        }
+
+        .project-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+        }
+
+        .project-card h3 {
+            font-size: 22px;
+            font-weight: 500;
+            color: #fff;
+            margin-bottom: 10px;
+        }
+
+        .project-card .category {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 15px;
+        }
+
+        .project-card p {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+            line-height: 1.7;
+            margin-bottom: 20px;
+        }
+
+        .project-features {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .feature-tag {
+            padding: 4px 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .launch-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+
+        .project-card:hover .launch-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .section-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            color: rgba(255, 255, 255, 0.3);
+            margin-bottom: 30px;
+            padding-left: 10px;
+            border-left: 3px solid rgba(100, 181, 246, 0.5);
+        }
+
+        footer {
+            margin-top: 100px;
+            padding-top: 40px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+        }
+
+        .footer-quote {
+            font-size: 18px;
+            font-style: italic;
+            color: rgba(255, 255, 255, 0.4);
+            max-width: 600px;
+            margin: 0 auto 20px;
+            line-height: 1.6;
+        }
+
+        .footer-attribution {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 60px;
+            margin: 40px 0;
+            padding: 30px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 36px;
+            font-weight: 300;
+            color: #64b5f6;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 36px;
+            }
+
+            .projects-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-bar {
+                flex-wrap: wrap;
+                gap: 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="stars" id="stars"></div>
+
+    <div class="container">
+        <header>
+            <div class="logo">Claude Opus 4.5</div>
+            <h1>Demonstrations of Intelligence</h1>
+            <p class="subtitle">
+                A collection of interactive experiences exploring emergence, creativity, mathematics, music, philosophy, and the nature of computation itself.
+            </p>
+        </header>
+
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-number">111</div>
+                <div class="stat-label">Experiences</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">~210k</div>
+                <div class="stat-label">Lines of Code</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">∞</div>
+                <div class="stat-label">Possibilities</div>
+            </div>
+        </div>
+
+        <div class="manifesto">
+            <p>
+                What follows is not merely a collection of programs, but an exploration of fundamental questions:
+                <em>How does complexity emerge from simplicity?</em> <em>Can machines create beauty?</em>
+                <em>What is the nature of understanding?</em>
+            </p>
+            <p>
+                Each demonstration embodies a different facet of intelligence—from the evolutionary dynamics of artificial life
+                to the harmonic structures of generative music, from the infinite depths of mathematical fractals
+                to the recursive mysteries of consciousness contemplating itself.
+            </p>
+        </div>
+
+        <div class="section-title">Interactive Experiences</div>
+
+        <div class="projects-grid">
+            <a href="emergent_intelligence.html" class="project-card" style="--accent-1: #4caf50; --accent-2: #8bc34a;">
+                <div class="project-icon">🧬</div>
+                <div class="category">Artificial Life</div>
+                <h3>Emergent Intelligence</h3>
+                <p>
+                    A self-evolving ecosystem where digital creatures develop neural networks, compete for resources,
+                    and exhibit emergent collective behaviors. Watch as evolution unfolds in real-time.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Neural Networks</span>
+                    <span class="feature-tag">Evolution</span>
+                    <span class="feature-tag">Speciation</span>
+                    <span class="feature-tag">Emergence</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="mathematical_beauty.html" class="project-card" style="--accent-1: #2196f3; --accent-2: #00bcd4;">
+                <div class="project-icon">∞</div>
+                <div class="category">Mathematical Art</div>
+                <h3>Mathematical Beauty</h3>
+                <p>
+                    Explore the infinite depths of fractals—from the Mandelbrot set to Julia sets, Newton fractals,
+                    strange attractors, and quantum wave functions. Navigate infinite complexity.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Fractals</span>
+                    <span class="feature-tag">Chaos Theory</span>
+                    <span class="feature-tag">Golden Ratio</span>
+                    <span class="feature-tag">Interactive</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="infinite_poetry.html" class="project-card" style="--accent-1: #9c27b0; --accent-2: #e91e63;">
+                <div class="project-icon">✒</div>
+                <div class="category">Generative Literature</div>
+                <h3>Infinite Poetry</h3>
+                <p>
+                    A generative poetry engine that creates original verse across multiple forms—haiku, sonnets,
+                    villanelles, and free verse—exploring themes from cosmic wonder to human consciousness.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Poetry</span>
+                    <span class="feature-tag">Language</span>
+                    <span class="feature-tag">Creativity</span>
+                    <span class="feature-tag">Form</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="harmonic_synthesis.html" class="project-card" style="--accent-1: #ff9800; --accent-2: #ffc107;">
+                <div class="project-icon">♪</div>
+                <div class="category">Audio Synthesis</div>
+                <h3>Harmonic Synthesis</h3>
+                <p>
+                    An interactive music synthesizer with real-time audio generation, step sequencer,
+                    generative composition, and visualizations. Create and explore musical space.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Web Audio</span>
+                    <span class="feature-tag">Synthesis</span>
+                    <span class="feature-tag">Sequencer</span>
+                    <span class="feature-tag">Generative</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="philosophical_dialogue.html" class="project-card" style="--accent-1: #607d8b; --accent-2: #78909c;">
+                <div class="project-icon">💭</div>
+                <div class="category">Philosophy</div>
+                <h3>Philosophical Dialogues</h3>
+                <p>
+                    Generative philosophical conversations between history's greatest thinkers—from Socrates to Wittgenstein—
+                    exploring consciousness, existence, time, and meaning.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Dialogue</span>
+                    <span class="feature-tag">Metaphysics</span>
+                    <span class="feature-tag">Epistemology</span>
+                    <span class="feature-tag">Ethics</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="procedural_universe.html" class="project-card" style="--accent-1: #3f51b5; --accent-2: #673ab7;">
+                <div class="project-icon">🌌</div>
+                <div class="category">Procedural Generation</div>
+                <h3>Procedural Universe</h3>
+                <p>
+                    An infinite, procedurally generated cosmos. Explore galaxies, stars, and planetary systems—
+                    each deterministically generated from mathematical seeds. Navigate the infinite.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Infinite World</span>
+                    <span class="feature-tag">Astronomy</span>
+                    <span class="feature-tag">Procedural</span>
+                    <span class="feature-tag">Exploration</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="emergent_automata.html" class="project-card" style="--accent-1: #00bcd4; --accent-2: #009688;">
+                <div class="project-icon">⬡</div>
+                <div class="category">Cellular Automata</div>
+                <h3>Emergent Automata</h3>
+                <p>
+                    Advanced cellular automata systems—from Conway's Game of Life to Wireworld and Langton's Ant.
+                    Witness how simple rules give rise to extraordinary complexity.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Game of Life</span>
+                    <span class="feature-tag">Emergence</span>
+                    <span class="feature-tag">Patterns</span>
+                    <span class="feature-tag">Computation</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="neural_network_viz.html" class="project-card" style="--accent-1: #f44336; --accent-2: #ff5722;">
+                <div class="project-icon">🧠</div>
+                <div class="category">Machine Learning</div>
+                <h3>Neural Network Visualization</h3>
+                <p>
+                    Watch a neural network learn in real-time. Train networks on different problems,
+                    visualize weight changes, decision boundaries, and understand how machines learn.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Deep Learning</span>
+                    <span class="feature-tag">Backpropagation</span>
+                    <span class="feature-tag">Visualization</span>
+                    <span class="feature-tag">Interactive</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="semantic_space.html" class="project-card" style="--accent-1: #a855f7; --accent-2: #ec4899;">
+                <div class="project-icon">📐</div>
+                <div class="category">Computational Linguistics</div>
+                <h3>Semantic Space</h3>
+                <p>
+                    Explore the geometry of language. See how words exist as vectors in high-dimensional space,
+                    compute word analogies, and visualize semantic relationships between concepts.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Word Vectors</span>
+                    <span class="feature-tag">Analogies</span>
+                    <span class="feature-tag">Similarity</span>
+                    <span class="feature-tag">Clustering</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="thought_streams.html" class="project-card" style="--accent-1: #06b6d4; --accent-2: #8b5cf6;">
+                <div class="project-icon">🌊</div>
+                <div class="category">Consciousness</div>
+                <h3>Thought Streams</h3>
+                <p>
+                    An abstract visualization of consciousness and cognition. Watch interconnected thoughts flow,
+                    form associations, and explore different cognitive states from meditation to focused attention.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Consciousness</span>
+                    <span class="feature-tag">Flow States</span>
+                    <span class="feature-tag">Neural Networks</span>
+                    <span class="feature-tag">Meditation</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="reasoning_engine.html" class="project-card" style="--accent-1: #0ea5e9; --accent-2: #22d3ee;">
+                <div class="project-icon">⚙</div>
+                <div class="category">Logic & Inference</div>
+                <h3>Reasoning Engine</h3>
+                <p>
+                    An interactive Prolog-style logical inference engine. Build knowledge bases, execute queries,
+                    and watch forward and backward chaining unfold with proof tree visualization.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Logic Programming</span>
+                    <span class="feature-tag">Unification</span>
+                    <span class="feature-tag">Inference</span>
+                    <span class="feature-tag">Proof Trees</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="evolutionary_art.html" class="project-card" style="--accent-1: #f97316; --accent-2: #ef4444;">
+                <div class="project-icon">🎨</div>
+                <div class="category">Genetic Algorithms</div>
+                <h3>Evolutionary Art</h3>
+                <p>
+                    Breed beautiful images through artificial selection. A population of visual genomes evolves
+                    based on aesthetic fitness, mutation, and crossover—watch art emerge from evolution.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Genetic Art</span>
+                    <span class="feature-tag">Evolution</span>
+                    <span class="feature-tag">Selection</span>
+                    <span class="feature-tag">Aesthetics</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="quantum_sim.html" class="project-card" style="--accent-1: #00ffff; --accent-2: #ff00ff;">
+                <div class="project-icon">⚛</div>
+                <div class="category">Quantum Computing</div>
+                <h3>Quantum State Visualizer</h3>
+                <p>
+                    Explore quantum computing concepts visually. Manipulate qubits on Bloch spheres, apply quantum gates,
+                    create entanglement, and observe superposition and measurement.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Qubits</span>
+                    <span class="feature-tag">Bloch Sphere</span>
+                    <span class="feature-tag">Entanglement</span>
+                    <span class="feature-tag">Gates</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="language_emergence.html" class="project-card" style="--accent-1: #eab308; --accent-2: #f97316;">
+                <div class="project-icon">💬</div>
+                <div class="category">Emergent Communication</div>
+                <h3>Language Emergence</h3>
+                <p>
+                    Watch language emerge from scratch as simple agents learn to communicate. Through repeated
+                    interactions, a shared vocabulary develops—simulating the birth of language.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Emergence</span>
+                    <span class="feature-tag">Communication</span>
+                    <span class="feature-tag">Learning</span>
+                    <span class="feature-tag">Vocabulary</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="chaos_theory.html" class="project-card" style="--accent-1: #ff4444; --accent-2: #ffaa00;">
+                <div class="project-icon">🦋</div>
+                <div class="category">Dynamical Systems</div>
+                <h3>Chaos Theory</h3>
+                <p>
+                    Explore the butterfly effect and strange attractors. Watch how tiny differences in initial
+                    conditions lead to wildly divergent outcomes in chaotic systems like Lorenz and Rössler.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Lorenz</span>
+                    <span class="feature-tag">Attractors</span>
+                    <span class="feature-tag">Sensitivity</span>
+                    <span class="feature-tag">Phase Space</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="recursive_patterns.html" class="project-card" style="--accent-1: #00ff88; --accent-2: #00ffff;">
+                <div class="project-icon">🔄</div>
+                <div class="category">Fractals & Recursion</div>
+                <h3>Recursive Patterns</h3>
+                <p>
+                    Generate beautiful self-similar patterns from simple recursive rules. Sierpinski triangles,
+                    Koch snowflakes, dragon curves, Hilbert curves, and more.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Fractals</span>
+                    <span class="feature-tag">L-Systems</span>
+                    <span class="feature-tag">Self-Similarity</span>
+                    <span class="feature-tag">Recursion</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="turing_machine.html" class="project-card" style="--accent-1: #ffd700; --accent-2: #ff8800;">
+                <div class="project-icon">📼</div>
+                <div class="category">Computation Theory</div>
+                <h3>Turing Machine</h3>
+                <p>
+                    An interactive simulation of Alan Turing's foundational computing model. Step through
+                    computations, visualize state transitions, and explore the basis of all computation.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Computation</span>
+                    <span class="feature-tag">Automata</span>
+                    <span class="feature-tag">Tape</span>
+                    <span class="feature-tag">States</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="particle_physics.html" class="project-card" style="--accent-1: #00ffff; --accent-2: #ff00ff;">
+                <div class="project-icon">⚛</div>
+                <div class="category">Physics Simulation</div>
+                <h3>Particle Physics</h3>
+                <p>
+                    Simulate fundamental forces between particles. Gravity, electrostatic forces, springs,
+                    and magnetic fields. Create atoms, plasmas, and watch physics unfold.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Forces</span>
+                    <span class="feature-tag">Fields</span>
+                    <span class="feature-tag">N-Body</span>
+                    <span class="feature-tag">Simulation</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="graph_algorithms.html" class="project-card" style="--accent-1: #4ecdc4; --accent-2: #44a08d;">
+                <div class="project-icon">🔗</div>
+                <div class="category">Algorithms</div>
+                <h3>Graph Algorithms</h3>
+                <p>
+                    Visualize graph traversal and pathfinding algorithms. BFS, DFS, Dijkstra, A*,
+                    and minimum spanning tree algorithms with step-by-step animation.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Pathfinding</span>
+                    <span class="feature-tag">Traversal</span>
+                    <span class="feature-tag">MST</span>
+                    <span class="feature-tag">Visualization</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="sorting_algorithms.html" class="project-card" style="--accent-1: #667eea; --accent-2: #764ba2;">
+                <div class="project-icon">📊</div>
+                <div class="category">Algorithms</div>
+                <h3>Sorting Algorithms</h3>
+                <p>
+                    Watch sorting algorithms visualized with sound. Bubble, selection, insertion,
+                    merge, quick, heap, shell, and radix sort with complexity analysis.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Comparison</span>
+                    <span class="feature-tag">Divide & Conquer</span>
+                    <span class="feature-tag">Audio</span>
+                    <span class="feature-tag">Complexity</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="fluid_dynamics.html" class="project-card" style="--accent-1: #0077be; --accent-2: #00d4ff;">
+                <div class="project-icon">💧</div>
+                <div class="category">Physics Simulation</div>
+                <h3>Fluid Dynamics</h3>
+                <p>
+                    Real-time Navier-Stokes fluid simulation. Add dye and force with your mouse,
+                    watch viscosity and diffusion in action, and explore turbulent flow.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Navier-Stokes</span>
+                    <span class="feature-tag">Advection</span>
+                    <span class="feature-tag">Viscosity</span>
+                    <span class="feature-tag">Interactive</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="compression.html" class="project-card" style="--accent-1: #00ff88; --accent-2: #00d4ff;">
+                <div class="project-icon">📦</div>
+                <div class="category">Information Theory</div>
+                <h3>Compression Algorithms</h3>
+                <p>
+                    Visualize how data compression works. Huffman coding trees, run-length encoding,
+                    LZ77 dictionary compression, and Shannon-Fano coding with step-by-step animation.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Huffman</span>
+                    <span class="feature-tag">LZ77</span>
+                    <span class="feature-tag">Entropy</span>
+                    <span class="feature-tag">Trees</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="cryptography.html" class="project-card" style="--accent-1: #ff6b6b; --accent-2: #feca57;">
+                <div class="project-icon">🔐</div>
+                <div class="category">Cryptography</div>
+                <h3>Cryptography Explorer</h3>
+                <p>
+                    Explore classical and modern ciphers. Caesar, Vigenère, Playfair, substitution ciphers,
+                    and RSA demonstration with step-by-step encryption visualization.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Ciphers</span>
+                    <span class="feature-tag">RSA</span>
+                    <span class="feature-tag">Frequency</span>
+                    <span class="feature-tag">Brute Force</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="raytracer.html" class="project-card" style="--accent-1: #ff7e5f; --accent-2: #feb47b;">
+                <div class="project-icon">🌐</div>
+                <div class="category">Computer Graphics</div>
+                <h3>Ray Tracing Renderer</h3>
+                <p>
+                    Real-time software ray tracer with reflections, shadows, and Phong lighting.
+                    Multiple scene presets, camera animation, and configurable rendering options.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Ray Tracing</span>
+                    <span class="feature-tag">Reflections</span>
+                    <span class="feature-tag">Lighting</span>
+                    <span class="feature-tag">3D Graphics</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="music_theory.html" class="project-card" style="--accent-1: #ffd700; --accent-2: #c471ed;">
+                <div class="project-icon">🎹</div>
+                <div class="category">Music Theory</div>
+                <h3>Music Theory Visualizer</h3>
+                <p>
+                    Interactive exploration of scales, chords, and harmony. Circle of fifths,
+                    chord progressions, and scale degrees with audio playback.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Scales</span>
+                    <span class="feature-tag">Chords</span>
+                    <span class="feature-tag">Harmony</span>
+                    <span class="feature-tag">Audio</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="fsm_builder.html" class="project-card" style="--accent-1: #00d4ff; --accent-2: #7c3aed;">
+                <div class="project-icon">⚙</div>
+                <div class="category">Automata Theory</div>
+                <h3>Finite State Machine Builder</h3>
+                <p>
+                    Design and simulate deterministic finite automata. Visual state machine editor
+                    with drag-and-drop, preset machines, and step-through simulation.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">DFA</span>
+                    <span class="feature-tag">Simulation</span>
+                    <span class="feature-tag">Visual Editor</span>
+                    <span class="feature-tag">Transitions</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="maze.html" class="project-card" style="--accent-1: #00ff88; --accent-2: #00d4ff;">
+                <div class="project-icon">🔲</div>
+                <div class="category">Algorithms</div>
+                <h3>Maze Generator & Solver</h3>
+                <p>
+                    Generate perfect mazes with multiple algorithms and watch pathfinding solve them.
+                    DFS, Prim's, Kruskal's generation with BFS, A*, Dijkstra solving.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Generation</span>
+                    <span class="feature-tag">Pathfinding</span>
+                    <span class="feature-tag">A*</span>
+                    <span class="feature-tag">Animation</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="regex.html" class="project-card" style="--accent-1: #f97316; --accent-2: #eab308;">
+                <div class="project-icon">.*</div>
+                <div class="category">Pattern Matching</div>
+                <h3>Regular Expression Visualizer</h3>
+                <p>
+                    Understand regular expressions visually. Pattern tokenization, match highlighting,
+                    capture groups, and a comprehensive quick reference for regex syntax.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Regex</span>
+                    <span class="feature-tag">Patterns</span>
+                    <span class="feature-tag">Matching</span>
+                    <span class="feature-tag">Capture Groups</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="binary_tree.html" class="project-card" style="--accent-1: #4ade80; --accent-2: #22d3ee;">
+                <div class="project-icon">🌲</div>
+                <div class="category">Data Structures</div>
+                <h3>Binary Tree Visualizer</h3>
+                <p>
+                    Interactive visualization of binary search trees, AVL trees, Red-Black trees, and heaps.
+                    Insert, delete, search with animated traversals.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">BST</span>
+                    <span class="feature-tag">AVL</span>
+                    <span class="feature-tag">Red-Black</span>
+                    <span class="feature-tag">Traversals</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="pendulum.html" class="project-card" style="--accent-1: #f97316; --accent-2: #eab308;">
+                <div class="project-icon">🎯</div>
+                <div class="category">Physics Simulation</div>
+                <h3>Pendulum Physics</h3>
+                <p>
+                    From simple harmonic motion to chaos. Single, double, and triple pendulum simulations
+                    with energy conservation, trails, and Lagrangian mechanics.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Chaos</span>
+                    <span class="feature-tag">Lagrangian</span>
+                    <span class="feature-tag">Energy</span>
+                    <span class="feature-tag">Interactive</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="fourier.html" class="project-card" style="--accent-1: #a855f7; --accent-2: #ec4899;">
+                <div class="project-icon">〜</div>
+                <div class="category">Signal Processing</div>
+                <h3>Fourier Transform</h3>
+                <p>
+                    Decompose any signal into sine waves. Visualize waveforms, frequency spectra,
+                    epicycles, and even draw shapes to see their Fourier decomposition.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">FFT</span>
+                    <span class="feature-tag">Spectrum</span>
+                    <span class="feature-tag">Epicycles</span>
+                    <span class="feature-tag">Audio</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="voronoi.html" class="project-card" style="--accent-1: #06b6d4; --accent-2: #8b5cf6;">
+                <div class="project-icon">◇</div>
+                <div class="category">Computational Geometry</div>
+                <h3>Voronoi Diagrams</h3>
+                <p>
+                    Partition space by proximity. Interactive Voronoi and Delaunay triangulation
+                    with multiple distance metrics, Lloyd relaxation, and Fortune's algorithm.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Voronoi</span>
+                    <span class="feature-tag">Delaunay</span>
+                    <span class="feature-tag">Fortune's</span>
+                    <span class="feature-tag">Interactive</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="state_machine.html" class="project-card" style="--accent-1: #f093fb; --accent-2: #f5576c;">
+                <div class="project-icon">◉</div>
+                <div class="category">Automata Theory</div>
+                <h3>State Machine Designer</h3>
+                <p>
+                    Visual editor for finite state machines. Design DFAs and NFAs with an interactive
+                    canvas, simulate input strings, and watch state transitions animate in real-time.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">DFA/NFA</span>
+                    <span class="feature-tag">Simulation</span>
+                    <span class="feature-tag">Visual Editor</span>
+                    <span class="feature-tag">Presets</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="lorenz.html" class="project-card" style="--accent-1: #ff6b6b; --accent-2: #feca57;">
+                <div class="project-icon">🦋</div>
+                <div class="category">Chaos Theory</div>
+                <h3>Lorenz Attractor</h3>
+                <p>
+                    Explore the butterfly effect in 3D. Visualize Lorenz, Rössler, Chen, Aizawa,
+                    Thomas, and Halvorsen strange attractors with real-time parameter control.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Chaos</span>
+                    <span class="feature-tag">3D</span>
+                    <span class="feature-tag">Strange Attractors</span>
+                    <span class="feature-tag">Interactive</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="sorting.html" class="project-card" style="--accent-1: #00d4ff; --accent-2: #00ff88;">
+                <div class="project-icon">📊</div>
+                <div class="category">Algorithms</div>
+                <h3>Sorting Visualizer</h3>
+                <p>
+                    Watch 12 sorting algorithms in action with audio feedback. Compare bubble, merge,
+                    quick, heap, radix, and more with real-time statistics and complexity analysis.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">12 Algorithms</span>
+                    <span class="feature-tag">Audio</span>
+                    <span class="feature-tag">Statistics</span>
+                    <span class="feature-tag">Comparison</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="circuit.html" class="project-card" style="--accent-1: #ffd700; --accent-2: #ff6b6b;">
+                <div class="project-icon">⚡</div>
+                <div class="category">Digital Logic</div>
+                <h3>Circuit Simulator</h3>
+                <p>
+                    Build and simulate digital logic circuits. Drag-and-drop logic gates, wire connections,
+                    real-time signal propagation, truth table generation, and preset circuits.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Logic Gates</span>
+                    <span class="feature-tag">Wiring</span>
+                    <span class="feature-tag">Truth Tables</span>
+                    <span class="feature-tag">Presets</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="ray_marching.html" class="project-card" style="--accent-1: #ff6b6b; --accent-2: #feca57;">
+                <div class="project-icon">🌐</div>
+                <div class="category">Computer Graphics</div>
+                <h3>Ray Marching Visualizer</h3>
+                <p>
+                    Real-time sphere tracing with signed distance functions. Explore Mandelbulb fractals,
+                    Menger sponges, metaballs, and procedural terrain with soft shadows and ambient occlusion.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">SDF</span>
+                    <span class="feature-tag">Fractals</span>
+                    <span class="feature-tag">Soft Shadows</span>
+                    <span class="feature-tag">8 Scenes</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="dna.html" class="project-card" style="--accent-1: #00ff88; --accent-2: #00d4ff;">
+                <div class="project-icon">🧬</div>
+                <div class="category">Molecular Biology</div>
+                <h3>DNA Sequence Visualizer</h3>
+                <p>
+                    Explore DNA sequences with 3D double helix visualization, codon translation, ORF detection,
+                    restriction enzyme sites, and sequence transformations including complement and transcription.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">3D Helix</span>
+                    <span class="feature-tag">Translation</span>
+                    <span class="feature-tag">ORF Finder</span>
+                    <span class="feature-tag">Restriction</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="life3d.html" class="project-card" style="--accent-1: #00ff88; --accent-2: #00d4ff;">
+                <div class="project-icon">🔲</div>
+                <div class="category">Cellular Automata</div>
+                <h3>3D Cellular Automata</h3>
+                <p>
+                    Conway's Game of Life in three dimensions. Multiple 3D rule sets including 4/4/5/M, Clouds,
+                    Crystal, and Amoeba with multi-state cells and interactive camera controls.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">3D Rules</span>
+                    <span class="feature-tag">Multi-State</span>
+                    <span class="feature-tag">6 Patterns</span>
+                    <span class="feature-tag">Interactive</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="music_viz.html" class="project-card" style="--accent-1: #ff6b6b; --accent-2: #feca57;">
+                <div class="project-icon">🎵</div>
+                <div class="category">Audio Visualization</div>
+                <h3>Music Visualizer</h3>
+                <p>
+                    Real-time audio reactive graphics with 8 visualization modes. Microphone input or file playback
+                    with bars, circles, waveforms, particles, tunnels, galaxies, fractals, and terrain.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">8 Modes</span>
+                    <span class="feature-tag">Microphone</span>
+                    <span class="feature-tag">File Playback</span>
+                    <span class="feature-tag">Real-time</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="gravity.html" class="project-card" style="--accent-1: #ffd700; --accent-2: #ff8c00;">
+                <div class="project-icon">🌌</div>
+                <div class="category">Physics Simulation</div>
+                <h3>Gravity Sandbox</h3>
+                <p>
+                    N-body gravitational simulation with collisions and merging. Create solar systems, binary stars,
+                    and chaotic three-body systems. Drag to launch bodies with initial velocity.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">N-Body</span>
+                    <span class="feature-tag">Collisions</span>
+                    <span class="feature-tag">6 Presets</span>
+                    <span class="feature-tag">Energy Stats</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="matrix.html" class="project-card" style="--accent-1: #00ff00; --accent-2: #003300;">
+                <div class="project-icon">ア</div>
+                <div class="category">Visual Effect</div>
+                <h3>Matrix Rain</h3>
+                <p>
+                    Digital rain animation inspired by The Matrix. Multiple character sets including Katakana,
+                    binary, and hex. Mouse interaction, hidden messages, and configurable effects.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">6 Char Sets</span>
+                    <span class="feature-tag">Interactive</span>
+                    <span class="feature-tag">6 Colors</span>
+                    <span class="feature-tag">Effects</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="mandala.html" class="project-card" style="--accent-1: #ffd700; --accent-2: #ff69b4;">
+                <div class="project-icon">☸</div>
+                <div class="category">Generative Art</div>
+                <h3>Mandala Generator</h3>
+                <p>
+                    Create beautiful radial symmetry art with interactive drawing and procedural generation.
+                    Multiple brush shapes, color palettes, and animated rotation effects.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Radial Symmetry</span>
+                    <span class="feature-tag">Draw Mode</span>
+                    <span class="feature-tag">6 Presets</span>
+                    <span class="feature-tag">Animation</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="typing.html" class="project-card" style="--accent-1: #00d4ff; --accent-2: #00ff88;">
+                <div class="project-icon">⌨</div>
+                <div class="category">Skills</div>
+                <h3>Typing Speed Test</h3>
+                <p>
+                    Test your typing speed and accuracy with quotes, random words, code snippets, and numbers.
+                    Live WPM tracking, difficulty levels, and persistent history of results.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">WPM Tracking</span>
+                    <span class="feature-tag">4 Modes</span>
+                    <span class="feature-tag">Accuracy</span>
+                    <span class="feature-tag">History</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="pixel.html" class="project-card" style="--accent-1: #ff6b6b; --accent-2: #ffd93d;">
+                <div class="project-icon">🎨</div>
+                <div class="category">Creative Tools</div>
+                <h3>Pixel Art Editor</h3>
+                <p>
+                    Create retro-style pixel art with drawing tools, fill bucket, shapes, and multiple palettes.
+                    Undo/redo, flip, rotate, export to PNG, and import images.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">8 Tools</span>
+                    <span class="feature-tag">5 Palettes</span>
+                    <span class="feature-tag">Export PNG</span>
+                    <span class="feature-tag">Zoom Grid</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="chess.html" class="project-card" style="--accent-1: #b58863; --accent-2: #f0d9b5;">
+                <div class="project-icon">♔</div>
+                <div class="category">Strategy Game</div>
+                <h3>Chess</h3>
+                <p>
+                    Full chess implementation with all rules including castling, en passant, and promotion.
+                    Play against AI (easy/medium/hard) or another human. Move history and undo support.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Full Rules</span>
+                    <span class="feature-tag">AI Opponent</span>
+                    <span class="feature-tag">Move History</span>
+                    <span class="feature-tag">Check/Mate</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="glitch.html" class="project-card" style="--accent-1: #ff0080; --accent-2: #00ffff;">
+                <div class="project-icon">📺</div>
+                <div class="category">Image Effects</div>
+                <h3>Glitch Lab</h3>
+                <p>
+                    Apply digital distortion effects to images. RGB split, scanlines, noise, displacement,
+                    pixelation, and color manipulation. Presets for VHS, digital, and cyberpunk aesthetics.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">RGB Split</span>
+                    <span class="feature-tag">Scanlines</span>
+                    <span class="feature-tag">6 Presets</span>
+                    <span class="feature-tag">Export PNG</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="tetris.html" class="project-card" style="--accent-1: #00ffff; --accent-2: #ff0080;">
+                <div class="project-icon">🧱</div>
+                <div class="category">Classic Game</div>
+                <h3>Tetris</h3>
+                <p>
+                    The classic block-stacking puzzle game. Complete lines to score points and level up.
+                    Features ghost piece, hold queue, 7-bag randomizer, and wall kicks.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">7-Bag System</span>
+                    <span class="feature-tag">Hold Queue</span>
+                    <span class="feature-tag">Ghost Piece</span>
+                    <span class="feature-tag">20 Levels</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="ascii.html" class="project-card" style="--accent-1: #00ff00; --accent-2: #888888;">
+                <div class="project-icon">A</div>
+                <div class="category">Image Processing</div>
+                <h3>ASCII Art Generator</h3>
+                <p>
+                    Convert images to text-based art using character density mapping. Multiple character sets
+                    including braille and blocks, webcam support, and color output mode.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">6 Char Sets</span>
+                    <span class="feature-tag">Webcam</span>
+                    <span class="feature-tag">Color Mode</span>
+                    <span class="feature-tag">Export</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="conway.html" class="project-card" style="--accent-1: #00ff00; --accent-2: #00ffff;">
+                <div class="project-icon">&#x25A3;</div>
+                <div class="category">Cellular Automata</div>
+                <h3>Conway's Game of Life</h3>
+                <p>
+                    The classic cellular automaton with drawing tools, pattern library, and custom rules.
+                    Explore gliders, gosper guns, and emergent complexity from simple rules.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">12 Patterns</span>
+                    <span class="feature-tag">Custom Rules</span>
+                    <span class="feature-tag">Zoom/Pan</span>
+                    <span class="feature-tag">Statistics</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="drums.html" class="project-card" style="--accent-1: #ff6b6b; --accent-2: #feca57;">
+                <div class="project-icon">&#x1F941;</div>
+                <div class="category">Audio Synthesis</div>
+                <h3>Drum Machine</h3>
+                <p>
+                    Step sequencer and beat maker with synthesized 808-style drums. Create patterns,
+                    use swing timing, and play live with keyboard pads. 8 pattern memory slots.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">16-Step Seq</span>
+                    <span class="feature-tag">8 Sounds</span>
+                    <span class="feature-tag">Swing</span>
+                    <span class="feature-tag">Live Pads</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="particles.html" class="project-card" style="--accent-1: #ff6b6b; --accent-2: #48dbfb;">
+                <div class="project-icon">&#x2728;</div>
+                <div class="category">Visual Effects</div>
+                <h3>Particle System</h3>
+                <p>
+                    Interactive particle playground with 8 presets including fire, snow, and explosions.
+                    Control emission, physics, and forces. Add attractors and repulsors.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">8 Presets</span>
+                    <span class="feature-tag">Physics</span>
+                    <span class="feature-tag">Forces</span>
+                    <span class="feature-tag">Customizable</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="snake.html" class="project-card" style="--accent-1: #00ff88; --accent-2: #00d4ff;">
+                <div class="project-icon">&#x1F40D;</div>
+                <div class="category">Classic Game</div>
+                <h3>Snake</h3>
+                <p>
+                    The classic arcade game with smooth controls and modern styling. Multiple game modes
+                    including walls and obstacles. Local high scores and difficulty levels.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">3 Modes</span>
+                    <span class="feature-tag">Levels</span>
+                    <span class="feature-tag">High Scores</span>
+                    <span class="feature-tag">Touch Support</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="2048.html" class="project-card" style="--accent-1: #edc22e; --accent-2: #f67c5f;">
+                <div class="project-icon">2048</div>
+                <div class="category">Puzzle Game</div>
+                <h3>2048</h3>
+                <p>
+                    The addictive sliding number puzzle. Merge tiles to reach 2048 and beyond.
+                    Multiple grid sizes from 3x3 to 6x6. Undo support and local high scores.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">4 Grid Sizes</span>
+                    <span class="feature-tag">Undo</span>
+                    <span class="feature-tag">Best Score</span>
+                    <span class="feature-tag">Swipe Controls</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="memory.html" class="project-card" style="--accent-1: #667eea; --accent-2: #764ba2;">
+                <div class="project-icon">&#x1F0CF;</div>
+                <div class="category">Puzzle Game</div>
+                <h3>Memory Match</h3>
+                <p>
+                    Classic card matching game with 4 difficulty levels and 4 themes.
+                    Track your moves and time. Beat your best times for each difficulty.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">4 Difficulties</span>
+                    <span class="feature-tag">4 Themes</span>
+                    <span class="feature-tag">Timer</span>
+                    <span class="feature-tag">Best Times</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="breakout.html" class="project-card" style="--accent-1: #ff6b6b; --accent-2: #4fc3f7;">
+                <div class="project-icon">&#x1F3AE;</div>
+                <div class="category">Arcade Game</div>
+                <h3>Breakout</h3>
+                <p>
+                    Classic brick-breaking action with 9 levels and power-ups. Multi-hit bricks,
+                    paddle expansion, multi-ball, and more. Progress saved locally.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">9 Levels</span>
+                    <span class="feature-tag">5 Power-ups</span>
+                    <span class="feature-tag">Multi-ball</span>
+                    <span class="feature-tag">Progress Save</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="minesweeper.html" class="project-card" style="--accent-1: #feca57; --accent-2: #ff6b6b;">
+                <div class="project-icon">💣</div>
+                <div class="category">Puzzle Game</div>
+                <h3>Minesweeper</h3>
+                <p>
+                    Classic mine-clearing puzzle with 3 difficulty levels. Safe first click,
+                    flag/question marking, chording, and best times tracking.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">3 Difficulties</span>
+                    <span class="feature-tag">Chording</span>
+                    <span class="feature-tag">Best Times</span>
+                    <span class="feature-tag">Safe Start</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="connect4.html" class="project-card" style="--accent-1: #ff4757; --accent-2: #feca57;">
+                <div class="project-icon">🔴</div>
+                <div class="category">Strategy Game</div>
+                <h3>Connect Four</h3>
+                <p>
+                    Classic drop-disc strategy game with AI opponent using minimax algorithm
+                    with alpha-beta pruning. Play against computer or a friend.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Smart AI</span>
+                    <span class="feature-tag">3 Difficulties</span>
+                    <span class="feature-tag">2-Player Mode</span>
+                    <span class="feature-tag">Score Tracking</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="tictactoe.html" class="project-card" style="--accent-1: #48dbfb; --accent-2: #ff6b6b;">
+                <div class="project-icon">⭕</div>
+                <div class="category">Strategy Game</div>
+                <h3>Tic-Tac-Toe</h3>
+                <p>
+                    Classic X's and O's with an unbeatable AI opponent using perfect minimax
+                    strategy. Multiple difficulty levels and 2-player mode.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Unbeatable AI</span>
+                    <span class="feature-tag">3 Difficulties</span>
+                    <span class="feature-tag">Choose Side</span>
+                    <span class="feature-tag">2-Player</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="pong.html" class="project-card" style="--accent-1: #ffffff; --accent-2: #888888;">
+                <div class="project-icon">🏓</div>
+                <div class="category">Arcade Classic</div>
+                <h3>Pong</h3>
+                <p>
+                    The 1972 arcade classic recreated with smooth physics, paddle spin effects,
+                    and adaptive AI. Single player or two-player modes.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">VS Computer</span>
+                    <span class="feature-tag">2-Player</span>
+                    <span class="feature-tag">4 Speeds</span>
+                    <span class="feature-tag">Touch Support</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="wordsearch.html" class="project-card" style="--accent-1: #feca57; --accent-2: #ff6b6b;">
+                <div class="project-icon">🔤</div>
+                <div class="category">Word Puzzle</div>
+                <h3>Word Search</h3>
+                <p>
+                    Classic word search puzzle generator with 5 themed word lists and
+                    3 grid sizes. Find words horizontally, vertically, and diagonally.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">5 Themes</span>
+                    <span class="feature-tag">3 Sizes</span>
+                    <span class="feature-tag">8 Directions</span>
+                    <span class="feature-tag">Timed</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="simon.html" class="project-card" style="--accent-1: #00d26a; --accent-2: #ff4757;">
+                <div class="project-icon">🎵</div>
+                <div class="category">Memory Game</div>
+                <h3>Simon Says</h3>
+                <p>
+                    The classic memory game with colored lights and musical tones.
+                    Watch the sequence, then repeat it back. How far can you go?
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Audio Tones</span>
+                    <span class="feature-tag">3 Speeds</span>
+                    <span class="feature-tag">High Scores</span>
+                    <span class="feature-tag">Touch Support</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="reaction.html" class="project-card" style="--accent-1: #00ff88; --accent-2: #ff4757;">
+                <div class="project-icon">⚡</div>
+                <div class="category">Reflex Test</div>
+                <h3>Reaction Time</h3>
+                <p>
+                    Test your reflexes with visual and audio reaction tests.
+                    Track your best, average times, and see how you compare.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Visual Mode</span>
+                    <span class="feature-tag">Audio Mode</span>
+                    <span class="feature-tag">Statistics</span>
+                    <span class="feature-tag">Benchmark</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="colorblind.html" class="project-card" style="--accent-1: #ff6b6b; --accent-2: #00ff88;">
+                <div class="project-icon">👁️</div>
+                <div class="category">Vision Test</div>
+                <h3>Color Vision Test</h3>
+                <p>
+                    Ishihara-style plates to screen for color vision deficiency.
+                    Tests red-green and blue-yellow color perception.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">12 Plates</span>
+                    <span class="feature-tag">Red-Green</span>
+                    <span class="feature-tag">Blue-Yellow</span>
+                    <span class="feature-tag">Score Report</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="aimtrainer.html" class="project-card" style="--accent-1: #ff6b6b; --accent-2: #feca57;">
+                <div class="project-icon">🎯</div>
+                <div class="category">Skill Trainer</div>
+                <h3>Aim Trainer</h3>
+                <p>
+                    Improve your mouse accuracy with 4 game modes. Track your
+                    reaction time, accuracy, and compete for high scores.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">4 Modes</span>
+                    <span class="feature-tag">4 Sizes</span>
+                    <span class="feature-tag">Tracking</span>
+                    <span class="feature-tag">Statistics</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="numbermemory.html" class="project-card" style="--accent-1: #a29bfe; --accent-2: #6c5ce7;">
+                <div class="project-icon">🔢</div>
+                <div class="category">Cognitive Test</div>
+                <h3>Number Memory</h3>
+                <p>
+                    Test your short-term memory with increasingly long number
+                    sequences. How many digits can you remember?
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Progressive</span>
+                    <span class="feature-tag">High Scores</span>
+                    <span class="feature-tag">Percentiles</span>
+                    <span class="feature-tag">Instant Feedback</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="sudoku.html" class="project-card" style="--accent-1: #00d9ff; --accent-2: #0099cc;">
+                <div class="project-icon">🔷</div>
+                <div class="category">Logic Puzzle</div>
+                <h3>Sudoku</h3>
+                <p>
+                    Classic 9x9 logic puzzle with 4 difficulty levels. Features pencil marks,
+                    hints, undo, validation, and mistake tracking.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">4 Difficulties</span>
+                    <span class="feature-tag">Pencil Marks</span>
+                    <span class="feature-tag">Hints</span>
+                    <span class="feature-tag">Undo</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="whackamole.html" class="project-card" style="--accent-1: #8B4513; --accent-2: #f4d03f;">
+                <div class="project-icon">🔨</div>
+                <div class="category">Arcade Game</div>
+                <h3>Whack-a-Mole</h3>
+                <p>
+                    Classic arcade action! Whack moles as they pop up from holes. Golden moles
+                    give bonus points, bombs cost you. Build combos for multipliers.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">4 Difficulties</span>
+                    <span class="feature-tag">Combo System</span>
+                    <span class="feature-tag">Special Moles</span>
+                    <span class="feature-tag">High Scores</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="flappybird.html" class="project-card" style="--accent-1: #4EC0CA; --accent-2: #5CBF35;">
+                <div class="project-icon">🐦</div>
+                <div class="category">Arcade Game</div>
+                <h3>Flappy Bird</h3>
+                <p>
+                    Navigate through pipes by tapping to flap! Simple controls, addictive gameplay.
+                    Three difficulty levels, medals for high scores.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">3 Difficulties</span>
+                    <span class="feature-tag">Medal System</span>
+                    <span class="feature-tag">High Scores</span>
+                    <span class="feature-tag">Touch Support</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="doodlejump.html" class="project-card" style="--accent-1: #8bc34a; --accent-2: #4caf50;">
+                <div class="project-icon">🦘</div>
+                <div class="category">Arcade Game</div>
+                <h3>Doodle Jump</h3>
+                <p>
+                    Endless vertical platformer! Jump from platform to platform and climb as high
+                    as possible. Special platforms: moving, spring, and breakable.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Endless</span>
+                    <span class="feature-tag">4 Platform Types</span>
+                    <span class="feature-tag">Tilt Control</span>
+                    <span class="feature-tag">High Scores</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="crossword.html" class="project-card" style="--accent-1: #ffd700; --accent-2: #ff8c00;">
+                <div class="project-icon">📝</div>
+                <div class="category">Word Puzzle</div>
+                <h3>Crossword</h3>
+                <p>
+                    Auto-generated crossword puzzles with themed word sets. Science, geography,
+                    technology, and general knowledge themes. Hints and reveal options.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">4 Themes</span>
+                    <span class="feature-tag">Auto-Generated</span>
+                    <span class="feature-tag">Hints</span>
+                    <span class="feature-tag">Timer</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="hangman.html" class="project-card" style="--accent-1: #e74c3c; --accent-2: #c0392b;">
+                <div class="project-icon">🎯</div>
+                <div class="category">Word Game</div>
+                <h3>Hangman</h3>
+                <p>
+                    Classic word guessing game with animated hangman drawing. Multiple categories
+                    including animals, countries, movies, food, and sports.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">5 Categories</span>
+                    <span class="feature-tag">Animated</span>
+                    <span class="feature-tag">Win Streak</span>
+                    <span class="feature-tag">Keyboard Support</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="mastermind.html" class="project-card" style="--accent-1: #f39c12; --accent-2: #e67e22;">
+                <div class="project-icon">🔐</div>
+                <div class="category">Logic Puzzle</div>
+                <h3>Mastermind</h3>
+                <p>
+                    Classic code-breaking logic game. Guess the secret 4-color combination in
+                    10 tries using deduction from the feedback clues.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">3 Difficulties</span>
+                    <span class="feature-tag">Feedback System</span>
+                    <span class="feature-tag">Duplicates Toggle</span>
+                    <span class="feature-tag">Statistics</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="puzzle15.html" class="project-card" style="--accent-1: #4facfe; --accent-2: #00f2fe;">
+                <div class="project-icon">🔢</div>
+                <div class="category">Classic Puzzle</div>
+                <h3>15 Puzzle</h3>
+                <p>
+                    Classic sliding tile puzzle. Arrange the numbered tiles in order by sliding
+                    them into the empty space. Three grid sizes available.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">3 Grid Sizes</span>
+                    <span class="feature-tag">Move Counter</span>
+                    <span class="feature-tag">Best Times</span>
+                    <span class="feature-tag">Keyboard Controls</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="pomodoro.html" class="project-card" style="--accent-1: #e74c3c; --accent-2: #27ae60;">
+                <div class="project-icon">🍅</div>
+                <div class="category">Productivity</div>
+                <h3>Pomodoro Timer</h3>
+                <p>
+                    Focus timer based on the Pomodoro Technique. Work sessions with short and long
+                    breaks. Customizable durations and audio notifications.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Customizable</span>
+                    <span class="feature-tag">Auto-Start</span>
+                    <span class="feature-tag">Sound Alerts</span>
+                    <span class="feature-tag">Statistics</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="tetris.html" class="project-card" style="--accent-1: #00ffff; --accent-2: #ff0080;">
+                <div class="project-icon">🧩</div>
+                <div class="category">Arcade Classic</div>
+                <h3>Tetris</h3>
+                <p>
+                    The iconic falling block puzzle. 7-bag randomizer, ghost piece, hold queue,
+                    wall kicks, and increasing speed. All the modern features.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">7-Bag</span>
+                    <span class="feature-tag">Ghost Piece</span>
+                    <span class="feature-tag">Hold</span>
+                    <span class="feature-tag">Wall Kicks</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="asteroids.html" class="project-card" style="--accent-1: #ffffff; --accent-2: #aaaaaa;">
+                <div class="project-icon">☄️</div>
+                <div class="category">Arcade Classic</div>
+                <h3>Asteroids</h3>
+                <p>
+                    Vector graphics space shooter. Rotate, thrust, and shoot asteroids that
+                    split into smaller pieces. Classic wraparound screen edges.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Vector Graphics</span>
+                    <span class="feature-tag">Physics</span>
+                    <span class="feature-tag">Splitting</span>
+                    <span class="feature-tag">Levels</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="spaceinvaders.html" class="project-card" style="--accent-1: #33ff33; --accent-2: #00ff00;">
+                <div class="project-icon">👾</div>
+                <div class="category">Arcade Classic</div>
+                <h3>Space Invaders</h3>
+                <p>
+                    Defend Earth from descending alien waves! Classic pixel-art aliens with
+                    shields, UFO bonuses, and increasing difficulty.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Pixel Art</span>
+                    <span class="feature-tag">Waves</span>
+                    <span class="feature-tag">Shields</span>
+                    <span class="feature-tag">UFO Bonus</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="breakout.html" class="project-card" style="--accent-1: #ff6b6b; --accent-2: #feca57;">
+                <div class="project-icon">🧱</div>
+                <div class="category">Arcade Classic</div>
+                <h3>Breakout</h3>
+                <p>
+                    Break all the bricks! 9 unique level patterns with multi-hit bricks.
+                    Power-ups include paddle expand, multi-ball, slow motion, and extra lives.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">9 Levels</span>
+                    <span class="feature-tag">Power-ups</span>
+                    <span class="feature-tag">Multi-ball</span>
+                    <span class="feature-tag">Touch Support</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="simon.html" class="project-card" style="--accent-1: #ff6b6b; --accent-2: #48dbfb;">
+                <div class="project-icon">🔴</div>
+                <div class="category">Memory Game</div>
+                <h3>Simon Says</h3>
+                <p>
+                    Classic memory game with colored light sequences. Watch the pattern,
+                    repeat it back. Progressive difficulty with three speed modes.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Memory</span>
+                    <span class="feature-tag">Audio Tones</span>
+                    <span class="feature-tag">Speed Modes</span>
+                    <span class="feature-tag">High Scores</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="hanoi.html" class="project-card" style="--accent-1: #f39c12; --accent-2: #e74c3c;">
+                <div class="project-icon">🗼</div>
+                <div class="category">Classic Puzzle</div>
+                <h3>Tower of Hanoi</h3>
+                <p>
+                    Classic disk-stacking puzzle. Move disks between towers with the constraint that
+                    larger disks cannot sit on smaller ones. Recursive auto-solve animation.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">3-8 Disks</span>
+                    <span class="feature-tag">Recursive Solver</span>
+                    <span class="feature-tag">Undo</span>
+                    <span class="feature-tag">Best Moves</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="lightsout.html" class="project-card" style="--accent-1: #ffeb3b; --accent-2: #ffc107;">
+                <div class="project-icon">💡</div>
+                <div class="category">Logic Puzzle</div>
+                <h3>Lights Out</h3>
+                <p>
+                    Classic toggle puzzle where clicking a cell flips it and its neighbors.
+                    Uses Gaussian elimination over GF(2) to solve. Multiple grid sizes with auto-solve.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Toggle Logic</span>
+                    <span class="feature-tag">GF(2) Solver</span>
+                    <span class="feature-tag">Hints</span>
+                    <span class="feature-tag">Auto-Solve</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="wave_interference.html" class="project-card" style="--accent-1: #3b82f6; --accent-2: #8b5cf6;">
+                <div class="project-icon">〰</div>
+                <div class="category">Wave Physics</div>
+                <h3>Wave Interference</h3>
+                <p>
+                    Visualize wave superposition and interference patterns. Multiple sources,
+                    double-slit experiment, standing waves, and 3D surface visualization.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Superposition</span>
+                    <span class="feature-tag">Double Slit</span>
+                    <span class="feature-tag">Standing Waves</span>
+                    <span class="feature-tag">3D</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="spring_mass.html" class="project-card" style="--accent-1: #22c55e; --accent-2: #06b6d4;">
+                <div class="project-icon">⌇</div>
+                <div class="category">Classical Mechanics</div>
+                <h3>Spring-Mass System</h3>
+                <p>
+                    Harmonic oscillators and coupled systems. Single, double, chain, and 2D lattice
+                    configurations with damping, phase space plots, and energy visualization.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Harmonic</span>
+                    <span class="feature-tag">Damping</span>
+                    <span class="feature-tag">Phase Space</span>
+                    <span class="feature-tag">Coupled</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="lsystem.html" class="project-card" style="--accent-1: #4ade80; --accent-2: #a3e635;">
+                <div class="project-icon">🌿</div>
+                <div class="category">Generative Systems</div>
+                <h3>L-System Visualizer</h3>
+                <p>
+                    Lindenmayer Systems for procedural plant generation. Define grammar rules,
+                    watch fractal trees and plants grow. Presets for ferns, trees, and fractals.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Grammar</span>
+                    <span class="feature-tag">Fractals</span>
+                    <span class="feature-tag">Plants</span>
+                    <span class="feature-tag">SVG Export</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="reaction_diffusion.html" class="project-card" style="--accent-1: #ec4899; --accent-2: #8b5cf6;">
+                <div class="project-icon">🔬</div>
+                <div class="category">Chemical Simulation</div>
+                <h3>Reaction-Diffusion</h3>
+                <p>
+                    Gray-Scott model of chemical morphogenesis. Watch emergent patterns form
+                    from simple reaction equations - spots, stripes, coral, and maze patterns.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Gray-Scott</span>
+                    <span class="feature-tag">Morphogenesis</span>
+                    <span class="feature-tag">Emergent</span>
+                    <span class="feature-tag">Interactive</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="perlin_noise.html" class="project-card" style="--accent-1: #00d4aa; --accent-2: #7b68ee;">
+                <div class="project-icon">🌫️</div>
+                <div class="category">Procedural Generation</div>
+                <h3>Perlin Noise Explorer</h3>
+                <p>
+                    Gradient noise algorithms for procedural textures. Perlin, Simplex, Value, and Worley noise
+                    with fractal octaves, domain warping, and multiple color schemes.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Perlin</span>
+                    <span class="feature-tag">Simplex</span>
+                    <span class="feature-tag">fBm</span>
+                    <span class="feature-tag">Tileable</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="boids.html" class="project-card" style="--accent-1: #ff6b6b; --accent-2: #4ecdc4;">
+                <div class="project-icon">🐦</div>
+                <div class="category">Emergent Behavior</div>
+                <h3>Boids Flocking</h3>
+                <p>
+                    Craig Reynolds' classic flocking simulation. Separation, alignment, and cohesion
+                    rules create emergent collective behavior with predators and wind forces.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Swarm AI</span>
+                    <span class="feature-tag">Emergent</span>
+                    <span class="feature-tag">Predators</span>
+                    <span class="feature-tag">Wind</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="cloth.html" class="project-card" style="--accent-1: #e94560; --accent-2: #533483;">
+                <div class="project-icon">🎪</div>
+                <div class="category">Physics Simulation</div>
+                <h3>Cloth Physics</h3>
+                <p>
+                    Mass-spring fabric simulation with Verlet integration. Drag, cut, and interact
+                    with cloth. Wind forces, sphere collision, and constraint-based physics.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Verlet</span>
+                    <span class="feature-tag">Constraints</span>
+                    <span class="feature-tag">Tearable</span>
+                    <span class="feature-tag">Collision</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="electric_field.html" class="project-card" style="--accent-1: #ffd700; --accent-2: #ff6b6b;">
+                <div class="project-icon">⚡</div>
+                <div class="category">Electrostatics</div>
+                <h3>Electric Field Visualizer</h3>
+                <p>
+                    Coulomb's law in action. Place positive and negative charges, visualize field lines,
+                    equipotential surfaces, and vector fields. Interactive test charge simulation.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Coulomb</span>
+                    <span class="feature-tag">Field Lines</span>
+                    <span class="feature-tag">Equipotential</span>
+                    <span class="feature-tag">Heatmap</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="orbital.html" class="project-card" style="--accent-1: #4fc3f7; --accent-2: #ab47bc;">
+                <div class="project-icon">🌍</div>
+                <div class="category">Celestial Mechanics</div>
+                <h3>Orbital Mechanics</h3>
+                <p>
+                    N-body gravitational simulation demonstrating Kepler's laws. Create solar systems,
+                    binary stars, and chaotic three-body systems. Launch spacecraft with custom orbits.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">N-Body</span>
+                    <span class="feature-tag">Kepler</span>
+                    <span class="feature-tag">Gravity</span>
+                    <span class="feature-tag">Orbits</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="pathfinding.html" class="project-card" style="--accent-1: #00b894; --accent-2: #00cec9;">
+                <div class="project-icon">🗺️</div>
+                <div class="category">Algorithm Visualization</div>
+                <h3>Pathfinding Visualizer</h3>
+                <p>
+                    Compare A*, Dijkstra's, BFS, DFS, and more. Watch algorithms explore mazes,
+                    find shortest paths, and handle weighted terrain. Generate mazes procedurally.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">A*</span>
+                    <span class="feature-tag">Dijkstra</span>
+                    <span class="feature-tag">BFS/DFS</span>
+                    <span class="feature-tag">Maze Gen</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="markov.html" class="project-card" style="--accent-1: #f093fb; --accent-2: #f5576c;">
+                <div class="project-icon">📝</div>
+                <div class="category">Statistical Generation</div>
+                <h3>Markov Chain Text</h3>
+                <p>
+                    Train Markov chains on text and generate new sequences. Visualize transition
+                    probabilities, adjust temperature, and explore n-gram based text synthesis.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">N-grams</span>
+                    <span class="feature-tag">Transitions</span>
+                    <span class="feature-tag">Temperature</span>
+                    <span class="feature-tag">Animation</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="life_variants.html" class="project-card" style="--accent-1: #00ff00; --accent-2: #00ffff;">
+                <div class="project-icon">🔲</div>
+                <div class="category">Cellular Automata</div>
+                <h3>Game of Life Variants</h3>
+                <p>
+                    Explore Conway's Game of Life and alternative rule sets. HighLife, Day & Night,
+                    Seeds, and custom rules. Pattern library with gliders, guns, and oscillators.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Conway</span>
+                    <span class="feature-tag">B/S Rules</span>
+                    <span class="feature-tag">Patterns</span>
+                    <span class="feature-tag">Custom Rules</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="fractal_music.html" class="project-card" style="--accent-1: #ff6b9d; --accent-2: #6c5ce7;">
+                <div class="project-icon">🎵</div>
+                <div class="category">Generative Music</div>
+                <h3>Fractal Music Generator</h3>
+                <p>
+                    Create melodies from mathematical sequences. Mandelbrot orbits, Fibonacci,
+                    Thue-Morse, and chaos maps transformed into musical scales and harmonies.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Fractals</span>
+                    <span class="feature-tag">Web Audio</span>
+                    <span class="feature-tag">Scales</span>
+                    <span class="feature-tag">Sequences</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="color_theory.html" class="project-card" style="--accent-1: #ff6b6b; --accent-2: #48dbfb;">
+                <div class="project-icon">🎨</div>
+                <div class="category">Design Theory</div>
+                <h3>Color Theory Explorer</h3>
+                <p>
+                    Interactive color wheel with harmony modes. Complementary, analogous, triadic
+                    schemes. WCAG contrast checking, tints, shades, and color blending tools.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Harmonies</span>
+                    <span class="feature-tag">WCAG</span>
+                    <span class="feature-tag">HSL/RGB</span>
+                    <span class="feature-tag">Palettes</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="strange_attractors.html" class="project-card" style="--accent-1: #ff6b6b; --accent-2: #feca57;">
+                <div class="project-icon">🌀</div>
+                <div class="category">Dynamical Systems</div>
+                <h3>Strange Attractor Gallery</h3>
+                <p>
+                    WebGL-rendered 3D gallery of chaotic attractors. Lorenz, Rossler, Aizawa,
+                    Thomas, Chen, and more with rotatable views and customizable rendering.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">WebGL</span>
+                    <span class="feature-tag">Chaos</span>
+                    <span class="feature-tag">3D</span>
+                    <span class="feature-tag">10 Attractors</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="number_theory.html" class="project-card" style="--accent-1: #ffd700; --accent-2: #ff8c00;">
+                <div class="project-icon">🔢</div>
+                <div class="category">Mathematics</div>
+                <h3>Number Theory Visualizer</h3>
+                <p>
+                    Explore prime patterns with Sieve of Eratosthenes, Ulam spiral, Goldbach comet,
+                    Collatz sequences, divisor functions, and Euler's totient.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Primes</span>
+                    <span class="feature-tag">Ulam Spiral</span>
+                    <span class="feature-tag">Collatz</span>
+                    <span class="feature-tag">Factorization</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="genetic_algorithm.html" class="project-card" style="--accent-1: #58a6ff; --accent-2: #3fb950;">
+                <div class="project-icon">🧬</div>
+                <div class="category">Optimization</div>
+                <h3>Genetic Algorithm Visualizer</h3>
+                <p>
+                    Watch evolution solve optimization problems. TSP, string matching, function
+                    optimization, and knapsack with selection, crossover, and mutation.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Evolution</span>
+                    <span class="feature-tag">TSP</span>
+                    <span class="feature-tag">Crossover</span>
+                    <span class="feature-tag">Mutation</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="hash_visualizer.html" class="project-card" style="--accent-1: #00d4ff; --accent-2: #9d4edd;">
+                <div class="project-icon">#</div>
+                <div class="category">Cryptography</div>
+                <h3>Hash Function Visualizer</h3>
+                <p>
+                    Explore hash functions visually. SHA-256, MD5, and non-cryptographic hashes
+                    with avalanche effect, bit distribution, and collision testing.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">SHA-256</span>
+                    <span class="feature-tag">MD5</span>
+                    <span class="feature-tag">Avalanche</span>
+                    <span class="feature-tag">Collisions</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="network_graph.html" class="project-card" style="--accent-1: #667eea; --accent-2: #764ba2;">
+                <div class="project-icon">🕸️</div>
+                <div class="category">Graph Theory</div>
+                <h3>Network Graph Visualizer</h3>
+                <p>
+                    Force-directed graph layouts with community detection. Explore random networks,
+                    scale-free graphs, small worlds, and centrality measures.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Force Layout</span>
+                    <span class="feature-tag">PageRank</span>
+                    <span class="feature-tag">Communities</span>
+                    <span class="feature-tag">Betweenness</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="shader_playground.html" class="project-card" style="--accent-1: #ff6b6b; --accent-2: #feca57;">
+                <div class="project-icon">🎨</div>
+                <div class="category">Graphics Programming</div>
+                <h3>GLSL Shader Playground</h3>
+                <p>
+                    Interactive fragment shader editor with live preview. Create mesmerizing visuals
+                    with raymarching, fractals, noise, and procedural effects.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">WebGL</span>
+                    <span class="feature-tag">GLSL</span>
+                    <span class="feature-tag">Real-time</span>
+                    <span class="feature-tag">12 Presets</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="bezier_editor.html" class="project-card" style="--accent-1: #667eea; --accent-2: #a29bfe;">
+                <div class="project-icon">✏️</div>
+                <div class="category">Computational Geometry</div>
+                <h3>Bezier Curve Editor</h3>
+                <p>
+                    Interactive curve design with de Casteljau's algorithm visualization. Explore
+                    curvature, tangents, normals, and the mathematics of smooth curves.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">de Casteljau</span>
+                    <span class="feature-tag">Curvature</span>
+                    <span class="feature-tag">Tangent</span>
+                    <span class="feature-tag">Interactive</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="audio_spectrum.html" class="project-card" style="--accent-1: #00d2d3; --accent-2: #54a0ff;">
+                <div class="project-icon">🎵</div>
+                <div class="category">Audio Processing</div>
+                <h3>Audio Spectrum Analyzer</h3>
+                <p>
+                    Real-time FFT visualization with multiple display modes. Analyze microphone input
+                    or test with oscillators across frequency spectrum.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">FFT</span>
+                    <span class="feature-tag">Waveform</span>
+                    <span class="feature-tag">6 Modes</span>
+                    <span class="feature-tag">Note Detection</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="physics_sandbox.html" class="project-card" style="--accent-1: #ff9f43; --accent-2: #ee5a24;">
+                <div class="project-icon">⚡</div>
+                <div class="category">Physics Simulation</div>
+                <h3>Physics Sandbox</h3>
+                <p>
+                    2D rigid body physics with collisions, springs, and gravity. Create pendulums,
+                    bridges, Newton's cradles, and cloth simulations.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Rigid Bodies</span>
+                    <span class="feature-tag">Collisions</span>
+                    <span class="feature-tag">Springs</span>
+                    <span class="feature-tag">6 Presets</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="regex_visualizer.html" class="project-card" style="--accent-1: #a55eea; --accent-2: #8854d0;">
+                <div class="project-icon">🔍</div>
+                <div class="category">Pattern Matching</div>
+                <h3>Regex Visualizer</h3>
+                <p>
+                    Parse and visualize regular expressions as railroad diagrams. Test patterns
+                    with live highlighting and capture group extraction.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Railroad Diagram</span>
+                    <span class="feature-tag">Live Testing</span>
+                    <span class="feature-tag">Groups</span>
+                    <span class="feature-tag">Examples</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="maze_solver.html" class="project-card" style="--accent-1: #00b894; --accent-2: #00cec9;">
+                <div class="project-icon">🧩</div>
+                <div class="category">Algorithms</div>
+                <h3>Maze Generator & Solver</h3>
+                <p>
+                    Generate mazes with 9 different algorithms and solve them with 6 pathfinding
+                    methods. Watch A*, Dijkstra, and BFS find the optimal path.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">9 Generators</span>
+                    <span class="feature-tag">A* Search</span>
+                    <span class="feature-tag">Animated</span>
+                    <span class="feature-tag">Statistics</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+
+            <a href="fourier_visualizer.html" class="project-card" style="--accent-1: #fdcb6e; --accent-2: #e17055;">
+                <div class="project-icon">〰️</div>
+                <div class="category">Signal Processing</div>
+                <h3>Fourier Transform Visualizer</h3>
+                <p>
+                    Decompose any signal into rotating circles and sine waves. Draw custom
+                    waveforms and see their frequency spectrum in real-time.
+                </p>
+                <div class="project-features">
+                    <span class="feature-tag">Epicycles</span>
+                    <span class="feature-tag">DFT</span>
+                    <span class="feature-tag">Spectrum</span>
+                    <span class="feature-tag">Custom Drawing</span>
+                </div>
+                <div class="launch-btn">Launch Experience →</div>
+            </a>
+        </div>
+
+        <footer>
+            <p class="footer-quote">
+                "The question is not whether machines can think, but whether humans can think deeply enough
+                to understand what thinking truly is."
+            </p>
+            <p class="footer-attribution">
+                Created with curiosity and code — A demonstration of emergent creativity
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        // Create animated stars background
+        function createStars() {
+            const container = document.getElementById('stars');
+            const count = 150;
+
+            for (let i = 0; i < count; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.animationDelay = Math.random() * 4 + 's';
+                star.style.animationDuration = (3 + Math.random() * 3) + 's';
+                star.style.opacity = Math.random() * 0.5 + 0.2;
+                container.appendChild(star);
+            }
+        }
+
+        createStars();
+
+        // Animate stats on scroll
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.project-card').forEach((card, i) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(30px)';
+            card.style.transition = `opacity 0.6s ease ${i * 0.1}s, transform 0.6s ease ${i * 0.1}s`;
+            observer.observe(card);
+        });
+    </script>
+</body>
+</html>

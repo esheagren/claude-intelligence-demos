@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>15 Puzzle</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 42px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 20px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .control-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .control-group label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        select, button {
+            padding: 10px 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        button.primary {
+            background: linear-gradient(135deg, rgba(79, 172, 254, 0.3), rgba(0, 242, 254, 0.3));
+            border-color: #4facfe;
+        }
+
+        .stats-bar {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 20px;
+        }
+
+        .stat {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px 20px;
+            border-radius: 10px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4facfe;
+            font-family: monospace;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .game-container {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 20px;
+            padding: 25px;
+        }
+
+        .puzzle {
+            display: grid;
+            gap: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 15px;
+        }
+
+        .tile {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            font-weight: bold;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            user-select: none;
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            color: #fff;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+            box-shadow:
+                0 4px 8px rgba(0, 0, 0, 0.3),
+                inset 0 2px 4px rgba(255, 255, 255, 0.2);
+        }
+
+        .tile:hover:not(.empty) {
+            transform: scale(1.03);
+            box-shadow:
+                0 6px 12px rgba(0, 0, 0, 0.4),
+                inset 0 2px 4px rgba(255, 255, 255, 0.2);
+        }
+
+        .tile:active:not(.empty) {
+            transform: scale(0.98);
+        }
+
+        .tile.empty {
+            background: rgba(0, 0, 0, 0.2);
+            box-shadow: inset 0 4px 8px rgba(0, 0, 0, 0.3);
+            cursor: default;
+        }
+
+        .tile.correct {
+            background: linear-gradient(135deg, #00d9a6, #00b894);
+        }
+
+        .tile.sliding {
+            z-index: 10;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+
+        .message {
+            text-align: center;
+            padding: 20px 40px;
+            border-radius: 15px;
+            margin-top: 20px;
+            font-size: 20px;
+        }
+
+        .message.win {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+            border: 1px solid rgba(0, 255, 136, 0.5);
+        }
+
+        .instructions {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 15px;
+            font-size: 13px;
+        }
+
+        @media (max-width: 500px) {
+            .tile {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>15 Puzzle</h1>
+    <p class="subtitle">Slide the tiles to arrange them in order</p>
+
+    <div class="controls">
+        <div class="control-group">
+            <label>Size:</label>
+            <select id="size">
+                <option value="3">3x3 (8 Puzzle)</option>
+                <option value="4" selected>4x4 (15 Puzzle)</option>
+                <option value="5">5x5 (24 Puzzle)</option>
+            </select>
+        </div>
+        <button class="primary" id="newGameBtn">New Game</button>
+    </div>
+
+    <div class="stats-bar">
+        <div class="stat">
+            <div class="stat-value" id="moves">0</div>
+            <div class="stat-label">Moves</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value" id="timer">00:00</div>
+            <div class="stat-label">Time</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value" id="best">-</div>
+            <div class="stat-label">Best</div>
+        </div>
+    </div>
+
+    <div class="game-container">
+        <div class="puzzle" id="puzzle"></div>
+        <div class="action-buttons">
+            <button id="hintBtn">Show Solution Position</button>
+        </div>
+        <p class="instructions">Click a tile adjacent to the empty space to slide it.<br>Use arrow keys for quick moves.</p>
+    </div>
+
+    <div id="messageArea"></div>
+
+    <script>
+        let size = 4;
+        let tiles = [];
+        let emptyPos = { row: 0, col: 0 };
+        let moves = 0;
+        let timerInterval = null;
+        let seconds = 0;
+        let gameActive = false;
+        let bestTimes = {};
+
+        const TILE_SIZE = 70;
+
+        function init() {
+            loadBestTimes();
+            document.getElementById('newGameBtn').addEventListener('click', newGame);
+            document.getElementById('hintBtn').addEventListener('click', toggleHint);
+            document.addEventListener('keydown', handleKeyPress);
+            newGame();
+        }
+
+        function loadBestTimes() {
+            bestTimes = JSON.parse(localStorage.getItem('puzzle15-best') || '{}');
+            updateBestDisplay();
+        }
+
+        function saveBestTime(size, time) {
+            if (!bestTimes[size] || time < bestTimes[size]) {
+                bestTimes[size] = time;
+                localStorage.setItem('puzzle15-best', JSON.stringify(bestTimes));
+                updateBestDisplay();
+                return true;
+            }
+            return false;
+        }
+
+        function updateBestDisplay() {
+            const best = bestTimes[size];
+            document.getElementById('best').textContent = best ? formatTime(best) : '-';
+        }
+
+        function newGame() {
+            size = parseInt(document.getElementById('size').value);
+            updateBestDisplay();
+
+            // Reset state
+            moves = 0;
+            seconds = 0;
+            gameActive = true;
+
+            if (timerInterval) clearInterval(timerInterval);
+
+            document.getElementById('moves').textContent = moves;
+            document.getElementById('timer').textContent = '00:00';
+            document.getElementById('messageArea').innerHTML = '';
+
+            // Create solved state
+            tiles = [];
+            for (let i = 1; i < size * size; i++) {
+                tiles.push(i);
+            }
+            tiles.push(0); // Empty space
+
+            // Shuffle (ensuring solvability)
+            shuffleTiles();
+
+            // Find empty position
+            const emptyIndex = tiles.indexOf(0);
+            emptyPos = {
+                row: Math.floor(emptyIndex / size),
+                col: emptyIndex % size
+            };
+
+            renderPuzzle();
+
+            // Start timer on first move
+            timerInterval = null;
+        }
+
+        function shuffleTiles() {
+            // Fisher-Yates shuffle
+            for (let i = tiles.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [tiles[i], tiles[j]] = [tiles[j], tiles[i]];
+            }
+
+            // Check if solvable, if not swap two tiles (not the empty one)
+            if (!isSolvable()) {
+                // Find two non-empty tiles and swap
+                let first = -1, second = -1;
+                for (let i = 0; i < tiles.length; i++) {
+                    if (tiles[i] !== 0) {
+                        if (first === -1) first = i;
+                        else if (second === -1) {
+                            second = i;
+                            break;
+                        }
+                    }
+                }
+                [tiles[first], tiles[second]] = [tiles[second], tiles[first]];
+            }
+        }
+
+        function isSolvable() {
+            let inversions = 0;
+            const flatTiles = tiles.filter(t => t !== 0);
+
+            for (let i = 0; i < flatTiles.length; i++) {
+                for (let j = i + 1; j < flatTiles.length; j++) {
+                    if (flatTiles[i] > flatTiles[j]) {
+                        inversions++;
+                    }
+                }
+            }
+
+            const emptyIndex = tiles.indexOf(0);
+            const emptyRow = Math.floor(emptyIndex / size);
+
+            if (size % 2 === 1) {
+                // Odd grid: solvable if inversions is even
+                return inversions % 2 === 0;
+            } else {
+                // Even grid: solvable if (inversions + row of empty from bottom) is odd
+                const rowFromBottom = size - emptyRow;
+                return (inversions + rowFromBottom) % 2 === 1;
+            }
+        }
+
+        function renderPuzzle() {
+            const puzzle = document.getElementById('puzzle');
+            puzzle.innerHTML = '';
+            puzzle.style.gridTemplateColumns = `repeat(${size}, ${TILE_SIZE}px)`;
+
+            for (let i = 0; i < tiles.length; i++) {
+                const tile = document.createElement('div');
+                tile.className = 'tile';
+                tile.style.width = TILE_SIZE + 'px';
+                tile.style.height = TILE_SIZE + 'px';
+
+                const value = tiles[i];
+                const row = Math.floor(i / size);
+                const col = i % size;
+
+                if (value === 0) {
+                    tile.classList.add('empty');
+                } else {
+                    tile.textContent = value;
+                    tile.dataset.value = value;
+
+                    // Check if in correct position
+                    if (value === i + 1) {
+                        tile.classList.add('correct');
+                    }
+
+                    tile.addEventListener('click', () => handleTileClick(row, col));
+                }
+
+                puzzle.appendChild(tile);
+            }
+        }
+
+        function handleTileClick(row, col) {
+            if (!gameActive) return;
+
+            // Check if adjacent to empty
+            const isAdjacent = (
+                (Math.abs(row - emptyPos.row) === 1 && col === emptyPos.col) ||
+                (Math.abs(col - emptyPos.col) === 1 && row === emptyPos.row)
+            );
+
+            if (isAdjacent) {
+                moveTile(row, col);
+            }
+        }
+
+        function handleKeyPress(e) {
+            if (!gameActive) return;
+
+            let targetRow = emptyPos.row;
+            let targetCol = emptyPos.col;
+
+            switch (e.key) {
+                case 'ArrowUp':
+                    targetRow = emptyPos.row + 1;
+                    break;
+                case 'ArrowDown':
+                    targetRow = emptyPos.row - 1;
+                    break;
+                case 'ArrowLeft':
+                    targetCol = emptyPos.col + 1;
+                    break;
+                case 'ArrowRight':
+                    targetCol = emptyPos.col - 1;
+                    break;
+                default:
+                    return;
+            }
+
+            e.preventDefault();
+
+            if (targetRow >= 0 && targetRow < size && targetCol >= 0 && targetCol < size) {
+                moveTile(targetRow, targetCol);
+            }
+        }
+
+        function moveTile(row, col) {
+            // Start timer on first move
+            if (moves === 0 && !timerInterval) {
+                timerInterval = setInterval(updateTimer, 1000);
+            }
+
+            // Swap tiles
+            const tileIndex = row * size + col;
+            const emptyIndex = emptyPos.row * size + emptyPos.col;
+
+            [tiles[tileIndex], tiles[emptyIndex]] = [tiles[emptyIndex], tiles[tileIndex]];
+
+            emptyPos = { row, col };
+            moves++;
+            document.getElementById('moves').textContent = moves;
+
+            renderPuzzle();
+            checkWin();
+        }
+
+        function checkWin() {
+            for (let i = 0; i < tiles.length - 1; i++) {
+                if (tiles[i] !== i + 1) return;
+            }
+
+            // Win!
+            gameActive = false;
+            if (timerInterval) clearInterval(timerInterval);
+
+            const isNewBest = saveBestTime(size, seconds);
+
+            document.getElementById('messageArea').innerHTML = `
+                <div class="message win">
+                    Congratulations! Solved in ${moves} moves and ${formatTime(seconds)}!
+                    ${isNewBest ? '<br>New best time!' : ''}
+                </div>
+            `;
+        }
+
+        function toggleHint() {
+            const tiles = document.querySelectorAll('.tile:not(.empty)');
+            tiles.forEach(tile => {
+                const value = parseInt(tile.dataset.value);
+                const index = Array.from(document.querySelectorAll('.tile')).indexOf(tile);
+
+                if (value === index + 1) {
+                    tile.style.opacity = '1';
+                } else {
+                    tile.style.opacity = tile.style.opacity === '0.5' ? '1' : '0.5';
+                }
+            });
+        }
+
+        function updateTimer() {
+            seconds++;
+            document.getElementById('timer').textContent = formatTime(seconds);
+        }
+
+        function formatTime(secs) {
+            const mins = Math.floor(secs / 60);
+            const s = secs % 60;
+            return `${mins.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        }
+
+        // Initialize
+        init();
+    </script>
+</body>
+</html>

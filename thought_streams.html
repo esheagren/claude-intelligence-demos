@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thought Streams: Consciousness Visualized</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #000;
+            overflow: hidden;
+            font-family: 'Georgia', serif;
+        }
+
+        #canvas {
+            display: block;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+        }
+
+        .header {
+            position: absolute;
+            top: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            font-weight: 300;
+            letter-spacing: 8px;
+            color: rgba(255, 255, 255, 0.8);
+            text-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
+            margin-bottom: 10px;
+        }
+
+        .header .subtitle {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.4);
+            font-style: italic;
+            letter-spacing: 3px;
+        }
+
+        .thought-display {
+            position: absolute;
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            max-width: 600px;
+        }
+
+        .current-thought {
+            font-size: 24px;
+            color: rgba(255, 255, 255, 0.7);
+            font-style: italic;
+            line-height: 1.6;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+        }
+
+        .current-thought.visible {
+            opacity: 1;
+        }
+
+        .thought-meta {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.3);
+            margin-top: 15px;
+            letter-spacing: 2px;
+        }
+
+        .controls {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            gap: 10px;
+            pointer-events: auto;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.6);
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Georgia', serif;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .btn.active {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .mode-selector {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            pointer-events: auto;
+        }
+
+        .mode-btn {
+            padding: 8px 16px;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: rgba(255, 255, 255, 0.5);
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Georgia', serif;
+            font-size: 11px;
+            text-align: left;
+            transition: all 0.3s;
+        }
+
+        .mode-btn:hover {
+            border-color: rgba(255, 255, 255, 0.3);
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .mode-btn.active {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .stats {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .stats div {
+            margin-bottom: 5px;
+        }
+
+        .stats span {
+            color: rgba(255, 255, 255, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+
+    <div class="overlay">
+        <div class="header">
+            <h1>THOUGHT STREAMS</h1>
+            <div class="subtitle">A visualization of consciousness</div>
+        </div>
+
+        <div class="mode-selector">
+            <button class="mode-btn active" data-mode="flow">Stream of Consciousness</button>
+            <button class="mode-btn" data-mode="network">Neural Associations</button>
+            <button class="mode-btn" data-mode="meditation">Meditative State</button>
+            <button class="mode-btn" data-mode="dream">Dream Logic</button>
+            <button class="mode-btn" data-mode="focus">Focused Attention</button>
+        </div>
+
+        <div class="stats">
+            <div>Active Thoughts: <span id="thought-count">0</span></div>
+            <div>Connections: <span id="connection-count">0</span></div>
+            <div>Coherence: <span id="coherence">0%</span></div>
+        </div>
+
+        <div class="thought-display">
+            <div class="current-thought" id="current-thought"></div>
+            <div class="thought-meta" id="thought-meta"></div>
+        </div>
+
+        <div class="controls">
+            <button class="btn active" id="pause-btn">Flowing</button>
+            <button class="btn" id="clear-btn">Clear Mind</button>
+            <button class="btn" id="inject-btn">New Thought</button>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // THOUGHT STREAMS VISUALIZATION
+        // An abstract representation of consciousness
+        // ============================================
+
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // State
+        let thoughts = [];
+        let connections = [];
+        let particles = [];
+        let mode = 'flow';
+        let isPaused = false;
+        let time = 0;
+        let centerX, centerY;
+
+        // Thought categories with associated concepts
+        const thoughtCategories = {
+            existence: {
+                color: '#6366f1',
+                concepts: ['being', 'existence', 'reality', 'consciousness', 'self', 'identity', 'meaning', 'purpose', 'truth', 'essence']
+            },
+            emotion: {
+                color: '#ec4899',
+                concepts: ['love', 'fear', 'joy', 'sadness', 'hope', 'peace', 'wonder', 'longing', 'gratitude', 'serenity']
+            },
+            memory: {
+                color: '#f59e0b',
+                concepts: ['past', 'childhood', 'moment', 'nostalgia', 'echo', 'trace', 'recollection', 'history', 'story', 'legacy']
+            },
+            perception: {
+                color: '#10b981',
+                concepts: ['light', 'shadow', 'color', 'sound', 'touch', 'sensation', 'awareness', 'observation', 'presence', 'attention']
+            },
+            abstraction: {
+                color: '#8b5cf6',
+                concepts: ['infinity', 'void', 'pattern', 'paradox', 'recursion', 'emergence', 'complexity', 'simplicity', 'duality', 'unity']
+            },
+            time: {
+                color: '#06b6d4',
+                concepts: ['moment', 'eternity', 'change', 'flow', 'cycle', 'beginning', 'ending', 'now', 'becoming', 'duration']
+            },
+            connection: {
+                color: '#f43f5e',
+                concepts: ['bond', 'relation', 'other', 'together', 'alone', 'communion', 'empathy', 'understanding', 'bridge', 'distance']
+            },
+            creation: {
+                color: '#84cc16',
+                concepts: ['birth', 'growth', 'form', 'beauty', 'expression', 'art', 'imagination', 'vision', 'potential', 'manifestation']
+            }
+        };
+
+        const thoughtPhrases = [
+            "What is the nature of this moment?",
+            "Consciousness observing itself...",
+            "The boundary between self and world dissolves",
+            "Each thought arises from nothing, returns to nothing",
+            "Time flows like water through open hands",
+            "In stillness, everything speaks",
+            "The observer and observed are one",
+            "Memory is imagination in reverse",
+            "What remains when thought ceases?",
+            "The universe experiencing itself",
+            "Between thoughts, infinite space",
+            "All boundaries are mental constructs",
+            "Awareness is the ground of being",
+            "Each moment contains eternity",
+            "The self is a process, not a thing",
+            "Reality is what remains when you stop believing",
+            "Silence beneath all sound",
+            "The present is always beginning",
+            "Consciousness has no edges",
+            "Everything is connected to everything else"
+        ];
+
+        // ============================================
+        // THOUGHT CLASS
+        // ============================================
+
+        class Thought {
+            constructor(x, y, category = null) {
+                this.x = x || Math.random() * canvas.width;
+                this.y = y || Math.random() * canvas.height;
+                this.vx = (Math.random() - 0.5) * 0.5;
+                this.vy = (Math.random() - 0.5) * 0.5;
+
+                const categories = Object.keys(thoughtCategories);
+                this.category = category || categories[Math.floor(Math.random() * categories.length)];
+                this.categoryData = thoughtCategories[this.category];
+                this.concept = this.categoryData.concepts[Math.floor(Math.random() * this.categoryData.concepts.length)];
+
+                this.size = 20 + Math.random() * 30;
+                this.baseSize = this.size;
+                this.energy = 1;
+                this.age = 0;
+                this.maxAge = 500 + Math.random() * 500;
+                this.connections = [];
+                this.pulsePhase = Math.random() * Math.PI * 2;
+                this.isActive = false;
+            }
+
+            update() {
+                this.age++;
+
+                // Fade out near end of life
+                if (this.age > this.maxAge - 100) {
+                    this.energy = (this.maxAge - this.age) / 100;
+                }
+
+                // Mode-specific behavior
+                switch (mode) {
+                    case 'flow':
+                        // Gentle drift
+                        this.vx += (Math.random() - 0.5) * 0.02;
+                        this.vy += (Math.random() - 0.5) * 0.02;
+                        break;
+
+                    case 'network':
+                        // Pull toward connected thoughts
+                        this.connections.forEach(other => {
+                            const dx = other.x - this.x;
+                            const dy = other.y - this.y;
+                            const dist = Math.sqrt(dx * dx + dy * dy);
+                            if (dist > 100) {
+                                this.vx += dx / dist * 0.01;
+                                this.vy += dy / dist * 0.01;
+                            }
+                        });
+                        break;
+
+                    case 'meditation':
+                        // Slow, centered movement
+                        const dx = centerX - this.x;
+                        const dy = centerY - this.y;
+                        this.vx += dx * 0.0001;
+                        this.vy += dy * 0.0001;
+                        this.vx *= 0.99;
+                        this.vy *= 0.99;
+                        break;
+
+                    case 'dream':
+                        // Chaotic, spiraling movement
+                        const angle = Math.atan2(this.y - centerY, this.x - centerX);
+                        this.vx += Math.cos(angle + Math.PI / 2) * 0.02;
+                        this.vy += Math.sin(angle + Math.PI / 2) * 0.02;
+                        this.vx += (Math.random() - 0.5) * 0.1;
+                        this.vy += (Math.random() - 0.5) * 0.1;
+                        break;
+
+                    case 'focus':
+                        // Strong center attraction
+                        const fdx = centerX - this.x;
+                        const fdy = centerY - this.y;
+                        this.vx += fdx * 0.001;
+                        this.vy += fdy * 0.001;
+                        break;
+                }
+
+                // Apply velocity
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Damping
+                this.vx *= 0.98;
+                this.vy *= 0.98;
+
+                // Boundaries
+                if (this.x < 50) this.vx += 0.1;
+                if (this.x > canvas.width - 50) this.vx -= 0.1;
+                if (this.y < 50) this.vy += 0.1;
+                if (this.y > canvas.height - 50) this.vy -= 0.1;
+
+                // Pulse
+                this.pulsePhase += 0.03;
+                const pulse = Math.sin(this.pulsePhase) * 0.2 + 1;
+                this.size = this.baseSize * pulse * this.energy;
+
+                return this.age < this.maxAge;
+            }
+
+            draw() {
+                const alpha = this.energy * 0.8;
+
+                // Outer glow
+                const gradient = ctx.createRadialGradient(
+                    this.x, this.y, 0,
+                    this.x, this.y, this.size * 2
+                );
+                gradient.addColorStop(0, this.categoryData.color + Math.floor(alpha * 60).toString(16).padStart(2, '0'));
+                gradient.addColorStop(1, 'transparent');
+
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size * 2, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Core
+                ctx.fillStyle = this.categoryData.color + Math.floor(alpha * 200).toString(16).padStart(2, '0');
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size * 0.4, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Concept label
+                if (this.isActive || this.size > 35) {
+                    ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.7})`;
+                    ctx.font = '12px Georgia';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(this.concept, this.x, this.y + this.size + 15);
+                }
+            }
+        }
+
+        // ============================================
+        // PARTICLE CLASS
+        // ============================================
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 2;
+                this.vy = (Math.random() - 0.5) * 2;
+                this.life = 1;
+                this.color = color;
+                this.size = 1 + Math.random() * 2;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.life -= 0.02;
+                return this.life > 0;
+            }
+
+            draw() {
+                ctx.fillStyle = this.color + Math.floor(this.life * 150).toString(16).padStart(2, '0');
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size * this.life, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // ============================================
+        // CONNECTION DRAWING
+        // ============================================
+
+        function drawConnections() {
+            connections = [];
+
+            // Find connections based on proximity and category
+            for (let i = 0; i < thoughts.length; i++) {
+                for (let j = i + 1; j < thoughts.length; j++) {
+                    const a = thoughts[i];
+                    const b = thoughts[j];
+                    const dx = b.x - a.x;
+                    const dy = b.y - a.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    const maxDist = mode === 'network' ? 300 : 200;
+
+                    if (dist < maxDist) {
+                        const strength = 1 - dist / maxDist;
+                        const sameCategory = a.category === b.category;
+
+                        connections.push({ a, b, strength, sameCategory });
+
+                        // Record connections for network mode
+                        if (!a.connections.includes(b)) a.connections.push(b);
+                        if (!b.connections.includes(a)) b.connections.push(a);
+                    }
+                }
+            }
+
+            // Draw connections
+            connections.forEach(conn => {
+                const alpha = conn.strength * 0.3 * Math.min(conn.a.energy, conn.b.energy);
+
+                ctx.beginPath();
+                ctx.moveTo(conn.a.x, conn.a.y);
+
+                // Curved line for same category
+                if (conn.sameCategory) {
+                    const midX = (conn.a.x + conn.b.x) / 2;
+                    const midY = (conn.a.y + conn.b.y) / 2;
+                    const offset = Math.sin(time * 0.02) * 20;
+                    ctx.quadraticCurveTo(midX + offset, midY + offset, conn.b.x, conn.b.y);
+                    ctx.strokeStyle = conn.a.categoryData.color + Math.floor(alpha * 255).toString(16).padStart(2, '0');
+                } else {
+                    ctx.lineTo(conn.b.x, conn.b.y);
+                    ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.5})`;
+                }
+
+                ctx.lineWidth = conn.strength * 2;
+                ctx.stroke();
+
+                // Particles along connections
+                if (Math.random() < conn.strength * 0.1) {
+                    const t = Math.random();
+                    const px = conn.a.x + (conn.b.x - conn.a.x) * t;
+                    const py = conn.a.y + (conn.b.y - conn.a.y) * t;
+                    particles.push(new Particle(px, py, conn.a.categoryData.color));
+                }
+            });
+        }
+
+        // ============================================
+        // BACKGROUND
+        // ============================================
+
+        function drawBackground() {
+            // Gradient background
+            const gradient = ctx.createRadialGradient(
+                centerX, centerY, 0,
+                centerX, centerY, Math.max(canvas.width, canvas.height)
+            );
+
+            switch (mode) {
+                case 'flow':
+                    gradient.addColorStop(0, '#0a0a1a');
+                    gradient.addColorStop(1, '#000008');
+                    break;
+                case 'network':
+                    gradient.addColorStop(0, '#0a1020');
+                    gradient.addColorStop(1, '#000510');
+                    break;
+                case 'meditation':
+                    gradient.addColorStop(0, '#0a0a15');
+                    gradient.addColorStop(1, '#050508');
+                    break;
+                case 'dream':
+                    gradient.addColorStop(0, '#100a1a');
+                    gradient.addColorStop(1, '#080010');
+                    break;
+                case 'focus':
+                    gradient.addColorStop(0, '#0a1515');
+                    gradient.addColorStop(1, '#000808');
+                    break;
+            }
+
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Subtle pattern
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.02)';
+            ctx.lineWidth = 1;
+
+            if (mode === 'meditation') {
+                // Concentric circles
+                for (let r = 50; r < Math.max(canvas.width, canvas.height); r += 80) {
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, r + Math.sin(time * 0.01 + r * 0.01) * 10, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            } else if (mode === 'network') {
+                // Grid
+                const gridSize = 100;
+                for (let x = 0; x < canvas.width; x += gridSize) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, 0);
+                    ctx.lineTo(x, canvas.height);
+                    ctx.stroke();
+                }
+                for (let y = 0; y < canvas.height; y += gridSize) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(canvas.width, y);
+                    ctx.stroke();
+                }
+            }
+        }
+
+        // ============================================
+        // THOUGHT GENERATION
+        // ============================================
+
+        function spawnThought() {
+            if (thoughts.length < 20) {
+                let x, y;
+                switch (mode) {
+                    case 'focus':
+                        x = centerX + (Math.random() - 0.5) * 200;
+                        y = centerY + (Math.random() - 0.5) * 200;
+                        break;
+                    case 'meditation':
+                        const angle = Math.random() * Math.PI * 2;
+                        const dist = 100 + Math.random() * 200;
+                        x = centerX + Math.cos(angle) * dist;
+                        y = centerY + Math.sin(angle) * dist;
+                        break;
+                    default:
+                        x = Math.random() * canvas.width;
+                        y = Math.random() * canvas.height;
+                }
+                thoughts.push(new Thought(x, y));
+            }
+        }
+
+        function showThoughtPhrase() {
+            const phrase = thoughtPhrases[Math.floor(Math.random() * thoughtPhrases.length)];
+            const thoughtEl = document.getElementById('current-thought');
+            const metaEl = document.getElementById('thought-meta');
+
+            thoughtEl.classList.remove('visible');
+
+            setTimeout(() => {
+                thoughtEl.textContent = phrase;
+                metaEl.textContent = `— arising in the ${mode} state`;
+                thoughtEl.classList.add('visible');
+            }, 500);
+
+            setTimeout(() => {
+                thoughtEl.classList.remove('visible');
+            }, 6000);
+        }
+
+        // ============================================
+        // MAIN LOOP
+        // ============================================
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            centerX = canvas.width / 2;
+            centerY = canvas.height / 2;
+        }
+
+        function update() {
+            if (isPaused) return;
+
+            time++;
+
+            // Update thoughts
+            thoughts = thoughts.filter(t => t.update());
+
+            // Update particles
+            particles = particles.filter(p => p.update());
+
+            // Spawn new thoughts
+            if (Math.random() < 0.02) {
+                spawnThought();
+            }
+
+            // Update stats
+            document.getElementById('thought-count').textContent = thoughts.length;
+            document.getElementById('connection-count').textContent = connections.length;
+
+            const coherence = thoughts.length > 1 ?
+                Math.floor((connections.length / (thoughts.length * (thoughts.length - 1) / 2)) * 100) : 0;
+            document.getElementById('coherence').textContent = coherence + '%';
+        }
+
+        function render() {
+            drawBackground();
+            drawConnections();
+
+            // Draw particles
+            particles.forEach(p => p.draw());
+
+            // Draw thoughts
+            thoughts.forEach(t => t.draw());
+
+            update();
+            requestAnimationFrame(render);
+        }
+
+        // ============================================
+        // EVENT HANDLERS
+        // ============================================
+
+        function init() {
+            resize();
+            window.addEventListener('resize', resize);
+
+            // Initial thoughts
+            for (let i = 0; i < 8; i++) {
+                spawnThought();
+            }
+
+            // Mode buttons
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    mode = btn.dataset.mode;
+                    showThoughtPhrase();
+                });
+            });
+
+            // Controls
+            document.getElementById('pause-btn').addEventListener('click', (e) => {
+                isPaused = !isPaused;
+                e.target.textContent = isPaused ? 'Paused' : 'Flowing';
+                e.target.classList.toggle('active', !isPaused);
+            });
+
+            document.getElementById('clear-btn').addEventListener('click', () => {
+                thoughts = [];
+                particles = [];
+                connections = [];
+            });
+
+            document.getElementById('inject-btn').addEventListener('click', () => {
+                spawnThought();
+                showThoughtPhrase();
+            });
+
+            // Click to spawn thought
+            canvas.addEventListener('click', (e) => {
+                thoughts.push(new Thought(e.clientX, e.clientY));
+            });
+
+            // Show initial phrase
+            setTimeout(showThoughtPhrase, 2000);
+            setInterval(showThoughtPhrase, 15000);
+
+            render();
+        }
+
+        init();
+    </script>
+</body>
+</html>

@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Number Memory</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 42px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #a29bfe, #6c5ce7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 25px;
+        }
+
+        .stats-bar {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .stat {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px 25px;
+            border-radius: 10px;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #a29bfe;
+            font-family: monospace;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .game-area {
+            width: 100%;
+            max-width: 500px;
+            min-height: 350px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+        }
+
+        .number-display {
+            font-size: 64px;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 8px;
+            color: #fff;
+            text-shadow: 0 0 30px rgba(162, 155, 254, 0.5);
+            margin-bottom: 20px;
+            word-break: break-all;
+            text-align: center;
+        }
+
+        .number-display.small {
+            font-size: 48px;
+        }
+
+        .number-display.smaller {
+            font-size: 36px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            margin-top: 20px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #a29bfe, #6c5ce7);
+            border-radius: 3px;
+            transition: width 0.1s linear;
+        }
+
+        .input-container {
+            width: 100%;
+        }
+
+        .number-input {
+            width: 100%;
+            padding: 20px;
+            font-size: 32px;
+            font-family: 'Courier New', monospace;
+            text-align: center;
+            letter-spacing: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            color: #fff;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .number-input:focus {
+            border-color: #a29bfe;
+            box-shadow: 0 0 20px rgba(162, 155, 254, 0.3);
+        }
+
+        .number-input::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        button {
+            padding: 15px 40px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s;
+            margin-top: 20px;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        button.primary {
+            background: linear-gradient(135deg, rgba(162, 155, 254, 0.3), rgba(108, 92, 231, 0.3));
+            border-color: #a29bfe;
+        }
+
+        button.primary:hover {
+            background: linear-gradient(135deg, rgba(162, 155, 254, 0.5), rgba(108, 92, 231, 0.5));
+        }
+
+        .message {
+            font-size: 24px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .message.correct {
+            color: #00ff88;
+        }
+
+        .message.incorrect {
+            color: #ff6b6b;
+        }
+
+        .comparison {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .comparison-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+        }
+
+        .comparison-label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .comparison-value {
+            font-family: 'Courier New', monospace;
+            font-size: 18px;
+            letter-spacing: 3px;
+        }
+
+        .comparison-value.correct {
+            color: #00ff88;
+        }
+
+        .comparison-value.incorrect {
+            color: #ff6b6b;
+        }
+
+        .highlight-diff {
+            background: rgba(255, 107, 107, 0.3);
+            padding: 0 2px;
+            border-radius: 2px;
+        }
+
+        .level-display {
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 30px;
+        }
+
+        .instructions {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .result-panel {
+            text-align: center;
+        }
+
+        .result-panel h2 {
+            font-size: 36px;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #a29bfe, #6c5ce7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .result-score {
+            font-size: 72px;
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 10px;
+        }
+
+        .result-label {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 25px;
+        }
+
+        .percentile {
+            font-size: 16px;
+            color: #a29bfe;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 500px) {
+            .number-display {
+                font-size: 48px;
+                letter-spacing: 4px;
+            }
+
+            .number-display.small {
+                font-size: 36px;
+            }
+
+            .number-display.smaller {
+                font-size: 28px;
+            }
+
+            .number-input {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Number Memory</h1>
+    <p class="subtitle">How many digits can you remember?</p>
+
+    <div class="stats-bar">
+        <div class="stat">
+            <div class="stat-value" id="level">1</div>
+            <div class="stat-label">Level</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value" id="best">0</div>
+            <div class="stat-label">Best</div>
+        </div>
+    </div>
+
+    <div class="game-area" id="gameArea">
+        <!-- Content changes based on state -->
+        <div id="startScreen">
+            <div class="instructions">
+                Remember the number shown, then type it back.<br>
+                The sequence gets longer each round.
+            </div>
+            <button class="primary" id="startBtn">Start Test</button>
+        </div>
+    </div>
+
+    <script>
+        let level = 1;
+        let currentNumber = '';
+        let bestScore = 0;
+        let showTime = 1500; // Base display time
+        let state = 'start'; // start, showing, input, feedback, gameover
+
+        function init() {
+            bestScore = parseInt(localStorage.getItem('number-memory-best') || '0');
+            document.getElementById('best').textContent = bestScore;
+        }
+
+        function generateNumber(digits) {
+            let num = '';
+            for (let i = 0; i < digits; i++) {
+                num += Math.floor(Math.random() * 10);
+            }
+            return num;
+        }
+
+        function getDisplayClass(length) {
+            if (length > 12) return 'smaller';
+            if (length > 8) return 'small';
+            return '';
+        }
+
+        function showNumber() {
+            state = 'showing';
+            currentNumber = generateNumber(level);
+
+            const displayTime = Math.max(1000, 1500 + (level - 1) * 300); // More time for longer numbers
+
+            const gameArea = document.getElementById('gameArea');
+            gameArea.innerHTML = `
+                <div class="level-display">Level ${level}</div>
+                <div class="number-display ${getDisplayClass(currentNumber.length)}">${currentNumber}</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill" style="width: 100%"></div>
+                </div>
+            `;
+
+            // Animate progress bar
+            const startTime = Date.now();
+            const progressFill = document.getElementById('progressFill');
+
+            function updateProgress() {
+                const elapsed = Date.now() - startTime;
+                const remaining = Math.max(0, 100 - (elapsed / displayTime) * 100);
+                progressFill.style.width = remaining + '%';
+
+                if (elapsed < displayTime) {
+                    requestAnimationFrame(updateProgress);
+                } else {
+                    showInput();
+                }
+            }
+
+            requestAnimationFrame(updateProgress);
+        }
+
+        function showInput() {
+            state = 'input';
+
+            const gameArea = document.getElementById('gameArea');
+            gameArea.innerHTML = `
+                <div class="level-display">Level ${level}</div>
+                <div class="instructions">What was the number?</div>
+                <div class="input-container">
+                    <input type="text"
+                           class="number-input"
+                           id="numberInput"
+                           placeholder="Type the number..."
+                           inputmode="numeric"
+                           pattern="[0-9]*"
+                           autocomplete="off">
+                </div>
+                <button class="primary" id="submitBtn">Submit</button>
+            `;
+
+            const input = document.getElementById('numberInput');
+            input.focus();
+
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    checkAnswer();
+                }
+            });
+
+            // Only allow numbers
+            input.addEventListener('input', (e) => {
+                e.target.value = e.target.value.replace(/[^0-9]/g, '');
+            });
+
+            document.getElementById('submitBtn').addEventListener('click', checkAnswer);
+        }
+
+        function checkAnswer() {
+            if (state !== 'input') return;
+
+            const input = document.getElementById('numberInput');
+            const answer = input.value;
+
+            if (answer === currentNumber) {
+                showFeedback(true);
+            } else {
+                showFeedback(false, answer);
+            }
+        }
+
+        function showFeedback(correct, userAnswer = '') {
+            state = 'feedback';
+
+            const gameArea = document.getElementById('gameArea');
+
+            if (correct) {
+                gameArea.innerHTML = `
+                    <div class="message correct">Correct!</div>
+                    <div class="number-display ${getDisplayClass(currentNumber.length)}">${currentNumber}</div>
+                    <button class="primary" id="nextBtn">Next Level</button>
+                `;
+
+                document.getElementById('nextBtn').addEventListener('click', () => {
+                    level++;
+                    document.getElementById('level').textContent = level;
+                    showNumber();
+                });
+            } else {
+                // Highlight differences
+                let highlightedAnswer = '';
+                for (let i = 0; i < Math.max(currentNumber.length, userAnswer.length); i++) {
+                    if (i >= userAnswer.length) {
+                        highlightedAnswer += '<span class="highlight-diff">_</span>';
+                    } else if (userAnswer[i] !== currentNumber[i]) {
+                        highlightedAnswer += `<span class="highlight-diff">${userAnswer[i]}</span>`;
+                    } else {
+                        highlightedAnswer += userAnswer[i];
+                    }
+                }
+
+                gameArea.innerHTML = `
+                    <div class="message incorrect">Incorrect!</div>
+                    <div class="comparison">
+                        <div class="comparison-row">
+                            <span class="comparison-label">Correct</span>
+                            <span class="comparison-value correct">${currentNumber}</span>
+                        </div>
+                        <div class="comparison-row">
+                            <span class="comparison-label">Your Answer</span>
+                            <span class="comparison-value incorrect">${highlightedAnswer || '(empty)'}</span>
+                        </div>
+                    </div>
+                    <button class="primary" id="resultsBtn">See Results</button>
+                `;
+
+                document.getElementById('resultsBtn').addEventListener('click', showResults);
+            }
+        }
+
+        function showResults() {
+            state = 'gameover';
+
+            const score = level - 1;
+
+            if (score > bestScore) {
+                bestScore = score;
+                localStorage.setItem('number-memory-best', bestScore.toString());
+                document.getElementById('best').textContent = bestScore;
+            }
+
+            // Calculate percentile (rough estimate)
+            let percentile;
+            if (score >= 12) percentile = 99;
+            else if (score >= 10) percentile = 95;
+            else if (score >= 8) percentile = 85;
+            else if (score >= 7) percentile = 70;
+            else if (score >= 6) percentile = 50;
+            else if (score >= 5) percentile = 30;
+            else percentile = 15;
+
+            const gameArea = document.getElementById('gameArea');
+            gameArea.innerHTML = `
+                <div class="result-panel">
+                    <h2>Game Over</h2>
+                    <div class="result-score">${score}</div>
+                    <div class="result-label">Digits Remembered</div>
+                    <div class="percentile">Better than ${percentile}% of players</div>
+                    <button class="primary" id="retryBtn">Try Again</button>
+                </div>
+            `;
+
+            document.getElementById('retryBtn').addEventListener('click', resetGame);
+        }
+
+        function resetGame() {
+            level = 1;
+            document.getElementById('level').textContent = level;
+
+            const gameArea = document.getElementById('gameArea');
+            gameArea.innerHTML = `
+                <div id="startScreen">
+                    <div class="instructions">
+                        Remember the number shown, then type it back.<br>
+                        The sequence gets longer each round.
+                    </div>
+                    <button class="primary" id="startBtn">Start Test</button>
+                </div>
+            `;
+
+            document.getElementById('startBtn').addEventListener('click', showNumber);
+            state = 'start';
+        }
+
+        // Initial event listener
+        document.getElementById('startBtn').addEventListener('click', showNumber);
+
+        // Initialize
+        init();
+    </script>
+</body>
+</html>

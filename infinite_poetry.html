@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infinite Poetry: Generative Verse</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            font-family: 'EB Garamond', 'Georgia', serif;
+            color: #e8e8e8;
+            overflow-x: hidden;
+        }
+
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 3s infinite ease-in-out;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.2; }
+            50% { opacity: 1; }
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 60px 40px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        h1 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 48px;
+            font-weight: 300;
+            letter-spacing: 8px;
+            color: #f8f8f8;
+            text-shadow: 0 0 40px rgba(255, 255, 255, 0.2);
+            margin-bottom: 15px;
+        }
+
+        .subtitle {
+            font-size: 16px;
+            font-style: italic;
+            color: rgba(255, 255, 255, 0.6);
+            letter-spacing: 3px;
+        }
+
+        .poem-container {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 50px;
+            margin-bottom: 40px;
+            position: relative;
+            min-height: 400px;
+        }
+
+        .poem-container::before {
+            content: '"';
+            position: absolute;
+            top: 20px;
+            left: 30px;
+            font-size: 80px;
+            color: rgba(255, 255, 255, 0.1);
+            font-family: 'Cormorant Garamond', serif;
+        }
+
+        .poem {
+            font-size: 22px;
+            line-height: 2;
+            text-align: center;
+        }
+
+        .poem .line {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 1s forwards;
+            margin: 10px 0;
+        }
+
+        .poem .line.emphasis {
+            font-style: italic;
+            color: #b8d4e8;
+        }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .poem-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 28px;
+            font-weight: 400;
+            color: #a8c8dc;
+            margin-bottom: 30px;
+            text-align: center;
+            letter-spacing: 2px;
+        }
+
+        .poem-meta {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.4);
+            font-style: italic;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-bottom: 40px;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #e8e8e8;
+            border-radius: 30px;
+            cursor: pointer;
+            font-family: 'EB Garamond', serif;
+            font-size: 15px;
+            letter-spacing: 2px;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn.active {
+            background: rgba(168, 200, 220, 0.2);
+            border-color: #a8c8dc;
+        }
+
+        .themes {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+
+        .theme-btn {
+            padding: 8px 20px;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: rgba(255, 255, 255, 0.6);
+            border-radius: 20px;
+            cursor: pointer;
+            font-family: 'EB Garamond', serif;
+            font-size: 13px;
+            letter-spacing: 1px;
+            transition: all 0.3s;
+        }
+
+        .theme-btn:hover, .theme-btn.active {
+            border-color: #a8c8dc;
+            color: #a8c8dc;
+        }
+
+        .history {
+            margin-top: 60px;
+            padding-top: 40px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .history h2 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 24px;
+            font-weight: 300;
+            letter-spacing: 4px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .history-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .history-item {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .history-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .history-item h4 {
+            font-size: 14px;
+            color: #a8c8dc;
+            margin-bottom: 8px;
+        }
+
+        .history-item p {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            line-height: 1.6;
+            font-style: italic;
+        }
+
+        .analysis {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .analysis h4 {
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 10px;
+            font-size: 12px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .analysis-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+        }
+
+        .syllable-count {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 12px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="stars" id="stars"></div>
+
+    <div class="container">
+        <header>
+            <h1>INFINITE POETRY</h1>
+            <p class="subtitle">Generative Verse from the Depths of Language</p>
+        </header>
+
+        <div class="themes">
+            <button class="theme-btn active" data-theme="cosmic">Cosmic</button>
+            <button class="theme-btn" data-theme="nature">Nature</button>
+            <button class="theme-btn" data-theme="love">Love</button>
+            <button class="theme-btn" data-theme="time">Time</button>
+            <button class="theme-btn" data-theme="consciousness">Consciousness</button>
+            <button class="theme-btn" data-theme="loss">Loss</button>
+            <button class="theme-btn" data-theme="hope">Hope</button>
+            <button class="theme-btn" data-theme="abstract">Abstract</button>
+        </div>
+
+        <div class="controls">
+            <button class="btn active" data-form="free">Free Verse</button>
+            <button class="btn" data-form="haiku">Haiku</button>
+            <button class="btn" data-form="sonnet">Sonnet</button>
+            <button class="btn" data-form="villanelle">Villanelle</button>
+            <button class="btn" data-form="tanka">Tanka</button>
+        </div>
+
+        <div class="poem-container">
+            <h3 class="poem-title" id="poem-title"></h3>
+            <div class="poem" id="poem"></div>
+            <div class="poem-meta" id="poem-meta"></div>
+        </div>
+
+        <div style="text-align: center;">
+            <button class="btn" id="generate">Generate New Poem</button>
+        </div>
+
+        <div class="analysis" id="analysis" style="display: none;">
+            <h4>Linguistic Analysis</h4>
+            <div id="analysis-content"></div>
+        </div>
+
+        <div class="history" id="history-section" style="display: none;">
+            <h2>Poetry Archive</h2>
+            <div class="history-grid" id="history-grid"></div>
+        </div>
+    </div>
+
+    <footer>
+        <p>"Poetry is when an emotion has found its thought and the thought has found words."</p>
+        <p style="margin-top: 10px;">— Robert Frost</p>
+    </footer>
+
+    <script>
+        // ============================================
+        // INFINITE POETRY GENERATOR
+        // A demonstration of computational creativity
+        // ============================================
+
+        const vocabulary = {
+            cosmic: {
+                nouns: ['stars', 'nebula', 'void', 'cosmos', 'light', 'darkness', 'infinity', 'silence', 'eternity', 'universe', 'galaxy', 'moon', 'sun', 'planets', 'comets', 'aurora', 'constellation', 'horizon', 'twilight', 'dawn', 'stardust', 'eclipse', 'orbit', 'abyss', 'singularity'],
+                verbs: ['whisper', 'drift', 'burn', 'fade', 'explode', 'spiral', 'collapse', 'illuminate', 'embrace', 'scatter', 'echo', 'pulse', 'transcend', 'dissolve', 'shimmer', 'radiate', 'orbit', 'expand', 'contract', 'awaken'],
+                adjectives: ['infinite', 'silent', 'eternal', 'distant', 'luminous', 'ancient', 'cold', 'vast', 'ephemeral', 'celestial', 'cosmic', 'boundless', 'timeless', 'radiant', 'mysterious', 'profound', 'remote', 'stellar', 'spectral', 'incandescent'],
+                abstracts: ['time', 'space', 'existence', 'oblivion', 'destiny', 'dreams', 'memory', 'truth', 'wonder', 'solitude', 'meaning', 'consciousness', 'reality', 'perception', 'infinity']
+            },
+            nature: {
+                nouns: ['river', 'mountain', 'forest', 'rain', 'wind', 'leaves', 'flowers', 'ocean', 'storm', 'meadow', 'bird', 'tree', 'stone', 'cloud', 'dawn', 'dusk', 'snow', 'spring', 'autumn', 'winter', 'summer', 'valley', 'peak', 'stream', 'moss'],
+                verbs: ['bloom', 'flow', 'whisper', 'dance', 'fall', 'rise', 'grow', 'wither', 'sing', 'rest', 'breathe', 'rustle', 'cascade', 'meander', 'blossom', 'unfold', 'descend', 'emerge', 'sway', 'drift'],
+                adjectives: ['wild', 'gentle', 'fierce', 'quiet', 'ancient', 'young', 'endless', 'deep', 'tall', 'green', 'golden', 'silver', 'pristine', 'untamed', 'serene', 'verdant', 'crystalline', 'misty', 'dew-laden', 'windswept'],
+                abstracts: ['peace', 'cycle', 'life', 'death', 'renewal', 'balance', 'harmony', 'change', 'growth', 'decay', 'wildness', 'stillness', 'rhythm', 'season', 'eternity']
+            },
+            love: {
+                nouns: ['heart', 'touch', 'kiss', 'embrace', 'eyes', 'hands', 'breath', 'soul', 'warmth', 'skin', 'lips', 'silence', 'whisper', 'promise', 'moment', 'memory', 'longing', 'desire', 'passion', 'tenderness'],
+                verbs: ['love', 'hold', 'yearn', 'remember', 'forget', 'cherish', 'ache', 'burn', 'melt', 'entwine', 'caress', 'embrace', 'surrender', 'discover', 'treasure', 'worship', 'adore', 'long', 'dream', 'hope'],
+                adjectives: ['tender', 'fierce', 'gentle', 'burning', 'soft', 'deep', 'endless', 'fragile', 'powerful', 'quiet', 'passionate', 'eternal', 'fleeting', 'profound', 'delicate', 'intense', 'pure', 'raw', 'sweet', 'aching'],
+                abstracts: ['love', 'passion', 'devotion', 'longing', 'desire', 'connection', 'intimacy', 'trust', 'vulnerability', 'surrender', 'union', 'separation', 'reunion', 'fate', 'destiny']
+            },
+            time: {
+                nouns: ['clock', 'hour', 'moment', 'memory', 'past', 'future', 'present', 'dawn', 'dusk', 'midnight', 'century', 'instant', 'eternity', 'age', 'youth', 'decay', 'shadow', 'echo', 'reflection', 'ghost'],
+                verbs: ['pass', 'fade', 'remain', 'change', 'return', 'vanish', 'linger', 'haunt', 'age', 'crumble', 'persist', 'dissolve', 'remember', 'forget', 'endure', 'elapse', 'unfold', 'recede', 'approach', 'freeze'],
+                adjectives: ['fleeting', 'eternal', 'ancient', 'young', 'endless', 'brief', 'forgotten', 'remembered', 'lost', 'found', 'passing', 'lingering', 'suspended', 'relentless', 'patient', 'timeless', 'ephemeral', 'perpetual', 'transient', 'momentary'],
+                abstracts: ['time', 'memory', 'history', 'future', 'mortality', 'impermanence', 'legacy', 'nostalgia', 'anticipation', 'regret', 'hope', 'change', 'continuity', 'entropy', 'cycles']
+            },
+            consciousness: {
+                nouns: ['mind', 'thought', 'dream', 'awareness', 'self', 'soul', 'perception', 'reality', 'illusion', 'truth', 'mirror', 'shadow', 'light', 'void', 'eye', 'silence', 'question', 'answer', 'paradox', 'mystery'],
+                verbs: ['think', 'dream', 'perceive', 'wonder', 'question', 'understand', 'forget', 'remember', 'transcend', 'awaken', 'dissolve', 'emerge', 'observe', 'reflect', 'contemplate', 'realize', 'imagine', 'become', 'exist', 'know'],
+                adjectives: ['conscious', 'aware', 'dreaming', 'waking', 'infinite', 'finite', 'illusory', 'real', 'deep', 'shallow', 'clear', 'clouded', 'profound', 'simple', 'complex', 'unified', 'fragmented', 'lucid', 'obscure', 'transcendent'],
+                abstracts: ['consciousness', 'awareness', 'existence', 'being', 'nothingness', 'self', 'identity', 'reality', 'perception', 'truth', 'meaning', 'purpose', 'understanding', 'mystery', 'enlightenment']
+            },
+            loss: {
+                nouns: ['absence', 'shadow', 'echo', 'memory', 'ghost', 'silence', 'void', 'tears', 'ache', 'wound', 'scar', 'grave', 'photograph', 'letter', 'name', 'face', 'voice', 'touch', 'emptiness', 'darkness'],
+                verbs: ['lose', 'mourn', 'grieve', 'fade', 'vanish', 'remember', 'forget', 'ache', 'cry', 'search', 'miss', 'haunt', 'linger', 'dissolve', 'crumble', 'break', 'shatter', 'heal', 'mend', 'carry'],
+                adjectives: ['lost', 'gone', 'absent', 'empty', 'hollow', 'broken', 'silent', 'fading', 'haunting', 'aching', 'tender', 'raw', 'deep', 'profound', 'endless', 'quiet', 'persistent', 'gentle', 'heavy', 'light'],
+                abstracts: ['loss', 'grief', 'absence', 'memory', 'pain', 'healing', 'acceptance', 'longing', 'hope', 'love', 'death', 'life', 'legacy', 'remembrance', 'letting go']
+            },
+            hope: {
+                nouns: ['dawn', 'light', 'seed', 'spring', 'child', 'dream', 'star', 'horizon', 'tomorrow', 'promise', 'bloom', 'path', 'door', 'bridge', 'wing', 'song', 'smile', 'hand', 'heart', 'beginning'],
+                verbs: ['hope', 'dream', 'rise', 'bloom', 'grow', 'shine', 'believe', 'trust', 'reach', 'soar', 'open', 'begin', 'emerge', 'transform', 'awaken', 'heal', 'build', 'create', 'imagine', 'aspire'],
+                adjectives: ['bright', 'new', 'young', 'fresh', 'endless', 'possible', 'open', 'free', 'alive', 'warm', 'golden', 'radiant', 'gentle', 'strong', 'resilient', 'unwavering', 'patient', 'quiet', 'fierce', 'tender'],
+                abstracts: ['hope', 'faith', 'possibility', 'future', 'potential', 'resilience', 'courage', 'strength', 'renewal', 'transformation', 'growth', 'love', 'light', 'beginning', 'tomorrow']
+            },
+            abstract: {
+                nouns: ['silence', 'shadow', 'echo', 'mirror', 'void', 'edge', 'threshold', 'boundary', 'fragment', 'whole', 'pattern', 'chaos', 'order', 'form', 'essence', 'texture', 'geometry', 'wave', 'particle', 'frequency'],
+                verbs: ['dissolve', 'emerge', 'transform', 'fragment', 'coalesce', 'oscillate', 'resonate', 'reflect', 'refract', 'converge', 'diverge', 'manifest', 'transcend', 'collapse', 'expand', 'pulse', 'vibrate', 'shift', 'phase', 'become'],
+                adjectives: ['abstract', 'concrete', 'fluid', 'solid', 'transparent', 'opaque', 'infinite', 'finite', 'complex', 'simple', 'chaotic', 'ordered', 'fractal', 'linear', 'circular', 'spiral', 'recursive', 'emergent', 'fundamental', 'ephemeral'],
+                abstracts: ['form', 'formlessness', 'pattern', 'randomness', 'structure', 'chaos', 'order', 'entropy', 'information', 'meaning', 'nothing', 'everything', 'somewhere', 'nowhere', 'being']
+            }
+        };
+
+        const templates = {
+            linePatterns: [
+                '{adj} {noun} {verb}s in the {noun}',
+                'the {noun} of {abstract}',
+                '{verb}ing through {adj} {noun}s',
+                'where {noun}s {verb}',
+                'in {adj} {abstract}',
+                'a {noun} {verb}s {adverb}',
+                'between {noun} and {noun}',
+                '{adj} as {noun}s {verb}',
+                'the {adj} {noun} knows',
+                'we {verb} like {noun}s',
+                'beneath the {adj} {noun}',
+                'what {noun}s {verb}',
+                'into the {abstract} of {noun}s',
+                'the {noun} remembers {abstract}',
+                'silently, the {noun} {verb}s',
+                'each {noun} a {adj} {abstract}',
+                'how the {noun} {verb}s',
+                'without {abstract}, only {noun}',
+                'the {adj} weight of {abstract}',
+                'where {abstract} meets {noun}'
+            ],
+            openings: [
+                'In the {adj} {noun}',
+                'There is a {noun}',
+                'We were {adj} once',
+                'Listen:',
+                'Before {abstract}',
+                'After the {noun}',
+                'Somewhere',
+                'I remember',
+                'They say the {noun}',
+                'In dreams'
+            ],
+            closings: [
+                'and so we {verb}',
+                'forever',
+                'until {noun}s {verb}',
+                'in {abstract}',
+                'this is {abstract}',
+                'only this',
+                'nothing more',
+                'and {verb}',
+                'becoming {noun}',
+                '...'
+            ],
+            transitions: [
+                'but', 'and', 'yet', 'still', 'perhaps', 'maybe', 'or', 'though', 'when', 'if', 'until', 'before', 'after', 'while', 'as'
+            ]
+        };
+
+        let currentTheme = 'cosmic';
+        let currentForm = 'free';
+        let poemHistory = [];
+
+        // ============================================
+        // UTILITY FUNCTIONS
+        // ============================================
+
+        function random(arr) {
+            return arr[Math.floor(Math.random() * arr.length)];
+        }
+
+        function capitalize(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+
+        function countSyllables(word) {
+            word = word.toLowerCase();
+            if (word.length <= 3) return 1;
+            word = word.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/, '');
+            word = word.replace(/^y/, '');
+            const matches = word.match(/[aeiouy]{1,2}/g);
+            return matches ? matches.length : 1;
+        }
+
+        function getAdverb(adj) {
+            if (adj.endsWith('y')) return adj.slice(0, -1) + 'ily';
+            if (adj.endsWith('le')) return adj.slice(0, -2) + 'ly';
+            if (adj.endsWith('ic')) return adj + 'ally';
+            return adj + 'ly';
+        }
+
+        // ============================================
+        // LINE GENERATION
+        // ============================================
+
+        function generateLine(vocab, targetSyllables = null) {
+            const pattern = random(templates.linePatterns);
+            let line = pattern
+                .replace(/{noun}/g, () => random(vocab.nouns))
+                .replace(/{verb}/g, () => random(vocab.verbs))
+                .replace(/{adj}/g, () => random(vocab.adjectives))
+                .replace(/{abstract}/g, () => random(vocab.abstracts))
+                .replace(/{adverb}/g, () => getAdverb(random(vocab.adjectives)));
+
+            // Handle verb conjugation
+            line = line.replace(/(\w+)s\s+in/g, (match, verb) => {
+                if (verb.endsWith('s') || verb.endsWith('x') || verb.endsWith('ch') || verb.endsWith('sh')) {
+                    return verb + 'es in';
+                }
+                return match;
+            });
+
+            return line;
+        }
+
+        function generateOpening(vocab) {
+            const pattern = random(templates.openings);
+            return pattern
+                .replace(/{noun}/g, () => random(vocab.nouns))
+                .replace(/{adj}/g, () => random(vocab.adjectives))
+                .replace(/{abstract}/g, () => random(vocab.abstracts));
+        }
+
+        function generateClosing(vocab) {
+            const pattern = random(templates.closings);
+            return pattern
+                .replace(/{noun}/g, () => random(vocab.nouns))
+                .replace(/{verb}/g, () => random(vocab.verbs))
+                .replace(/{abstract}/g, () => random(vocab.abstracts));
+        }
+
+        // ============================================
+        // TITLE GENERATION
+        // ============================================
+
+        function generateTitle(vocab) {
+            const patterns = [
+                '{adj} {noun}',
+                'The {noun} of {abstract}',
+                '{abstract}',
+                'On {abstract}',
+                'After the {noun}',
+                '{adj} {abstract}',
+                'When {noun}s {verb}',
+                'A {noun} in {abstract}',
+                '{noun} and {noun}',
+                'The {adj} Hour'
+            ];
+
+            const pattern = random(patterns);
+            let title = pattern
+                .replace(/{noun}/g, () => random(vocab.nouns))
+                .replace(/{verb}/g, () => random(vocab.verbs))
+                .replace(/{adj}/g, () => random(vocab.adjectives))
+                .replace(/{abstract}/g, () => random(vocab.abstracts));
+
+            return title.split(' ').map(capitalize).join(' ');
+        }
+
+        // ============================================
+        // POEM FORMS
+        // ============================================
+
+        function generateFreeVerse(vocab) {
+            const lines = [];
+            const stanzaCount = 2 + Math.floor(Math.random() * 2);
+            const linesPerStanza = 3 + Math.floor(Math.random() * 3);
+
+            lines.push(capitalize(generateOpening(vocab)));
+
+            for (let s = 0; s < stanzaCount; s++) {
+                for (let l = 0; l < linesPerStanza; l++) {
+                    let line = generateLine(vocab);
+                    if (l === 0 && Math.random() > 0.7) {
+                        line = random(templates.transitions) + ', ' + line;
+                    }
+                    if (l === linesPerStanza - 1) {
+                        line = line.replace(/\.$/, '') + '.';
+                    }
+                    lines.push(line);
+                }
+                if (s < stanzaCount - 1) {
+                    lines.push(''); // Empty line between stanzas
+                }
+            }
+
+            lines.push(generateClosing(vocab) + '.');
+
+            return lines;
+        }
+
+        function generateHaiku(vocab) {
+            // 5-7-5 syllable structure
+            const lines = [];
+
+            function generateSyllableLine(target) {
+                let attempts = 0;
+                while (attempts < 50) {
+                    const line = generateLine(vocab);
+                    const words = line.split(' ');
+                    let syllables = 0;
+                    const usedWords = [];
+
+                    for (const word of words) {
+                        const wordSyllables = countSyllables(word);
+                        if (syllables + wordSyllables <= target) {
+                            usedWords.push(word);
+                            syllables += wordSyllables;
+                        }
+                        if (syllables === target) break;
+                    }
+
+                    if (syllables >= target - 1 && syllables <= target + 1) {
+                        return usedWords.join(' ');
+                    }
+                    attempts++;
+                }
+                return generateLine(vocab).split(' ').slice(0, 3).join(' ');
+            }
+
+            lines.push(capitalize(generateSyllableLine(5)));
+            lines.push(generateSyllableLine(7));
+            lines.push(generateSyllableLine(5));
+
+            return lines;
+        }
+
+        function generateTanka(vocab) {
+            // 5-7-5-7-7 syllable structure
+            const lines = [];
+
+            function generateSyllableLine(target) {
+                let attempts = 0;
+                while (attempts < 50) {
+                    const line = generateLine(vocab);
+                    const words = line.split(' ');
+                    let syllables = 0;
+                    const usedWords = [];
+
+                    for (const word of words) {
+                        const wordSyllables = countSyllables(word);
+                        if (syllables + wordSyllables <= target + 1) {
+                            usedWords.push(word);
+                            syllables += wordSyllables;
+                        }
+                        if (syllables >= target) break;
+                    }
+
+                    if (syllables >= target - 1 && syllables <= target + 1) {
+                        return usedWords.join(' ');
+                    }
+                    attempts++;
+                }
+                return generateLine(vocab).split(' ').slice(0, 4).join(' ');
+            }
+
+            lines.push(capitalize(generateSyllableLine(5)));
+            lines.push(generateSyllableLine(7));
+            lines.push(generateSyllableLine(5));
+            lines.push(generateSyllableLine(7));
+            lines.push(generateSyllableLine(7));
+
+            return lines;
+        }
+
+        function generateSonnet(vocab) {
+            const lines = [];
+
+            // 14 lines in iambic pentameter (roughly 10 syllables)
+            for (let i = 0; i < 14; i++) {
+                let line = generateLine(vocab);
+
+                // Add some structure
+                if (i === 0) {
+                    line = capitalize(generateOpening(vocab)) + ', ' + line;
+                } else if (i === 4 || i === 8) {
+                    line = capitalize(random(templates.transitions)) + ' ' + line;
+                } else if (i === 12) {
+                    line = 'And ' + line;
+                } else if (i === 13) {
+                    line = generateClosing(vocab);
+                }
+
+                // Add punctuation
+                if ((i + 1) % 4 === 0 && i < 12) {
+                    line += '.';
+                } else if (i < 13) {
+                    line += ',';
+                } else {
+                    line += '.';
+                }
+
+                lines.push(i === 0 ? line : line.toLowerCase());
+
+                // Add breaks for quatrains
+                if ((i + 1) % 4 === 0 && i < 12) {
+                    lines.push('');
+                }
+            }
+
+            return lines;
+        }
+
+        function generateVillanelle(vocab) {
+            // 19 lines: five tercets and a quatrain
+            // Lines 1 and 3 of first tercet alternate as final lines of each subsequent tercet
+            // Both appear at end of final quatrain
+
+            const refrain1 = capitalize(generateLine(vocab));
+            const refrain2 = generateLine(vocab);
+            const lines = [];
+
+            // First tercet
+            lines.push(refrain1);
+            lines.push(generateLine(vocab) + ',');
+            lines.push(refrain2);
+            lines.push('');
+
+            // Second through fifth tercets
+            for (let t = 0; t < 4; t++) {
+                lines.push(capitalize(generateLine(vocab)) + ',');
+                lines.push(generateLine(vocab) + ',');
+                lines.push(t % 2 === 0 ? refrain1 : refrain2);
+                lines.push('');
+            }
+
+            // Final quatrain
+            lines.push(capitalize(generateLine(vocab)) + ',');
+            lines.push(generateLine(vocab) + ',');
+            lines.push(refrain1);
+            lines.push(refrain2 + '.');
+
+            return lines;
+        }
+
+        // ============================================
+        // MAIN GENERATION
+        // ============================================
+
+        function generatePoem() {
+            const vocab = vocabulary[currentTheme];
+            let lines;
+
+            switch (currentForm) {
+                case 'haiku': lines = generateHaiku(vocab); break;
+                case 'tanka': lines = generateTanka(vocab); break;
+                case 'sonnet': lines = generateSonnet(vocab); break;
+                case 'villanelle': lines = generateVillanelle(vocab); break;
+                default: lines = generateFreeVerse(vocab);
+            }
+
+            const title = generateTitle(vocab);
+            const poem = {
+                title,
+                lines,
+                theme: currentTheme,
+                form: currentForm,
+                timestamp: new Date().toISOString()
+            };
+
+            displayPoem(poem);
+            saveToHistory(poem);
+            showAnalysis(poem);
+
+            return poem;
+        }
+
+        function displayPoem(poem) {
+            document.getElementById('poem-title').textContent = poem.title;
+
+            const poemEl = document.getElementById('poem');
+            poemEl.innerHTML = '';
+
+            poem.lines.forEach((line, i) => {
+                const lineEl = document.createElement('div');
+                lineEl.className = 'line';
+                lineEl.textContent = line;
+                lineEl.style.animationDelay = `${i * 0.15}s`;
+
+                // Add emphasis to certain lines
+                if (line.includes('...') || line === '' || line.startsWith('And ')) {
+                    lineEl.classList.add('emphasis');
+                }
+
+                poemEl.appendChild(lineEl);
+            });
+
+            const formNames = {
+                free: 'Free Verse',
+                haiku: 'Haiku',
+                tanka: 'Tanka',
+                sonnet: 'Sonnet',
+                villanelle: 'Villanelle'
+            };
+
+            document.getElementById('poem-meta').textContent =
+                `${formNames[poem.form]} | Theme: ${capitalize(poem.theme)}`;
+        }
+
+        function showAnalysis(poem) {
+            const container = document.getElementById('analysis');
+            const content = document.getElementById('analysis-content');
+
+            const words = poem.lines.join(' ').split(/\s+/).filter(w => w.length > 0);
+            const uniqueWords = [...new Set(words.map(w => w.toLowerCase().replace(/[^a-z]/g, '')))];
+            const totalSyllables = words.reduce((sum, w) => sum + countSyllables(w), 0);
+            const avgWordLength = words.reduce((sum, w) => sum + w.length, 0) / words.length;
+
+            content.innerHTML = `
+                <div class="analysis-row">
+                    <span>Total Lines</span>
+                    <span>${poem.lines.filter(l => l.trim()).length}</span>
+                </div>
+                <div class="analysis-row">
+                    <span>Word Count</span>
+                    <span>${words.length}</span>
+                </div>
+                <div class="analysis-row">
+                    <span>Unique Words</span>
+                    <span>${uniqueWords.length}</span>
+                </div>
+                <div class="analysis-row">
+                    <span>Lexical Diversity</span>
+                    <span>${(uniqueWords.length / words.length * 100).toFixed(1)}%</span>
+                </div>
+                <div class="analysis-row">
+                    <span>Total Syllables</span>
+                    <span>${totalSyllables}</span>
+                </div>
+                <div class="analysis-row">
+                    <span>Avg Word Length</span>
+                    <span>${avgWordLength.toFixed(1)} chars</span>
+                </div>
+            `;
+
+            container.style.display = 'block';
+        }
+
+        function saveToHistory(poem) {
+            poemHistory.unshift(poem);
+            if (poemHistory.length > 20) poemHistory.pop();
+            updateHistoryDisplay();
+        }
+
+        function updateHistoryDisplay() {
+            if (poemHistory.length < 2) {
+                document.getElementById('history-section').style.display = 'none';
+                return;
+            }
+
+            document.getElementById('history-section').style.display = 'block';
+            const grid = document.getElementById('history-grid');
+
+            grid.innerHTML = poemHistory.slice(1).map((poem, i) => `
+                <div class="history-item" data-index="${i + 1}">
+                    <h4>${poem.title}</h4>
+                    <p>${poem.lines.slice(0, 2).join(' / ')}...</p>
+                </div>
+            `).join('');
+
+            grid.querySelectorAll('.history-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const index = parseInt(item.dataset.index);
+                    displayPoem(poemHistory[index]);
+                    showAnalysis(poemHistory[index]);
+                });
+            });
+        }
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+
+        function createStars() {
+            const container = document.getElementById('stars');
+            for (let i = 0; i < 200; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.animationDelay = Math.random() * 3 + 's';
+                star.style.opacity = Math.random() * 0.5 + 0.2;
+                container.appendChild(star);
+            }
+        }
+
+        function init() {
+            createStars();
+
+            // Theme buttons
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentTheme = btn.dataset.theme;
+                });
+            });
+
+            // Form buttons
+            document.querySelectorAll('.btn[data-form]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.btn[data-form]').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentForm = btn.dataset.form;
+                });
+            });
+
+            // Generate button
+            document.getElementById('generate').addEventListener('click', generatePoem);
+
+            // Generate initial poem
+            generatePoem();
+
+            // Auto-generate periodically
+            setInterval(() => {
+                if (document.hidden) return;
+                // Don't auto-generate, let user control it
+            }, 30000);
+        }
+
+        init();
+    </script>
+</body>
+</html>

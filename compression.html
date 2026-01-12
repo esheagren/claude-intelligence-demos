@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compression Algorithm Visualizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a2e 50%, #16213e 100%);
+            min-height: 100vh;
+            font-family: 'Courier New', monospace;
+            color: #e0e0e0;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #00ff88, #00d4ff, #aa00ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 20px;
+        }
+
+        .visualization-area {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(0, 255, 136, 0.2);
+        }
+
+        .input-section {
+            margin-bottom: 20px;
+        }
+
+        .input-section label {
+            display: block;
+            margin-bottom: 8px;
+            color: #00ff88;
+            font-size: 0.9em;
+        }
+
+        textarea {
+            width: 100%;
+            height: 100px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            color: #fff;
+            font-family: inherit;
+            font-size: 14px;
+            resize: vertical;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #00ff88;
+        }
+
+        .algorithm-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            color: #00ff88;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        .tab-btn:hover, .tab-btn.active {
+            background: rgba(0, 255, 136, 0.3);
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+        }
+
+        .visualization-panel {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .visualization-panel h3 {
+            color: #00d4ff;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+
+        .tree-container {
+            min-height: 300px;
+            position: relative;
+            overflow: auto;
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+        }
+
+        .output-section {
+            background: rgba(0, 50, 30, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .output-section h4 {
+            color: #00ff88;
+            margin-bottom: 10px;
+        }
+
+        .output-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+        }
+
+        .output-label {
+            color: #888;
+        }
+
+        .output-value {
+            color: #00ff88;
+            font-weight: bold;
+        }
+
+        .binary-output {
+            font-family: monospace;
+            word-break: break-all;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            max-height: 150px;
+            overflow-y: auto;
+            color: #00d4ff;
+        }
+
+        .controls {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(0, 255, 136, 0.2);
+        }
+
+        .control-section {
+            margin-bottom: 25px;
+        }
+
+        .control-section h3 {
+            color: #00ff88;
+            margin-bottom: 15px;
+            font-size: 1em;
+            border-bottom: 1px solid rgba(0, 255, 136, 0.3);
+            padding-bottom: 8px;
+        }
+
+        .preset-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .preset-btn {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(0, 150, 255, 0.2));
+            border: 1px solid rgba(0, 212, 255, 0.4);
+            color: #00d4ff;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.85em;
+            transition: all 0.3s;
+            text-align: left;
+        }
+
+        .preset-btn:hover {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.4), rgba(0, 150, 255, 0.4));
+        }
+
+        .algorithm-info {
+            background: rgba(0, 100, 150, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            font-size: 0.85em;
+            line-height: 1.6;
+            color: #aaa;
+        }
+
+        .algorithm-info h4 {
+            color: #00d4ff;
+            margin-bottom: 10px;
+        }
+
+        .code-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 0.85em;
+        }
+
+        .code-table th, .code-table td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid rgba(0, 255, 136, 0.2);
+        }
+
+        .code-table th {
+            color: #00ff88;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .code-table td {
+            color: #ccc;
+        }
+
+        .code-table .char-cell {
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .code-table .code-cell {
+            font-family: monospace;
+            color: #00d4ff;
+        }
+
+        .step-visualization {
+            margin-top: 20px;
+        }
+
+        .step-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            margin-bottom: 8px;
+            border-radius: 5px;
+            border-left: 3px solid #00ff88;
+        }
+
+        .step-number {
+            width: 30px;
+            height: 30px;
+            background: rgba(0, 255, 136, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #00ff88;
+            font-weight: bold;
+        }
+
+        .step-content {
+            flex: 1;
+        }
+
+        .step-label {
+            color: #888;
+            font-size: 0.8em;
+        }
+
+        .step-value {
+            color: #fff;
+            font-family: monospace;
+        }
+
+        .match-highlight {
+            background: rgba(0, 255, 136, 0.3);
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+
+        .literal-highlight {
+            background: rgba(255, 170, 0, 0.3);
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #00ff88;
+            text-decoration: none;
+            font-size: 0.9em;
+            opacity: 0.8;
+            transition: opacity 0.3s;
+        }
+
+        .back-link:hover {
+            opacity: 1;
+        }
+
+        .compression-bar {
+            height: 30px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 15px 0;
+            position: relative;
+        }
+
+        .compression-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff88, #00d4ff);
+            border-radius: 15px;
+            transition: width 0.5s ease;
+        }
+
+        .compression-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 0 5px rgba(0, 0, 0, 0.8);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-link">← Back to Index</a>
+
+        <h1>Compression Algorithm Visualizer</h1>
+        <p class="subtitle">Explore how data compression works through visual demonstrations</p>
+
+        <div class="main-content">
+            <div class="visualization-area">
+                <div class="input-section">
+                    <label>Input Text</label>
+                    <textarea id="inputText" placeholder="Enter text to compress...">ABRACADABRA</textarea>
+                </div>
+
+                <div class="algorithm-tabs">
+                    <button class="tab-btn active" data-algo="huffman">Huffman Coding</button>
+                    <button class="tab-btn" data-algo="rle">Run-Length Encoding</button>
+                    <button class="tab-btn" data-algo="lz77">LZ77</button>
+                    <button class="tab-btn" data-algo="shannon">Shannon-Fano</button>
+                </div>
+
+                <div class="visualization-panel">
+                    <h3 id="algoTitle">Huffman Coding Tree</h3>
+                    <div class="tree-container">
+                        <canvas id="treeCanvas" width="800" height="400"></canvas>
+                    </div>
+                </div>
+
+                <div id="codeTable" class="visualization-panel" style="display: block;">
+                    <h3>Character Codes</h3>
+                    <table class="code-table" id="huffmanTable">
+                        <thead>
+                            <tr>
+                                <th>Character</th>
+                                <th>Frequency</th>
+                                <th>Code</th>
+                                <th>Bits</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+                <div id="stepViz" class="step-visualization" style="display: none;"></div>
+
+                <div class="output-section">
+                    <h4>Compression Results</h4>
+                    <div class="compression-bar">
+                        <div class="compression-fill" id="compressionFill" style="width: 50%"></div>
+                        <div class="compression-text" id="compressionText">50%</div>
+                    </div>
+                    <div class="output-row">
+                        <span class="output-label">Original Size:</span>
+                        <span class="output-value" id="originalSize">88 bits</span>
+                    </div>
+                    <div class="output-row">
+                        <span class="output-label">Compressed Size:</span>
+                        <span class="output-value" id="compressedSize">44 bits</span>
+                    </div>
+                    <div class="output-row">
+                        <span class="output-label">Compression Ratio:</span>
+                        <span class="output-value" id="compressionRatio">2:1</span>
+                    </div>
+                    <div class="binary-output" id="binaryOutput"></div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <div class="control-section">
+                    <h3>Sample Inputs</h3>
+                    <div class="preset-buttons">
+                        <button class="preset-btn" data-text="ABRACADABRA">ABRACADABRA (Classic)</button>
+                        <button class="preset-btn" data-text="AAAAAABBBBCCCDDE">Repetitive Pattern</button>
+                        <button class="preset-btn" data-text="THE QUICK BROWN FOX JUMPS">English Text</button>
+                        <button class="preset-btn" data-text="MISSISSIPPI">MISSISSIPPI</button>
+                        <button class="preset-btn" data-text="AAAAAAAAAAAAAAA">High Redundancy</button>
+                        <button class="preset-btn" data-text="ABCDEFGHIJKLMNOP">Low Redundancy</button>
+                        <button class="preset-btn" data-text="BANANA BANDANA">Repeated Substrings</button>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h3>Algorithm Info</h3>
+                    <div class="algorithm-info" id="algoInfo">
+                        <h4>Huffman Coding</h4>
+                        <p>
+                            A greedy algorithm that creates optimal prefix-free codes. Characters with higher
+                            frequencies get shorter codes, minimizing the total number of bits needed.
+                        </p>
+                        <p style="margin-top: 10px;">
+                            <strong>Complexity:</strong> O(n log n)<br>
+                            <strong>Type:</strong> Entropy Encoding<br>
+                            <strong>Optimal:</strong> Yes (for symbol-by-symbol coding)
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('treeCanvas');
+        const ctx = canvas.getContext('2d');
+        const inputText = document.getElementById('inputText');
+
+        let currentAlgorithm = 'huffman';
+
+        // Huffman Node class
+        class HuffmanNode {
+            constructor(char, freq) {
+                this.char = char;
+                this.freq = freq;
+                this.left = null;
+                this.right = null;
+            }
+        }
+
+        // Build Huffman Tree
+        function buildHuffmanTree(text) {
+            const freq = {};
+            for (const char of text) {
+                freq[char] = (freq[char] || 0) + 1;
+            }
+
+            const nodes = Object.entries(freq).map(([char, f]) => new HuffmanNode(char, f));
+
+            if (nodes.length === 0) return null;
+            if (nodes.length === 1) {
+                const root = new HuffmanNode(null, nodes[0].freq);
+                root.left = nodes[0];
+                return root;
+            }
+
+            while (nodes.length > 1) {
+                nodes.sort((a, b) => a.freq - b.freq);
+                const left = nodes.shift();
+                const right = nodes.shift();
+                const parent = new HuffmanNode(null, left.freq + right.freq);
+                parent.left = left;
+                parent.right = right;
+                nodes.push(parent);
+            }
+
+            return nodes[0];
+        }
+
+        // Get Huffman codes
+        function getHuffmanCodes(node, code = '', codes = {}) {
+            if (!node) return codes;
+            if (node.char !== null) {
+                codes[node.char] = code || '0';
+            }
+            getHuffmanCodes(node.left, code + '0', codes);
+            getHuffmanCodes(node.right, code + '1', codes);
+            return codes;
+        }
+
+        // Draw Huffman Tree
+        function drawHuffmanTree(root) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (!root) return;
+
+            const getTreeDepth = (node) => {
+                if (!node) return 0;
+                return 1 + Math.max(getTreeDepth(node.left), getTreeDepth(node.right));
+            };
+
+            const depth = getTreeDepth(root);
+            const nodeRadius = 20;
+
+            function drawNode(node, x, y, spread, edgeLabel = '') {
+                if (!node) return;
+
+                // Draw edges to children
+                if (node.left) {
+                    const childX = x - spread;
+                    const childY = y + 60;
+                    ctx.beginPath();
+                    ctx.moveTo(x, y + nodeRadius);
+                    ctx.lineTo(childX, childY - nodeRadius);
+                    ctx.strokeStyle = '#00ff88';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    // Edge label
+                    ctx.fillStyle = '#00ff88';
+                    ctx.font = '14px monospace';
+                    ctx.fillText('0', (x + childX) / 2 - 15, (y + childY) / 2);
+
+                    drawNode(node.left, childX, childY, spread / 2);
+                }
+
+                if (node.right) {
+                    const childX = x + spread;
+                    const childY = y + 60;
+                    ctx.beginPath();
+                    ctx.moveTo(x, y + nodeRadius);
+                    ctx.lineTo(childX, childY - nodeRadius);
+                    ctx.strokeStyle = '#00d4ff';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    // Edge label
+                    ctx.fillStyle = '#00d4ff';
+                    ctx.font = '14px monospace';
+                    ctx.fillText('1', (x + childX) / 2 + 5, (y + childY) / 2);
+
+                    drawNode(node.right, childX, childY, spread / 2);
+                }
+
+                // Draw node
+                ctx.beginPath();
+                ctx.arc(x, y, nodeRadius, 0, Math.PI * 2);
+                ctx.fillStyle = node.char !== null ? 'rgba(0, 255, 136, 0.3)' : 'rgba(0, 212, 255, 0.2)';
+                ctx.fill();
+                ctx.strokeStyle = node.char !== null ? '#00ff88' : '#00d4ff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Draw text
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 14px monospace';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                if (node.char !== null) {
+                    ctx.fillText(node.char === ' ' ? '␣' : node.char, x, y);
+                } else {
+                    ctx.font = '12px monospace';
+                    ctx.fillText(node.freq, x, y);
+                }
+            }
+
+            const startX = canvas.width / 2;
+            const startY = 40;
+            const initialSpread = canvas.width / 4;
+
+            drawNode(root, startX, startY, initialSpread);
+        }
+
+        // Run-Length Encoding
+        function runLengthEncode(text) {
+            if (!text) return { encoded: '', steps: [] };
+
+            const steps = [];
+            let encoded = '';
+            let i = 0;
+
+            while (i < text.length) {
+                const char = text[i];
+                let count = 1;
+                while (i + count < text.length && text[i + count] === char) {
+                    count++;
+                }
+                encoded += count > 1 ? `${count}${char}` : char;
+                steps.push({
+                    char,
+                    count,
+                    position: i,
+                    encoded: encoded
+                });
+                i += count;
+            }
+
+            return { encoded, steps };
+        }
+
+        // Draw RLE visualization
+        function drawRLE(text) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const { encoded, steps } = runLengthEncode(text);
+
+            const cellWidth = Math.min(40, (canvas.width - 100) / text.length);
+            const startX = 50;
+            const originalY = 80;
+            const encodedY = 250;
+
+            // Draw original string
+            ctx.fillStyle = '#00d4ff';
+            ctx.font = '14px monospace';
+            ctx.fillText('Original:', startX, originalY - 30);
+
+            for (let i = 0; i < text.length; i++) {
+                const x = startX + i * cellWidth;
+
+                ctx.fillStyle = 'rgba(0, 212, 255, 0.2)';
+                ctx.fillRect(x, originalY, cellWidth - 2, 35);
+                ctx.strokeStyle = '#00d4ff';
+                ctx.strokeRect(x, originalY, cellWidth - 2, 35);
+
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 16px monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText(text[i], x + cellWidth / 2 - 1, originalY + 22);
+            }
+
+            // Draw encoded string
+            ctx.fillStyle = '#00ff88';
+            ctx.font = '14px monospace';
+            ctx.textAlign = 'left';
+            ctx.fillText('Encoded:', startX, encodedY - 30);
+
+            let encX = startX;
+            for (const step of steps) {
+                const label = step.count > 1 ? `${step.count}${step.char}` : step.char;
+                const width = label.length * 20;
+
+                ctx.fillStyle = step.count > 1 ? 'rgba(0, 255, 136, 0.3)' : 'rgba(255, 170, 0, 0.2)';
+                ctx.fillRect(encX, encodedY, width, 35);
+                ctx.strokeStyle = step.count > 1 ? '#00ff88' : '#ffaa00';
+                ctx.strokeRect(encX, encodedY, width, 35);
+
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 16px monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText(label, encX + width / 2, encodedY + 22);
+
+                encX += width + 5;
+            }
+
+            // Draw arrows connecting runs
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.setLineDash([5, 5]);
+
+            let arrowX = startX;
+            for (const step of steps) {
+                const origX = startX + step.position * cellWidth + cellWidth / 2;
+                const label = step.count > 1 ? `${step.count}${step.char}` : step.char;
+                const width = label.length * 20;
+
+                ctx.beginPath();
+                ctx.moveTo(origX, originalY + 35);
+                ctx.lineTo(arrowX + width / 2, encodedY);
+                ctx.stroke();
+
+                arrowX += width + 5;
+            }
+            ctx.setLineDash([]);
+
+            return encoded;
+        }
+
+        // LZ77 Encoding
+        function lz77Encode(text, windowSize = 20) {
+            const steps = [];
+            let i = 0;
+
+            while (i < text.length) {
+                let bestLength = 0;
+                let bestOffset = 0;
+
+                const searchStart = Math.max(0, i - windowSize);
+                const searchBuffer = text.slice(searchStart, i);
+
+                for (let j = 0; j < searchBuffer.length; j++) {
+                    let length = 0;
+                    while (i + length < text.length &&
+                           searchBuffer[j + length] === text[i + length] &&
+                           j + length < searchBuffer.length + length) {
+                        length++;
+                        if (length > 255) break;
+                    }
+                    if (length > bestLength) {
+                        bestLength = length;
+                        bestOffset = searchBuffer.length - j;
+                    }
+                }
+
+                if (bestLength > 2) {
+                    steps.push({
+                        type: 'match',
+                        offset: bestOffset,
+                        length: bestLength,
+                        next: text[i + bestLength] || '',
+                        position: i
+                    });
+                    i += bestLength + (text[i + bestLength] ? 1 : 0);
+                } else {
+                    steps.push({
+                        type: 'literal',
+                        char: text[i],
+                        position: i
+                    });
+                    i++;
+                }
+            }
+
+            return steps;
+        }
+
+        // Draw LZ77 visualization
+        function drawLZ77(text) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const steps = lz77Encode(text);
+
+            const stepViz = document.getElementById('stepViz');
+            stepViz.style.display = 'block';
+            stepViz.innerHTML = '<h3 style="color: #00d4ff; margin-bottom: 15px;">LZ77 Tokens</h3>';
+
+            let encoded = '';
+            steps.forEach((step, idx) => {
+                const div = document.createElement('div');
+                div.className = 'step-item';
+
+                if (step.type === 'match') {
+                    div.innerHTML = `
+                        <div class="step-number">${idx + 1}</div>
+                        <div class="step-content">
+                            <div class="step-label">Back-reference (offset, length, next)</div>
+                            <div class="step-value">
+                                <span class="match-highlight">(${step.offset}, ${step.length}, '${step.next}')</span>
+                            </div>
+                        </div>
+                    `;
+                    encoded += `(${step.offset},${step.length},${step.next})`;
+                } else {
+                    div.innerHTML = `
+                        <div class="step-number">${idx + 1}</div>
+                        <div class="step-content">
+                            <div class="step-label">Literal character</div>
+                            <div class="step-value">
+                                <span class="literal-highlight">'${step.char}'</span>
+                            </div>
+                        </div>
+                    `;
+                    encoded += step.char;
+                }
+
+                stepViz.appendChild(div);
+            });
+
+            // Draw visual representation on canvas
+            const cellWidth = Math.min(40, (canvas.width - 100) / text.length);
+            const startX = 50;
+            const y = 150;
+
+            ctx.fillStyle = '#00d4ff';
+            ctx.font = '14px monospace';
+            ctx.textAlign = 'left';
+            ctx.fillText('Input with match highlighting:', startX, y - 30);
+
+            let colorIdx = 0;
+            const colors = ['rgba(0, 255, 136, 0.4)', 'rgba(0, 212, 255, 0.4)', 'rgba(170, 0, 255, 0.4)'];
+
+            for (let i = 0; i < text.length; i++) {
+                const x = startX + i * cellWidth;
+
+                // Check if this position is part of a match
+                let isMatch = false;
+                for (const step of steps) {
+                    if (step.type === 'match' && i >= step.position && i < step.position + step.length) {
+                        isMatch = true;
+                        ctx.fillStyle = colors[colorIdx % colors.length];
+                        break;
+                    }
+                }
+
+                if (!isMatch) {
+                    ctx.fillStyle = 'rgba(255, 170, 0, 0.3)';
+                }
+
+                ctx.fillRect(x, y, cellWidth - 2, 35);
+                ctx.strokeStyle = isMatch ? '#00ff88' : '#ffaa00';
+                ctx.strokeRect(x, y, cellWidth - 2, 35);
+
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 16px monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText(text[i], x + cellWidth / 2 - 1, y + 22);
+            }
+
+            return encoded;
+        }
+
+        // Shannon-Fano encoding
+        function shannonFano(text) {
+            const freq = {};
+            for (const char of text) {
+                freq[char] = (freq[char] || 0) + 1;
+            }
+
+            const sorted = Object.entries(freq)
+                .map(([char, f]) => ({ char, freq: f, code: '' }))
+                .sort((a, b) => b.freq - a.freq);
+
+            function divide(symbols, prefix = '') {
+                if (symbols.length === 0) return;
+                if (symbols.length === 1) {
+                    symbols[0].code = prefix || '0';
+                    return;
+                }
+
+                const total = symbols.reduce((sum, s) => sum + s.freq, 0);
+                let runningSum = 0;
+                let splitIdx = 0;
+                let minDiff = Infinity;
+
+                for (let i = 0; i < symbols.length - 1; i++) {
+                    runningSum += symbols[i].freq;
+                    const diff = Math.abs(2 * runningSum - total);
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        splitIdx = i + 1;
+                    }
+                }
+
+                const left = symbols.slice(0, splitIdx);
+                const right = symbols.slice(splitIdx);
+
+                left.forEach(s => s.code = prefix + '0');
+                right.forEach(s => s.code = prefix + '1');
+
+                divide(left, prefix + '0');
+                divide(right, prefix + '1');
+            }
+
+            divide(sorted);
+
+            const codes = {};
+            sorted.forEach(s => codes[s.char] = s.code);
+
+            return { codes, symbols: sorted };
+        }
+
+        // Draw Shannon-Fano
+        function drawShannonFano(text) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const { codes, symbols } = shannonFano(text);
+
+            // Draw splitting visualization
+            const barWidth = canvas.width - 100;
+            const barHeight = 40;
+            const startX = 50;
+            let y = 50;
+
+            const total = symbols.reduce((sum, s) => sum + s.freq, 0);
+
+            ctx.fillStyle = '#00d4ff';
+            ctx.font = '14px monospace';
+            ctx.fillText('Shannon-Fano Splitting Process:', startX, y);
+            y += 30;
+
+            // Draw frequency bar
+            let x = startX;
+            symbols.forEach((s, i) => {
+                const width = (s.freq / total) * barWidth;
+                const hue = (i / symbols.length) * 360;
+                ctx.fillStyle = `hsla(${hue}, 70%, 50%, 0.5)`;
+                ctx.fillRect(x, y, width, barHeight);
+                ctx.strokeStyle = `hsl(${hue}, 70%, 50%)`;
+                ctx.strokeRect(x, y, width, barHeight);
+
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 14px monospace';
+                ctx.textAlign = 'center';
+                if (width > 20) {
+                    ctx.fillText(s.char, x + width / 2, y + barHeight / 2 + 5);
+                }
+                x += width;
+            });
+
+            // Draw division lines
+            y += barHeight + 40;
+            ctx.fillStyle = '#00ff88';
+            ctx.font = '12px monospace';
+            ctx.textAlign = 'left';
+            ctx.fillText('Character codes (shorter = higher frequency):', startX, y);
+
+            y += 20;
+            symbols.forEach((s, i) => {
+                const codeLength = s.code.length;
+                const barLen = codeLength * 30;
+
+                ctx.fillStyle = 'rgba(0, 255, 136, 0.2)';
+                ctx.fillRect(startX + 50, y, barLen, 25);
+                ctx.strokeStyle = '#00ff88';
+                ctx.strokeRect(startX + 50, y, barLen, 25);
+
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 14px monospace';
+                ctx.textAlign = 'right';
+                ctx.fillText(s.char === ' ' ? '␣' : s.char, startX + 40, y + 17);
+
+                ctx.textAlign = 'left';
+                ctx.fillStyle = '#00d4ff';
+                ctx.fillText(s.code, startX + 55, y + 17);
+
+                y += 30;
+            });
+
+            return codes;
+        }
+
+        // Update visualization
+        function updateVisualization() {
+            const text = inputText.value.toUpperCase();
+            const stepViz = document.getElementById('stepViz');
+            const codeTable = document.getElementById('codeTable');
+            const tableBody = document.querySelector('#huffmanTable tbody');
+
+            let originalBits = text.length * 8;
+            let compressedBits = 0;
+            let binaryOutput = '';
+
+            stepViz.style.display = 'none';
+
+            if (currentAlgorithm === 'huffman') {
+                document.getElementById('algoTitle').textContent = 'Huffman Coding Tree';
+                codeTable.style.display = 'block';
+                codeTable.querySelector('h3').textContent = 'Character Codes';
+
+                const root = buildHuffmanTree(text);
+                drawHuffmanTree(root);
+                const codes = getHuffmanCodes(root);
+
+                // Build code table
+                const freq = {};
+                for (const char of text) {
+                    freq[char] = (freq[char] || 0) + 1;
+                }
+
+                tableBody.innerHTML = '';
+                Object.entries(codes)
+                    .sort((a, b) => freq[b[0]] - freq[a[0]])
+                    .forEach(([char, code]) => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td class="char-cell">${char === ' ' ? '␣' : char}</td>
+                            <td>${freq[char]}</td>
+                            <td class="code-cell">${code}</td>
+                            <td>${code.length}</td>
+                        `;
+                        tableBody.appendChild(row);
+                        compressedBits += freq[char] * code.length;
+                    });
+
+                // Generate binary output
+                for (const char of text) {
+                    binaryOutput += codes[char] + ' ';
+                }
+
+            } else if (currentAlgorithm === 'rle') {
+                document.getElementById('algoTitle').textContent = 'Run-Length Encoding';
+                codeTable.style.display = 'none';
+
+                const encoded = drawRLE(text);
+                compressedBits = encoded.length * 8;
+                binaryOutput = encoded;
+
+            } else if (currentAlgorithm === 'lz77') {
+                document.getElementById('algoTitle').textContent = 'LZ77 Dictionary Compression';
+                codeTable.style.display = 'none';
+
+                const encoded = drawLZ77(text);
+                // Estimate compressed size (rough approximation)
+                const steps = lz77Encode(text);
+                steps.forEach(step => {
+                    if (step.type === 'match') {
+                        compressedBits += 16 + 8 + 8; // offset + length + next char
+                    } else {
+                        compressedBits += 8;
+                    }
+                });
+                binaryOutput = encoded;
+
+            } else if (currentAlgorithm === 'shannon') {
+                document.getElementById('algoTitle').textContent = 'Shannon-Fano Coding';
+                codeTable.style.display = 'block';
+                codeTable.querySelector('h3').textContent = 'Shannon-Fano Codes';
+
+                const { codes, symbols } = drawShannonFano(text);
+
+                const freq = {};
+                for (const char of text) {
+                    freq[char] = (freq[char] || 0) + 1;
+                }
+
+                tableBody.innerHTML = '';
+                symbols.forEach(s => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="char-cell">${s.char === ' ' ? '␣' : s.char}</td>
+                        <td>${s.freq}</td>
+                        <td class="code-cell">${s.code}</td>
+                        <td>${s.code.length}</td>
+                    `;
+                    tableBody.appendChild(row);
+                    compressedBits += s.freq * s.code.length;
+                });
+
+                for (const char of text) {
+                    binaryOutput += codes[char] + ' ';
+                }
+            }
+
+            // Update stats
+            const ratio = compressedBits > 0 ? (originalBits / compressedBits).toFixed(2) : 0;
+            const percentage = compressedBits > 0 ? Math.round((compressedBits / originalBits) * 100) : 100;
+
+            document.getElementById('originalSize').textContent = `${originalBits} bits`;
+            document.getElementById('compressedSize').textContent = `${compressedBits} bits`;
+            document.getElementById('compressionRatio').textContent = `${ratio}:1`;
+            document.getElementById('binaryOutput').textContent = binaryOutput.trim();
+
+            document.getElementById('compressionFill').style.width = `${percentage}%`;
+            document.getElementById('compressionText').textContent = `${percentage}% of original`;
+        }
+
+        // Update algorithm info
+        function updateAlgorithmInfo() {
+            const info = document.getElementById('algoInfo');
+            const infos = {
+                huffman: `
+                    <h4>Huffman Coding</h4>
+                    <p>
+                        A greedy algorithm that creates optimal prefix-free codes. Characters with higher
+                        frequencies get shorter codes, minimizing the total number of bits needed.
+                    </p>
+                    <p style="margin-top: 10px;">
+                        <strong>Complexity:</strong> O(n log n)<br>
+                        <strong>Type:</strong> Entropy Encoding<br>
+                        <strong>Optimal:</strong> Yes (for symbol-by-symbol coding)
+                    </p>
+                `,
+                rle: `
+                    <h4>Run-Length Encoding</h4>
+                    <p>
+                        Simple compression that replaces sequences of identical characters with a count
+                        and the character. Effective for data with many consecutive repeated characters.
+                    </p>
+                    <p style="margin-top: 10px;">
+                        <strong>Complexity:</strong> O(n)<br>
+                        <strong>Type:</strong> Lossless<br>
+                        <strong>Best for:</strong> Binary images, simple graphics
+                    </p>
+                `,
+                lz77: `
+                    <h4>LZ77 (Lempel-Ziv 77)</h4>
+                    <p>
+                        Dictionary-based compression that replaces repeated occurrences with references
+                        to earlier data. Foundation for ZIP, GZIP, and PNG compression.
+                    </p>
+                    <p style="margin-top: 10px;">
+                        <strong>Complexity:</strong> O(n × w)<br>
+                        <strong>Type:</strong> Dictionary Coding<br>
+                        <strong>Used in:</strong> DEFLATE, GZIP, ZIP
+                    </p>
+                `,
+                shannon: `
+                    <h4>Shannon-Fano Coding</h4>
+                    <p>
+                        Predecessor to Huffman coding that recursively divides symbols into two groups
+                        of roughly equal probability. Not always optimal but historically significant.
+                    </p>
+                    <p style="margin-top: 10px;">
+                        <strong>Complexity:</strong> O(n log n)<br>
+                        <strong>Type:</strong> Entropy Encoding<br>
+                        <strong>Optimal:</strong> Not always
+                    </p>
+                `
+            };
+            info.innerHTML = infos[currentAlgorithm];
+        }
+
+        // Event listeners
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentAlgorithm = btn.dataset.algo;
+                updateAlgorithmInfo();
+                updateVisualization();
+            });
+        });
+
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                inputText.value = btn.dataset.text;
+                updateVisualization();
+            });
+        });
+
+        inputText.addEventListener('input', updateVisualization);
+
+        // Initial render
+        updateVisualization();
+    </script>
+</body>
+</html>

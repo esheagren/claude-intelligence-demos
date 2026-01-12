@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Sandbox</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #0a0a15 0%, #1a1a2e 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .canvas-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #canvas {
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: rgba(20, 20, 35, 0.95);
+            border-left: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        header {
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 1.3em;
+            font-weight: 500;
+        }
+
+        .panel {
+            padding: 15px;
+            border-bottom: 1px solid #333;
+        }
+
+        .panel-title {
+            font-size: 0.85em;
+            color: #667eea;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .tool-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .tool-btn {
+            padding: 12px 8px;
+            background: rgba(60, 60, 80, 0.5);
+            border: 1px solid #444;
+            color: #aaa;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.8em;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .tool-btn:hover {
+            background: rgba(80, 80, 100, 0.6);
+            color: white;
+        }
+
+        .tool-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+
+        .tool-icon {
+            font-size: 1.4em;
+        }
+
+        .control-group {
+            margin-bottom: 12px;
+        }
+
+        .control-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.85em;
+            color: #888;
+        }
+
+        .control-value {
+            color: #667eea;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            background: #333;
+            border-radius: 3px;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85em;
+            color: #aaa;
+            cursor: pointer;
+            margin-bottom: 8px;
+        }
+
+        .checkbox-label input {
+            accent-color: #667eea;
+        }
+
+        .action-btns {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 10px;
+            background: rgba(60, 60, 80, 0.5);
+            border: 1px solid #444;
+            color: #aaa;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            background: rgba(80, 80, 100, 0.6);
+            color: white;
+        }
+
+        .action-btn.danger {
+            border-color: #ff6b6b;
+            color: #ff6b6b;
+        }
+
+        .action-btn.danger:hover {
+            background: rgba(255, 107, 107, 0.2);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .stat-item {
+            background: rgba(40, 40, 60, 0.5);
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.7em;
+            color: #888;
+            margin-bottom: 3px;
+        }
+
+        .stat-value {
+            font-size: 1.1em;
+            color: #667eea;
+            font-weight: 500;
+        }
+
+        .color-picker {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .color-swatch {
+            width: 28px;
+            height: 28px;
+            border-radius: 4px;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .color-swatch:hover {
+            transform: scale(1.1);
+        }
+
+        .color-swatch.active {
+            border-color: white;
+        }
+
+        .preset-btns {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+        }
+
+        .preset-btn {
+            padding: 8px;
+            background: rgba(60, 60, 80, 0.5);
+            border: 1px solid #444;
+            color: #aaa;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75em;
+            transition: all 0.2s;
+        }
+
+        .preset-btn:hover {
+            background: rgba(80, 80, 100, 0.6);
+            color: white;
+        }
+
+        .instructions {
+            font-size: 0.75em;
+            color: #888;
+            line-height: 1.5;
+        }
+
+        .instructions li {
+            margin-bottom: 4px;
+            margin-left: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="canvas-container">
+            <canvas id="canvas"></canvas>
+        </div>
+        <div class="sidebar">
+            <header>
+                <h1>Physics Sandbox</h1>
+            </header>
+
+            <div class="panel">
+                <div class="panel-title">Tools</div>
+                <div class="tool-grid">
+                    <button class="tool-btn active" data-tool="circle">
+                        <span class="tool-icon">⚪</span>
+                        <span>Circle</span>
+                    </button>
+                    <button class="tool-btn" data-tool="box">
+                        <span class="tool-icon">⬜</span>
+                        <span>Box</span>
+                    </button>
+                    <button class="tool-btn" data-tool="polygon">
+                        <span class="tool-icon">⬡</span>
+                        <span>Polygon</span>
+                    </button>
+                    <button class="tool-btn" data-tool="drag">
+                        <span class="tool-icon">✋</span>
+                        <span>Drag</span>
+                    </button>
+                    <button class="tool-btn" data-tool="spring">
+                        <span class="tool-icon">🔗</span>
+                        <span>Spring</span>
+                    </button>
+                    <button class="tool-btn" data-tool="delete">
+                        <span class="tool-icon">🗑️</span>
+                        <span>Delete</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">Object Properties</div>
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>Size</span>
+                        <span class="control-value" id="size-value">30</span>
+                    </div>
+                    <input type="range" id="size-slider" min="10" max="80" value="30">
+                </div>
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>Density</span>
+                        <span class="control-value" id="density-value">1.0</span>
+                    </div>
+                    <input type="range" id="density-slider" min="0.1" max="5" step="0.1" value="1">
+                </div>
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>Restitution (Bounce)</span>
+                        <span class="control-value" id="restitution-value">0.5</span>
+                    </div>
+                    <input type="range" id="restitution-slider" min="0" max="1" step="0.05" value="0.5">
+                </div>
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>Friction</span>
+                        <span class="control-value" id="friction-value">0.3</span>
+                    </div>
+                    <input type="range" id="friction-slider" min="0" max="1" step="0.05" value="0.3">
+                </div>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="static-check"> Static (Immovable)
+                </label>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">Color</div>
+                <div class="color-picker" id="color-picker">
+                    <div class="color-swatch active" style="background: #667eea" data-color="#667eea"></div>
+                    <div class="color-swatch" style="background: #ff6b6b" data-color="#ff6b6b"></div>
+                    <div class="color-swatch" style="background: #50fa7b" data-color="#50fa7b"></div>
+                    <div class="color-swatch" style="background: #f1fa8c" data-color="#f1fa8c"></div>
+                    <div class="color-swatch" style="background: #ff79c6" data-color="#ff79c6"></div>
+                    <div class="color-swatch" style="background: #8be9fd" data-color="#8be9fd"></div>
+                    <div class="color-swatch" style="background: #ffb86c" data-color="#ffb86c"></div>
+                    <div class="color-swatch" style="background: #bd93f9" data-color="#bd93f9"></div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">World Settings</div>
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>Gravity</span>
+                        <span class="control-value" id="gravity-value">500</span>
+                    </div>
+                    <input type="range" id="gravity-slider" min="0" max="1500" value="500">
+                </div>
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>Air Resistance</span>
+                        <span class="control-value" id="drag-value">0.01</span>
+                    </div>
+                    <input type="range" id="drag-slider" min="0" max="0.1" step="0.005" value="0.01">
+                </div>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="walls-check" checked> Boundary Walls
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="vectors-check"> Show Velocity Vectors
+                </label>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">Presets</div>
+                <div class="preset-btns">
+                    <button class="preset-btn" data-preset="pendulum">Pendulum</button>
+                    <button class="preset-btn" data-preset="newton">Newton's Cradle</button>
+                    <button class="preset-btn" data-preset="bridge">Bridge</button>
+                    <button class="preset-btn" data-preset="dominos">Dominos</button>
+                    <button class="preset-btn" data-preset="stack">Stack</button>
+                    <button class="preset-btn" data-preset="cloth">Cloth</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">Simulation</div>
+                <div class="action-btns">
+                    <button class="action-btn" id="pause-btn">⏸ Pause</button>
+                    <button class="action-btn danger" id="clear-btn">Clear All</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">Statistics</div>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-label">Objects</div>
+                        <div class="stat-value" id="object-count">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Springs</div>
+                        <div class="stat-value" id="spring-count">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">FPS</div>
+                        <div class="stat-value" id="fps-value">60</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Energy</div>
+                        <div class="stat-value" id="energy-value">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">Instructions</div>
+                <ul class="instructions">
+                    <li>Click to create objects</li>
+                    <li>Drag to throw with velocity</li>
+                    <li>Use spring tool to connect objects</li>
+                    <li>Right-click to delete objects</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Physics constants
+        let gravity = 500;
+        let airDrag = 0.01;
+        let hasWalls = true;
+        let showVectors = false;
+        let isPaused = false;
+
+        // Object creation settings
+        let currentTool = 'circle';
+        let objectSize = 30;
+        let objectDensity = 1;
+        let objectRestitution = 0.5;
+        let objectFriction = 0.3;
+        let objectColor = '#667eea';
+        let isStatic = false;
+
+        // Physics objects
+        let bodies = [];
+        let springs = [];
+
+        // Interaction state
+        let isDragging = false;
+        let draggedBody = null;
+        let dragOffset = { x: 0, y: 0 };
+        let mouseStart = { x: 0, y: 0 };
+        let springStart = null;
+
+        // Performance tracking
+        let lastTime = performance.now();
+        let frameCount = 0;
+        let fps = 60;
+
+        // Body class
+        class Body {
+            constructor(x, y, options = {}) {
+                this.x = x;
+                this.y = y;
+                this.vx = options.vx || 0;
+                this.vy = options.vy || 0;
+                this.angle = options.angle || 0;
+                this.angularVelocity = options.angularVelocity || 0;
+                this.type = options.type || 'circle';
+                this.size = options.size || 30;
+                this.width = options.width || this.size;
+                this.height = options.height || this.size;
+                this.vertices = options.vertices || [];
+                this.density = options.density || 1;
+                this.restitution = options.restitution || 0.5;
+                this.friction = options.friction || 0.3;
+                this.color = options.color || '#667eea';
+                this.isStatic = options.isStatic || false;
+
+                // Calculate mass based on area and density
+                this.calculateMass();
+            }
+
+            calculateMass() {
+                let area;
+                if (this.type === 'circle') {
+                    area = Math.PI * this.size * this.size;
+                } else if (this.type === 'box') {
+                    area = this.width * this.height;
+                } else {
+                    // Polygon - approximate
+                    area = this.size * this.size * 2;
+                }
+                this.mass = this.isStatic ? Infinity : area * this.density * 0.01;
+                this.invMass = this.isStatic ? 0 : 1 / this.mass;
+
+                // Moment of inertia
+                if (this.type === 'circle') {
+                    this.inertia = this.mass * this.size * this.size * 0.5;
+                } else {
+                    this.inertia = this.mass * (this.width * this.width + this.height * this.height) / 12;
+                }
+                this.invInertia = this.isStatic ? 0 : 1 / this.inertia;
+            }
+
+            update(dt) {
+                if (this.isStatic) return;
+
+                // Apply gravity
+                this.vy += gravity * dt;
+
+                // Apply air drag
+                this.vx *= (1 - airDrag);
+                this.vy *= (1 - airDrag);
+                this.angularVelocity *= (1 - airDrag * 2);
+
+                // Update position
+                this.x += this.vx * dt;
+                this.y += this.vy * dt;
+                this.angle += this.angularVelocity * dt;
+
+                // Boundary collision
+                if (hasWalls) {
+                    const r = this.type === 'circle' ? this.size : Math.max(this.width, this.height) / 2;
+
+                    if (this.x - r < 0) {
+                        this.x = r;
+                        this.vx *= -this.restitution;
+                    }
+                    if (this.x + r > canvas.width) {
+                        this.x = canvas.width - r;
+                        this.vx *= -this.restitution;
+                    }
+                    if (this.y - r < 0) {
+                        this.y = r;
+                        this.vy *= -this.restitution;
+                    }
+                    if (this.y + r > canvas.height) {
+                        this.y = canvas.height - r;
+                        this.vy *= -this.restitution;
+                        // Apply friction on ground
+                        this.vx *= (1 - this.friction);
+                    }
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle);
+
+                ctx.fillStyle = this.color;
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.lineWidth = 2;
+
+                if (this.type === 'circle') {
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.size, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Rotation indicator
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.lineTo(this.size * 0.8, 0);
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                    ctx.stroke();
+                } else if (this.type === 'box') {
+                    ctx.fillRect(-this.width / 2, -this.height / 2, this.width, this.height);
+                    ctx.strokeRect(-this.width / 2, -this.height / 2, this.width, this.height);
+                } else if (this.type === 'polygon') {
+                    ctx.beginPath();
+                    const sides = this.vertices;
+                    for (let i = 0; i < sides; i++) {
+                        const angle = (i / sides) * Math.PI * 2 - Math.PI / 2;
+                        const x = Math.cos(angle) * this.size;
+                        const y = Math.sin(angle) * this.size;
+                        if (i === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                }
+
+                ctx.restore();
+
+                // Draw velocity vector
+                if (showVectors && !this.isStatic) {
+                    const scale = 0.1;
+                    ctx.beginPath();
+                    ctx.moveTo(this.x, this.y);
+                    ctx.lineTo(this.x + this.vx * scale, this.y + this.vy * scale);
+                    ctx.strokeStyle = '#ff6b6b';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+            }
+
+            getKineticEnergy() {
+                if (this.isStatic) return 0;
+                const linearKE = 0.5 * this.mass * (this.vx * this.vx + this.vy * this.vy);
+                const rotationalKE = 0.5 * this.inertia * this.angularVelocity * this.angularVelocity;
+                return linearKE + rotationalKE;
+            }
+
+            getPotentialEnergy() {
+                if (this.isStatic) return 0;
+                return this.mass * gravity * (canvas.height - this.y);
+            }
+
+            containsPoint(px, py) {
+                if (this.type === 'circle') {
+                    const dx = px - this.x;
+                    const dy = py - this.y;
+                    return Math.sqrt(dx * dx + dy * dy) <= this.size;
+                } else {
+                    // Simple AABB for boxes
+                    const hw = this.width / 2;
+                    const hh = this.height / 2;
+                    return px >= this.x - hw && px <= this.x + hw &&
+                           py >= this.y - hh && py <= this.y + hh;
+                }
+            }
+        }
+
+        // Spring class
+        class Spring {
+            constructor(bodyA, bodyB, options = {}) {
+                this.bodyA = bodyA;
+                this.bodyB = bodyB;
+                this.restLength = options.restLength ||
+                    Math.sqrt(Math.pow(bodyB.x - bodyA.x, 2) + Math.pow(bodyB.y - bodyA.y, 2));
+                this.stiffness = options.stiffness || 0.1;
+                this.damping = options.damping || 0.02;
+            }
+
+            update() {
+                const dx = this.bodyB.x - this.bodyA.x;
+                const dy = this.bodyB.y - this.bodyA.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance === 0) return;
+
+                const nx = dx / distance;
+                const ny = dy / distance;
+
+                // Spring force (Hooke's law)
+                const stretch = distance - this.restLength;
+                const springForce = stretch * this.stiffness;
+
+                // Damping force
+                const relVelX = this.bodyB.vx - this.bodyA.vx;
+                const relVelY = this.bodyB.vy - this.bodyA.vy;
+                const relVelAlongSpring = relVelX * nx + relVelY * ny;
+                const dampingForce = relVelAlongSpring * this.damping;
+
+                const totalForce = springForce + dampingForce;
+
+                // Apply forces
+                if (!this.bodyA.isStatic) {
+                    this.bodyA.vx += nx * totalForce * this.bodyA.invMass;
+                    this.bodyA.vy += ny * totalForce * this.bodyA.invMass;
+                }
+                if (!this.bodyB.isStatic) {
+                    this.bodyB.vx -= nx * totalForce * this.bodyB.invMass;
+                    this.bodyB.vy -= ny * totalForce * this.bodyB.invMass;
+                }
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.moveTo(this.bodyA.x, this.bodyA.y);
+                ctx.lineTo(this.bodyB.x, this.bodyB.y);
+                ctx.strokeStyle = '#888';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Draw spring coils
+                const dx = this.bodyB.x - this.bodyA.x;
+                const dy = this.bodyB.y - this.bodyA.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const coils = 8;
+                const amplitude = 8;
+
+                ctx.beginPath();
+                for (let i = 0; i <= 20; i++) {
+                    const t = i / 20;
+                    const x = this.bodyA.x + dx * t;
+                    const y = this.bodyA.y + dy * t;
+
+                    // Perpendicular offset for coil effect
+                    const perpX = -dy / distance * Math.sin(t * coils * Math.PI * 2) * amplitude;
+                    const perpY = dx / distance * Math.sin(t * coils * Math.PI * 2) * amplitude;
+
+                    if (i === 0) ctx.moveTo(x + perpX, y + perpY);
+                    else ctx.lineTo(x + perpX, y + perpY);
+                }
+                ctx.strokeStyle = '#aaa';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+        }
+
+        // Collision detection and resolution
+        function detectCollisions() {
+            for (let i = 0; i < bodies.length; i++) {
+                for (let j = i + 1; j < bodies.length; j++) {
+                    resolveCollision(bodies[i], bodies[j]);
+                }
+            }
+        }
+
+        function resolveCollision(a, b) {
+            if (a.isStatic && b.isStatic) return;
+
+            // Simple circle-circle collision
+            if (a.type === 'circle' && b.type === 'circle') {
+                const dx = b.x - a.x;
+                const dy = b.y - a.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const minDist = a.size + b.size;
+
+                if (distance < minDist && distance > 0) {
+                    // Collision normal
+                    const nx = dx / distance;
+                    const ny = dy / distance;
+
+                    // Relative velocity
+                    const relVelX = b.vx - a.vx;
+                    const relVelY = b.vy - a.vy;
+                    const relVelAlongNormal = relVelX * nx + relVelY * ny;
+
+                    // Don't resolve if moving apart
+                    if (relVelAlongNormal > 0) return;
+
+                    // Restitution
+                    const e = Math.min(a.restitution, b.restitution);
+
+                    // Impulse scalar
+                    let j = -(1 + e) * relVelAlongNormal;
+                    j /= a.invMass + b.invMass;
+
+                    // Apply impulse
+                    a.vx -= j * nx * a.invMass;
+                    a.vy -= j * ny * a.invMass;
+                    b.vx += j * nx * b.invMass;
+                    b.vy += j * ny * b.invMass;
+
+                    // Position correction (prevent sinking)
+                    const percent = 0.4;
+                    const slop = 0.01;
+                    const penetration = minDist - distance;
+                    const correction = Math.max(penetration - slop, 0) / (a.invMass + b.invMass) * percent;
+
+                    a.x -= correction * nx * a.invMass;
+                    a.y -= correction * ny * a.invMass;
+                    b.x += correction * nx * b.invMass;
+                    b.y += correction * ny * b.invMass;
+
+                    // Friction
+                    const tangentX = relVelX - relVelAlongNormal * nx;
+                    const tangentY = relVelY - relVelAlongNormal * ny;
+                    const tangentLen = Math.sqrt(tangentX * tangentX + tangentY * tangentY);
+
+                    if (tangentLen > 0.0001) {
+                        const tx = tangentX / tangentLen;
+                        const ty = tangentY / tangentLen;
+                        const friction = Math.sqrt(a.friction * b.friction);
+                        const jt = Math.min(Math.abs(j * friction), tangentLen);
+
+                        a.vx += jt * tx * a.invMass;
+                        a.vy += jt * ty * a.invMass;
+                        b.vx -= jt * tx * b.invMass;
+                        b.vy -= jt * ty * b.invMass;
+                    }
+                }
+            }
+        }
+
+        // Main update loop
+        function update() {
+            const currentTime = performance.now();
+            const dt = Math.min((currentTime - lastTime) / 1000, 0.033);
+            lastTime = currentTime;
+
+            // FPS calculation
+            frameCount++;
+            if (frameCount >= 30) {
+                fps = Math.round(1000 / (dt * 1000));
+                frameCount = 0;
+            }
+
+            if (!isPaused) {
+                // Update springs
+                springs.forEach(spring => spring.update());
+
+                // Update bodies
+                bodies.forEach(body => body.update(dt));
+
+                // Detect and resolve collisions
+                detectCollisions();
+            }
+
+            // Draw
+            ctx.fillStyle = 'rgba(10, 10, 21, 1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw grid
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+            ctx.lineWidth = 1;
+            const gridSize = 50;
+            for (let x = 0; x < canvas.width; x += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y < canvas.height; y += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+
+            // Draw springs
+            springs.forEach(spring => spring.draw());
+
+            // Draw bodies
+            bodies.forEach(body => body.draw());
+
+            // Draw spring creation preview
+            if (currentTool === 'spring' && springStart) {
+                ctx.beginPath();
+                ctx.moveTo(springStart.x, springStart.y);
+                ctx.lineTo(mousePos.x, mousePos.y);
+                ctx.strokeStyle = 'rgba(136, 136, 136, 0.5)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            // Update stats
+            document.getElementById('object-count').textContent = bodies.length;
+            document.getElementById('spring-count').textContent = springs.length;
+            document.getElementById('fps-value').textContent = fps;
+
+            let totalEnergy = 0;
+            bodies.forEach(body => {
+                totalEnergy += body.getKineticEnergy() + body.getPotentialEnergy();
+            });
+            document.getElementById('energy-value').textContent = (totalEnergy / 1000).toFixed(1) + 'k';
+
+            requestAnimationFrame(update);
+        }
+
+        // Mouse position tracking
+        let mousePos = { x: 0, y: 0 };
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mousePos.x = e.clientX - rect.left;
+            mousePos.y = e.clientY - rect.top;
+
+            if (isDragging && draggedBody) {
+                if (currentTool === 'drag') {
+                    draggedBody.x = mousePos.x - dragOffset.x;
+                    draggedBody.y = mousePos.y - dragOffset.y;
+                    draggedBody.vx = 0;
+                    draggedBody.vy = 0;
+                }
+            }
+        });
+
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            mouseStart = { x, y };
+
+            if (e.button === 2) {
+                // Right click - delete
+                for (let i = bodies.length - 1; i >= 0; i--) {
+                    if (bodies[i].containsPoint(x, y)) {
+                        // Remove springs connected to this body
+                        springs = springs.filter(s => s.bodyA !== bodies[i] && s.bodyB !== bodies[i]);
+                        bodies.splice(i, 1);
+                        break;
+                    }
+                }
+                return;
+            }
+
+            if (currentTool === 'drag') {
+                for (let i = bodies.length - 1; i >= 0; i--) {
+                    if (bodies[i].containsPoint(x, y)) {
+                        isDragging = true;
+                        draggedBody = bodies[i];
+                        dragOffset.x = x - bodies[i].x;
+                        dragOffset.y = y - bodies[i].y;
+                        break;
+                    }
+                }
+            } else if (currentTool === 'spring') {
+                for (let i = bodies.length - 1; i >= 0; i--) {
+                    if (bodies[i].containsPoint(x, y)) {
+                        springStart = bodies[i];
+                        break;
+                    }
+                }
+            } else if (currentTool === 'delete') {
+                for (let i = bodies.length - 1; i >= 0; i--) {
+                    if (bodies[i].containsPoint(x, y)) {
+                        springs = springs.filter(s => s.bodyA !== bodies[i] && s.bodyB !== bodies[i]);
+                        bodies.splice(i, 1);
+                        break;
+                    }
+                }
+            } else {
+                isDragging = true;
+            }
+        });
+
+        canvas.addEventListener('mouseup', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            if (currentTool === 'spring' && springStart) {
+                for (let i = bodies.length - 1; i >= 0; i--) {
+                    if (bodies[i].containsPoint(x, y) && bodies[i] !== springStart) {
+                        springs.push(new Spring(springStart, bodies[i]));
+                        break;
+                    }
+                }
+                springStart = null;
+            } else if (isDragging && !draggedBody && currentTool !== 'drag' && currentTool !== 'delete') {
+                // Create new object with velocity from drag
+                const vx = (x - mouseStart.x) * 3;
+                const vy = (y - mouseStart.y) * 3;
+
+                let options = {
+                    vx, vy,
+                    size: objectSize,
+                    density: objectDensity,
+                    restitution: objectRestitution,
+                    friction: objectFriction,
+                    color: objectColor,
+                    isStatic: isStatic,
+                    type: currentTool
+                };
+
+                if (currentTool === 'box') {
+                    options.width = objectSize * 1.5;
+                    options.height = objectSize;
+                }
+
+                if (currentTool === 'polygon') {
+                    options.vertices = 3 + Math.floor(Math.random() * 5); // 3-7 sides
+                }
+
+                bodies.push(new Body(mouseStart.x, mouseStart.y, options));
+            }
+
+            isDragging = false;
+            draggedBody = null;
+        });
+
+        canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+        // UI Controls
+        document.querySelectorAll('.tool-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentTool = btn.dataset.tool;
+            });
+        });
+
+        document.getElementById('size-slider').addEventListener('input', (e) => {
+            objectSize = parseInt(e.target.value);
+            document.getElementById('size-value').textContent = objectSize;
+        });
+
+        document.getElementById('density-slider').addEventListener('input', (e) => {
+            objectDensity = parseFloat(e.target.value);
+            document.getElementById('density-value').textContent = objectDensity.toFixed(1);
+        });
+
+        document.getElementById('restitution-slider').addEventListener('input', (e) => {
+            objectRestitution = parseFloat(e.target.value);
+            document.getElementById('restitution-value').textContent = objectRestitution.toFixed(2);
+        });
+
+        document.getElementById('friction-slider').addEventListener('input', (e) => {
+            objectFriction = parseFloat(e.target.value);
+            document.getElementById('friction-value').textContent = objectFriction.toFixed(2);
+        });
+
+        document.getElementById('static-check').addEventListener('change', (e) => {
+            isStatic = e.target.checked;
+        });
+
+        document.getElementById('gravity-slider').addEventListener('input', (e) => {
+            gravity = parseInt(e.target.value);
+            document.getElementById('gravity-value').textContent = gravity;
+        });
+
+        document.getElementById('drag-slider').addEventListener('input', (e) => {
+            airDrag = parseFloat(e.target.value);
+            document.getElementById('drag-value').textContent = airDrag.toFixed(3);
+        });
+
+        document.getElementById('walls-check').addEventListener('change', (e) => {
+            hasWalls = e.target.checked;
+        });
+
+        document.getElementById('vectors-check').addEventListener('change', (e) => {
+            showVectors = e.target.checked;
+        });
+
+        document.querySelectorAll('.color-swatch').forEach(swatch => {
+            swatch.addEventListener('click', () => {
+                document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+                swatch.classList.add('active');
+                objectColor = swatch.dataset.color;
+            });
+        });
+
+        document.getElementById('pause-btn').addEventListener('click', function() {
+            isPaused = !isPaused;
+            this.textContent = isPaused ? '▶ Play' : '⏸ Pause';
+        });
+
+        document.getElementById('clear-btn').addEventListener('click', () => {
+            bodies = [];
+            springs = [];
+        });
+
+        // Presets
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                loadPreset(btn.dataset.preset);
+            });
+        });
+
+        function loadPreset(preset) {
+            bodies = [];
+            springs = [];
+
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+
+            switch (preset) {
+                case 'pendulum':
+                    const anchor = new Body(cx, 100, { size: 15, color: '#888', isStatic: true });
+                    const bob = new Body(cx + 200, 100, { size: 30, color: '#667eea' });
+                    bodies.push(anchor, bob);
+                    springs.push(new Spring(anchor, bob, { stiffness: 0.05 }));
+                    break;
+
+                case 'newton':
+                    const anchorY = 100;
+                    const spacing = 50;
+                    const startX = cx - spacing * 2;
+
+                    for (let i = 0; i < 5; i++) {
+                        const anchor = new Body(startX + i * spacing, anchorY, { size: 10, color: '#888', isStatic: true });
+                        const ball = new Body(startX + i * spacing + (i === 0 ? -80 : 0), anchorY + 150, { size: 20, color: '#667eea' });
+                        bodies.push(anchor, ball);
+                        springs.push(new Spring(anchor, ball, { stiffness: 0.2, damping: 0.001 }));
+                    }
+                    break;
+
+                case 'bridge':
+                    const bridgeY = cy;
+                    const bridgeSegments = 10;
+                    const segmentWidth = 40;
+                    const startBridgeX = cx - (bridgeSegments * segmentWidth) / 2;
+
+                    let prevBody = new Body(startBridgeX, bridgeY, { size: 15, color: '#888', isStatic: true });
+                    bodies.push(prevBody);
+
+                    for (let i = 1; i <= bridgeSegments; i++) {
+                        const isEnd = i === bridgeSegments;
+                        const body = new Body(startBridgeX + i * segmentWidth, bridgeY, {
+                            size: 12,
+                            color: isEnd ? '#888' : '#667eea',
+                            isStatic: isEnd
+                        });
+                        bodies.push(body);
+                        springs.push(new Spring(prevBody, body, { stiffness: 0.3 }));
+                        prevBody = body;
+                    }
+                    break;
+
+                case 'dominos':
+                    for (let i = 0; i < 10; i++) {
+                        bodies.push(new Body(200 + i * 45, cy + 50, {
+                            type: 'box',
+                            width: 15,
+                            height: 60,
+                            color: `hsl(${i * 36}, 70%, 60%)`,
+                            angle: i === 0 ? -0.3 : 0
+                        }));
+                    }
+                    break;
+
+                case 'stack':
+                    for (let row = 0; row < 6; row++) {
+                        for (let col = 0; col <= row; col++) {
+                            bodies.push(new Body(
+                                cx - row * 25 + col * 50,
+                                canvas.height - 50 - row * 50,
+                                {
+                                    type: 'box',
+                                    width: 45,
+                                    height: 45,
+                                    color: `hsl(${(row + col) * 30}, 70%, 60%)`
+                                }
+                            ));
+                        }
+                    }
+                    break;
+
+                case 'cloth':
+                    const clothWidth = 12;
+                    const clothHeight = 8;
+                    const clothSpacing = 25;
+                    const clothX = cx - (clothWidth * clothSpacing) / 2;
+                    const clothY = 80;
+                    const clothBodies = [];
+
+                    for (let y = 0; y < clothHeight; y++) {
+                        for (let x = 0; x < clothWidth; x++) {
+                            const isFixed = y === 0 && (x === 0 || x === clothWidth - 1 || x === Math.floor(clothWidth / 2));
+                            const body = new Body(clothX + x * clothSpacing, clothY + y * clothSpacing, {
+                                size: 5,
+                                color: isFixed ? '#888' : '#667eea',
+                                isStatic: isFixed
+                            });
+                            bodies.push(body);
+                            clothBodies.push(body);
+
+                            // Horizontal spring
+                            if (x > 0) {
+                                springs.push(new Spring(clothBodies[y * clothWidth + x - 1], body, { stiffness: 0.5 }));
+                            }
+                            // Vertical spring
+                            if (y > 0) {
+                                springs.push(new Spring(clothBodies[(y - 1) * clothWidth + x], body, { stiffness: 0.5 }));
+                            }
+                        }
+                    }
+                    break;
+            }
+        }
+
+        // Resize
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        update();
+    </script>
+</body>
+</html>

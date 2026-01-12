@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reaction-Diffusion Simulation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0a;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            height: 100vh;
+        }
+
+        .controls {
+            background: rgba(20, 20, 35, 0.95);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        h1 {
+            font-size: 1.3em;
+            background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 11px;
+            margin-bottom: 20px;
+        }
+
+        .control-section {
+            margin-bottom: 18px;
+        }
+
+        .control-section h3 {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #ec4899;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .slider-group {
+            margin-bottom: 12px;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .slider-value {
+            color: #8b5cf6;
+            font-weight: 600;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 5px;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            background: linear-gradient(135deg, #ec4899, #8b5cf6);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background: linear-gradient(135deg, #ec4899, #8b5cf6);
+            border: none;
+            border-radius: 6px;
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 6px;
+            font-size: 12px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(236, 72, 153, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: none;
+        }
+
+        .preset-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        .preset-btn {
+            padding: 8px;
+            font-size: 10px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+
+        input[type="checkbox"] {
+            width: 14px;
+            height: 14px;
+            accent-color: #ec4899;
+        }
+
+        select {
+            width: 100%;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 6px;
+            color: #fff;
+            font-size: 12px;
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #000;
+        }
+
+        canvas {
+            max-width: 100%;
+            max-height: 100%;
+            image-rendering: pixelated;
+        }
+
+        .info-panel {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 12px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            gap: 15px;
+        }
+
+        .info-label {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .info-value {
+            color: #ec4899;
+            font-weight: 600;
+        }
+
+        .formula-box {
+            margin-top: 10px;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            font-family: 'Times New Roman', serif;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.7);
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        .help-text {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.4);
+            margin-top: 10px;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="controls">
+            <h1>Reaction-Diffusion</h1>
+            <p class="subtitle">Gray-Scott Model - Emergent Patterns</p>
+
+            <div class="control-section">
+                <h3>Model Parameters</h3>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Feed Rate (F)</span>
+                        <span class="slider-value" id="feedValue">0.055</span>
+                    </div>
+                    <input type="range" id="feed" min="0.01" max="0.1" step="0.001" value="0.055">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Kill Rate (k)</span>
+                        <span class="slider-value" id="killValue">0.062</span>
+                    </div>
+                    <input type="range" id="kill" min="0.03" max="0.07" step="0.001" value="0.062">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Diffusion A (Da)</span>
+                        <span class="slider-value" id="daValue">1.00</span>
+                    </div>
+                    <input type="range" id="da" min="0.1" max="1.5" step="0.01" value="1">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Diffusion B (Db)</span>
+                        <span class="slider-value" id="dbValue">0.50</span>
+                    </div>
+                    <input type="range" id="db" min="0.1" max="1" step="0.01" value="0.5">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Time Step (dt)</span>
+                        <span class="slider-value" id="dtValue">1.0</span>
+                    </div>
+                    <input type="range" id="dt" min="0.5" max="2" step="0.1" value="1">
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>Simulation</h3>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Resolution</span>
+                        <span class="slider-value" id="resValue">200</span>
+                    </div>
+                    <input type="range" id="resolution" min="100" max="400" step="50" value="200">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Steps per Frame</span>
+                        <span class="slider-value" id="stepsValue">10</span>
+                    </div>
+                    <input type="range" id="steps" min="1" max="30" value="10">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Brush Size</span>
+                        <span class="slider-value" id="brushValue">15</span>
+                    </div>
+                    <input type="range" id="brush" min="5" max="50" value="15">
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>Presets</h3>
+                <div class="preset-grid">
+                    <button onclick="loadPreset('mitosis')" class="btn-secondary preset-btn">Mitosis</button>
+                    <button onclick="loadPreset('coral')" class="btn-secondary preset-btn">Coral</button>
+                    <button onclick="loadPreset('spots')" class="btn-secondary preset-btn">Spots</button>
+                    <button onclick="loadPreset('stripes')" class="btn-secondary preset-btn">Stripes</button>
+                    <button onclick="loadPreset('waves')" class="btn-secondary preset-btn">Waves</button>
+                    <button onclick="loadPreset('maze')" class="btn-secondary preset-btn">Maze</button>
+                    <button onclick="loadPreset('worms')" class="btn-secondary preset-btn">Worms</button>
+                    <button onclick="loadPreset('bubbles')" class="btn-secondary preset-btn">Bubbles</button>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>Color Scheme</h3>
+                <select id="colorScheme">
+                    <option value="purple">Purple Haze</option>
+                    <option value="thermal">Thermal</option>
+                    <option value="ocean">Ocean</option>
+                    <option value="forest">Forest</option>
+                    <option value="fire">Fire</option>
+                    <option value="grayscale">Grayscale</option>
+                    <option value="neon">Neon</option>
+                </select>
+            </div>
+
+            <div class="control-section">
+                <button onclick="togglePause()">Pause / Resume</button>
+                <button onclick="reset()" class="btn-secondary">Reset</button>
+                <button onclick="clear()" class="btn-secondary">Clear Grid</button>
+                <button onclick="randomSeed()" class="btn-secondary">Random Seed</button>
+            </div>
+
+            <div class="formula-box">
+                ∂A/∂t = Da∇²A - AB² + F(1-A)<br>
+                ∂B/∂t = Db∇²B + AB² - (F+k)B
+            </div>
+
+            <div class="help-text">
+                Click and drag to add reactant B. The simulation shows how two chemicals (A and B) react and diffuse, creating emergent patterns similar to those found in nature.
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="canvas"></canvas>
+            <div class="info-panel">
+                <div class="info-row">
+                    <span class="info-label">Iteration:</span>
+                    <span class="info-value" id="iterValue">0</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">FPS:</span>
+                    <span class="info-value" id="fpsValue">0</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Grid:</span>
+                    <span class="info-value" id="gridSize">200x200</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Grid dimensions
+        let width = 200;
+        let height = 200;
+
+        // Chemical concentrations (double buffered)
+        let gridA, gridB;
+        let nextA, nextB;
+
+        // Parameters
+        let feed = 0.055;
+        let kill = 0.062;
+        let dA = 1.0;
+        let dB = 0.5;
+        let dt = 1.0;
+
+        // Simulation state
+        let isPaused = false;
+        let iteration = 0;
+        let lastTime = performance.now();
+        let frameCount = 0;
+        let fps = 0;
+
+        // Mouse state
+        let isDrawing = false;
+        let brushSize = 15;
+
+        // Color schemes
+        const colorSchemes = {
+            purple: (v) => {
+                const r = Math.floor(60 + v * 176);
+                const g = Math.floor(30 + v * 40);
+                const b = Math.floor(100 + v * 156);
+                return [r, g, b];
+            },
+            thermal: (v) => {
+                if (v < 0.33) {
+                    return [Math.floor(v * 3 * 255), 0, Math.floor(128 - v * 3 * 128)];
+                } else if (v < 0.66) {
+                    const t = (v - 0.33) * 3;
+                    return [255, Math.floor(t * 255), 0];
+                } else {
+                    const t = (v - 0.66) * 3;
+                    return [255, 255, Math.floor(t * 255)];
+                }
+            },
+            ocean: (v) => {
+                const r = Math.floor(10 + v * 50);
+                const g = Math.floor(50 + v * 150);
+                const b = Math.floor(100 + v * 155);
+                return [r, g, b];
+            },
+            forest: (v) => {
+                const r = Math.floor(20 + v * 80);
+                const g = Math.floor(50 + v * 180);
+                const b = Math.floor(30 + v * 70);
+                return [r, g, b];
+            },
+            fire: (v) => {
+                const r = Math.floor(50 + v * 205);
+                const g = Math.floor(v * 150);
+                const b = Math.floor(v * 50);
+                return [r, g, b];
+            },
+            grayscale: (v) => {
+                const c = Math.floor(v * 255);
+                return [c, c, c];
+            },
+            neon: (v) => {
+                const hue = v * 0.8; // 0 to 0.8 (purple to cyan range)
+                const [r, g, b] = hslToRgb(hue, 1, 0.5);
+                return [r, g, b];
+            }
+        };
+
+        function hslToRgb(h, s, l) {
+            let r, g, b;
+            if (s === 0) {
+                r = g = b = l;
+            } else {
+                const hue2rgb = (p, q, t) => {
+                    if (t < 0) t += 1;
+                    if (t > 1) t -= 1;
+                    if (t < 1/6) return p + (q - p) * 6 * t;
+                    if (t < 1/2) return q;
+                    if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+                    return p;
+                };
+                const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                const p = 2 * l - q;
+                r = hue2rgb(p, q, h + 1/3);
+                g = hue2rgb(p, q, h);
+                b = hue2rgb(p, q, h - 1/3);
+            }
+            return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+        }
+
+        // Initialize grids
+        function initGrids() {
+            gridA = new Float32Array(width * height);
+            gridB = new Float32Array(width * height);
+            nextA = new Float32Array(width * height);
+            nextB = new Float32Array(width * height);
+
+            // Fill with chemical A
+            gridA.fill(1);
+            gridB.fill(0);
+
+            canvas.width = width;
+            canvas.height = height;
+
+            document.getElementById('gridSize').textContent = `${width}x${height}`;
+        }
+
+        // Add seed of chemical B
+        function addSeed(cx, cy, radius) {
+            for (let y = -radius; y <= radius; y++) {
+                for (let x = -radius; x <= radius; x++) {
+                    if (x * x + y * y <= radius * radius) {
+                        const px = Math.floor(cx + x);
+                        const py = Math.floor(cy + y);
+
+                        if (px >= 0 && px < width && py >= 0 && py < height) {
+                            const idx = py * width + px;
+                            gridB[idx] = 1;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Random seeding
+        function randomSeed() {
+            const numSeeds = Math.floor(Math.random() * 10) + 5;
+
+            for (let i = 0; i < numSeeds; i++) {
+                const x = Math.random() * width;
+                const y = Math.random() * height;
+                const r = Math.random() * 10 + 5;
+                addSeed(x, y, r);
+            }
+        }
+
+        // Laplacian (9-point stencil)
+        function laplacian(grid, x, y) {
+            const idx = y * width + x;
+
+            // Wrap around edges
+            const left = x > 0 ? x - 1 : width - 1;
+            const right = x < width - 1 ? x + 1 : 0;
+            const up = y > 0 ? y - 1 : height - 1;
+            const down = y < height - 1 ? y + 1 : 0;
+
+            // 9-point stencil for smoother results
+            const center = grid[idx];
+            const sumOrtho = grid[up * width + x] +
+                            grid[down * width + x] +
+                            grid[y * width + left] +
+                            grid[y * width + right];
+            const sumDiag = grid[up * width + left] +
+                           grid[up * width + right] +
+                           grid[down * width + left] +
+                           grid[down * width + right];
+
+            return sumOrtho * 0.2 + sumDiag * 0.05 - center;
+        }
+
+        // Simulation step
+        function step() {
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const idx = y * width + x;
+
+                    const a = gridA[idx];
+                    const b = gridB[idx];
+
+                    const lapA = laplacian(gridA, x, y);
+                    const lapB = laplacian(gridB, x, y);
+
+                    const reaction = a * b * b;
+
+                    nextA[idx] = a + (dA * lapA - reaction + feed * (1 - a)) * dt;
+                    nextB[idx] = b + (dB * lapB + reaction - (feed + kill) * b) * dt;
+
+                    // Clamp values
+                    nextA[idx] = Math.max(0, Math.min(1, nextA[idx]));
+                    nextB[idx] = Math.max(0, Math.min(1, nextB[idx]));
+                }
+            }
+
+            // Swap buffers
+            [gridA, nextA] = [nextA, gridA];
+            [gridB, nextB] = [nextB, gridB];
+
+            iteration++;
+        }
+
+        // Render
+        function render() {
+            const imageData = ctx.createImageData(width, height);
+            const data = imageData.data;
+            const scheme = document.getElementById('colorScheme').value;
+            const getColor = colorSchemes[scheme];
+
+            for (let i = 0; i < width * height; i++) {
+                const a = gridA[i];
+                const b = gridB[i];
+
+                // Use B concentration for coloring
+                const v = Math.max(0, Math.min(1, b));
+                const [r, g, bl] = getColor(v);
+
+                const idx = i * 4;
+                data[idx] = r;
+                data[idx + 1] = g;
+                data[idx + 2] = bl;
+                data[idx + 3] = 255;
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        // Animation loop
+        function animate() {
+            if (!isPaused) {
+                const stepsPerFrame = parseInt(document.getElementById('steps').value);
+
+                for (let i = 0; i < stepsPerFrame; i++) {
+                    step();
+                }
+
+                render();
+
+                // FPS calculation
+                frameCount++;
+                const now = performance.now();
+                if (now - lastTime >= 1000) {
+                    fps = frameCount;
+                    frameCount = 0;
+                    lastTime = now;
+                }
+
+                document.getElementById('iterValue').textContent = iteration.toLocaleString();
+                document.getElementById('fpsValue').textContent = fps;
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        // Mouse interaction
+        canvas.addEventListener('mousedown', e => {
+            isDrawing = true;
+            addChemical(e);
+        });
+
+        canvas.addEventListener('mousemove', e => {
+            if (isDrawing) addChemical(e);
+        });
+
+        canvas.addEventListener('mouseup', () => isDrawing = false);
+        canvas.addEventListener('mouseleave', () => isDrawing = false);
+
+        function addChemical(e) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = width / rect.width;
+            const scaleY = height / rect.height;
+            const x = (e.clientX - rect.left) * scaleX;
+            const y = (e.clientY - rect.top) * scaleY;
+
+            addSeed(x, y, brushSize / 5);
+        }
+
+        // Control handlers
+        document.getElementById('feed').addEventListener('input', e => {
+            feed = parseFloat(e.target.value);
+            document.getElementById('feedValue').textContent = feed.toFixed(3);
+        });
+
+        document.getElementById('kill').addEventListener('input', e => {
+            kill = parseFloat(e.target.value);
+            document.getElementById('killValue').textContent = kill.toFixed(3);
+        });
+
+        document.getElementById('da').addEventListener('input', e => {
+            dA = parseFloat(e.target.value);
+            document.getElementById('daValue').textContent = dA.toFixed(2);
+        });
+
+        document.getElementById('db').addEventListener('input', e => {
+            dB = parseFloat(e.target.value);
+            document.getElementById('dbValue').textContent = dB.toFixed(2);
+        });
+
+        document.getElementById('dt').addEventListener('input', e => {
+            dt = parseFloat(e.target.value);
+            document.getElementById('dtValue').textContent = dt.toFixed(1);
+        });
+
+        document.getElementById('resolution').addEventListener('change', e => {
+            width = height = parseInt(e.target.value);
+            document.getElementById('resValue').textContent = width;
+            initGrids();
+            randomSeed();
+        });
+
+        document.getElementById('steps').addEventListener('input', e => {
+            document.getElementById('stepsValue').textContent = e.target.value;
+        });
+
+        document.getElementById('brush').addEventListener('input', e => {
+            brushSize = parseInt(e.target.value);
+            document.getElementById('brushValue').textContent = brushSize;
+        });
+
+        // Presets
+        const presets = {
+            mitosis: { feed: 0.0367, kill: 0.0649 },
+            coral: { feed: 0.0545, kill: 0.062 },
+            spots: { feed: 0.03, kill: 0.062 },
+            stripes: { feed: 0.022, kill: 0.051 },
+            waves: { feed: 0.014, kill: 0.045 },
+            maze: { feed: 0.029, kill: 0.057 },
+            worms: { feed: 0.078, kill: 0.061 },
+            bubbles: { feed: 0.046, kill: 0.063 }
+        };
+
+        function loadPreset(name) {
+            const preset = presets[name];
+            if (!preset) return;
+
+            feed = preset.feed;
+            kill = preset.kill;
+
+            document.getElementById('feed').value = feed;
+            document.getElementById('feedValue').textContent = feed.toFixed(3);
+            document.getElementById('kill').value = kill;
+            document.getElementById('killValue').textContent = kill.toFixed(3);
+
+            reset();
+        }
+
+        function togglePause() {
+            isPaused = !isPaused;
+        }
+
+        function reset() {
+            initGrids();
+            randomSeed();
+            iteration = 0;
+        }
+
+        function clear() {
+            initGrids();
+            iteration = 0;
+        }
+
+        // Initialize and start
+        initGrids();
+        randomSeed();
+        animate();
+    </script>
+</body>
+</html>

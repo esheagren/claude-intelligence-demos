@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reaction Time Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 42px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #48dbfb, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 25px;
+        }
+
+        .stats-bar {
+            display: flex;
+            gap: 25px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .stat {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px 20px;
+            border-radius: 10px;
+            min-width: 100px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+            font-family: monospace;
+        }
+
+        .stat-value.good { color: #00ff88; }
+        .stat-value.average { color: #feca57; }
+        .stat-value.slow { color: #ff6b6b; }
+        .stat-value.neutral { color: #48dbfb; }
+
+        .stat-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 5px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        button.active {
+            background: rgba(72, 219, 251, 0.2);
+            border-color: #48dbfb;
+        }
+
+        .test-area {
+            width: 100%;
+            max-width: 600px;
+            height: 350px;
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s;
+            user-select: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .test-area.waiting {
+            background: linear-gradient(135deg, #c0392b, #e74c3c);
+        }
+
+        .test-area.ready {
+            background: linear-gradient(135deg, #00a854, #00d26a);
+        }
+
+        .test-area.result {
+            background: linear-gradient(135deg, #2563eb, #3b82f6);
+        }
+
+        .test-area.too-early {
+            background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+        }
+
+        .test-area h2 {
+            font-size: 36px;
+            margin-bottom: 15px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .test-area p {
+            font-size: 18px;
+            opacity: 0.9;
+        }
+
+        .test-area .result-time {
+            font-size: 72px;
+            font-weight: bold;
+            font-family: monospace;
+            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .test-area .result-unit {
+            font-size: 24px;
+            opacity: 0.8;
+        }
+
+        .test-area .result-rating {
+            font-size: 20px;
+            margin-top: 10px;
+            padding: 8px 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 20px;
+        }
+
+        .attempts-container {
+            margin-top: 25px;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .attempts-title {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .attempts-list {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .attempt {
+            padding: 10px 18px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 16px;
+            transition: transform 0.2s;
+        }
+
+        .attempt.good { color: #00ff88; border: 1px solid rgba(0, 255, 136, 0.3); }
+        .attempt.average { color: #feca57; border: 1px solid rgba(254, 202, 87, 0.3); }
+        .attempt.slow { color: #ff6b6b; border: 1px solid rgba(255, 107, 107, 0.3); }
+
+        .attempt.new {
+            animation: popIn 0.3s ease-out;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0); opacity: 0; }
+            70% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .benchmark {
+            margin-top: 30px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 15px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .benchmark h3 {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .benchmark-bar {
+            height: 30px;
+            background: linear-gradient(90deg, #00ff88 0%, #feca57 50%, #ff6b6b 100%);
+            border-radius: 15px;
+            position: relative;
+            margin-bottom: 10px;
+        }
+
+        .benchmark-marker {
+            position: absolute;
+            top: -8px;
+            width: 4px;
+            height: 46px;
+            background: #fff;
+            border-radius: 2px;
+            transform: translateX(-50%);
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            transition: left 0.3s ease-out;
+        }
+
+        .benchmark-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .mode-select {
+            display: flex;
+            gap: 10px;
+        }
+
+        @media (max-width: 600px) {
+            .test-area {
+                height: 300px;
+            }
+
+            .test-area h2 {
+                font-size: 28px;
+            }
+
+            .test-area .result-time {
+                font-size: 56px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Reaction Time</h1>
+    <p class="subtitle">Test your reflexes</p>
+
+    <div class="controls">
+        <div class="mode-select">
+            <button class="mode-btn active" data-mode="visual">Visual</button>
+            <button class="mode-btn" data-mode="audio">Audio</button>
+        </div>
+        <button id="resetBtn">Reset Stats</button>
+    </div>
+
+    <div class="stats-bar">
+        <div class="stat">
+            <div class="stat-value neutral" id="best">-</div>
+            <div class="stat-label">Best</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value neutral" id="average">-</div>
+            <div class="stat-label">Average</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value neutral" id="attempts">0</div>
+            <div class="stat-label">Attempts</div>
+        </div>
+    </div>
+
+    <div class="test-area waiting" id="testArea">
+        <h2>Wait for green...</h2>
+        <p>Then click as fast as you can!</p>
+    </div>
+
+    <div class="attempts-container">
+        <div class="attempts-title">Recent Attempts</div>
+        <div class="attempts-list" id="attemptsList"></div>
+    </div>
+
+    <div class="benchmark">
+        <h3>Reaction Time Scale</h3>
+        <div class="benchmark-bar">
+            <div class="benchmark-marker" id="benchmarkMarker" style="left: 50%;"></div>
+        </div>
+        <div class="benchmark-labels">
+            <span>Incredible (&lt;150ms)</span>
+            <span>Average (~250ms)</span>
+            <span>Slow (&gt;350ms)</span>
+        </div>
+    </div>
+
+    <script>
+        let audioCtx = null;
+        let mode = 'visual';
+        let state = 'waiting'; // waiting, ready, result, too-early
+        let startTime = 0;
+        let timeoutId = null;
+        let attempts = [];
+
+        const testArea = document.getElementById('testArea');
+
+        function init() {
+            // Load saved attempts
+            const saved = localStorage.getItem('reaction-attempts');
+            if (saved) {
+                attempts = JSON.parse(saved);
+                updateStats();
+                renderAttempts();
+            }
+
+            resetTest();
+        }
+
+        function resetTest() {
+            clearTimeout(timeoutId);
+            state = 'waiting';
+
+            testArea.className = 'test-area waiting';
+
+            if (mode === 'visual') {
+                testArea.innerHTML = `
+                    <h2>Wait for green...</h2>
+                    <p>Then click as fast as you can!</p>
+                `;
+            } else {
+                testArea.innerHTML = `
+                    <h2>Wait for the beep...</h2>
+                    <p>Then click as fast as you can!</p>
+                `;
+            }
+
+            // Random delay between 1-5 seconds
+            const delay = 1000 + Math.random() * 4000;
+            timeoutId = setTimeout(showReady, delay);
+        }
+
+        function showReady() {
+            state = 'ready';
+            startTime = performance.now();
+
+            testArea.className = 'test-area ready';
+
+            if (mode === 'visual') {
+                testArea.innerHTML = `
+                    <h2>CLICK NOW!</h2>
+                `;
+            } else {
+                testArea.innerHTML = `
+                    <h2>CLICK NOW!</h2>
+                `;
+                playBeep();
+            }
+        }
+
+        function playBeep() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            oscillator.type = 'sine';
+            oscillator.frequency.value = 800;
+
+            gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+
+            oscillator.start(audioCtx.currentTime);
+            oscillator.stop(audioCtx.currentTime + 0.2);
+        }
+
+        function handleClick() {
+            if (state === 'waiting') {
+                // Clicked too early
+                clearTimeout(timeoutId);
+                state = 'too-early';
+
+                testArea.className = 'test-area too-early';
+                testArea.innerHTML = `
+                    <h2>Too Early!</h2>
+                    <p>Click to try again</p>
+                `;
+            } else if (state === 'ready') {
+                // Record reaction time
+                const reactionTime = Math.round(performance.now() - startTime);
+                state = 'result';
+
+                showResult(reactionTime);
+                recordAttempt(reactionTime);
+            } else if (state === 'result' || state === 'too-early') {
+                // Start new test
+                resetTest();
+            }
+        }
+
+        function showResult(time) {
+            let rating, ratingClass;
+
+            if (time < 150) {
+                rating = 'Incredible!';
+                ratingClass = 'good';
+            } else if (time < 200) {
+                rating = 'Excellent!';
+                ratingClass = 'good';
+            } else if (time < 250) {
+                rating = 'Good';
+                ratingClass = 'average';
+            } else if (time < 350) {
+                rating = 'Average';
+                ratingClass = 'average';
+            } else {
+                rating = 'Keep practicing';
+                ratingClass = 'slow';
+            }
+
+            testArea.className = 'test-area result';
+            testArea.innerHTML = `
+                <div class="result-time">${time}</div>
+                <div class="result-unit">milliseconds</div>
+                <div class="result-rating">${rating}</div>
+                <p style="margin-top: 20px; opacity: 0.7;">Click to try again</p>
+            `;
+
+            // Update benchmark marker
+            const position = Math.min(100, Math.max(0, (time - 100) / 3));
+            document.getElementById('benchmarkMarker').style.left = position + '%';
+        }
+
+        function recordAttempt(time) {
+            attempts.unshift(time);
+            if (attempts.length > 10) {
+                attempts.pop();
+            }
+
+            localStorage.setItem('reaction-attempts', JSON.stringify(attempts));
+
+            updateStats();
+            renderAttempts();
+        }
+
+        function updateStats() {
+            if (attempts.length === 0) {
+                document.getElementById('best').textContent = '-';
+                document.getElementById('average').textContent = '-';
+                document.getElementById('attempts').textContent = '0';
+                return;
+            }
+
+            const best = Math.min(...attempts);
+            const avg = Math.round(attempts.reduce((a, b) => a + b, 0) / attempts.length);
+
+            const bestEl = document.getElementById('best');
+            bestEl.textContent = best + 'ms';
+            bestEl.className = 'stat-value ' + getRatingClass(best);
+
+            const avgEl = document.getElementById('average');
+            avgEl.textContent = avg + 'ms';
+            avgEl.className = 'stat-value ' + getRatingClass(avg);
+
+            document.getElementById('attempts').textContent = attempts.length;
+        }
+
+        function getRatingClass(time) {
+            if (time < 200) return 'good';
+            if (time < 300) return 'average';
+            return 'slow';
+        }
+
+        function renderAttempts() {
+            const list = document.getElementById('attemptsList');
+            list.innerHTML = '';
+
+            attempts.slice(0, 5).forEach((time, index) => {
+                const attempt = document.createElement('div');
+                attempt.className = `attempt ${getRatingClass(time)}`;
+                if (index === 0) attempt.classList.add('new');
+                attempt.textContent = time + 'ms';
+                list.appendChild(attempt);
+            });
+        }
+
+        // Event listeners
+        testArea.addEventListener('click', handleClick);
+
+        testArea.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            handleClick();
+        });
+
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                mode = btn.dataset.mode;
+
+                // Initialize audio context on user interaction
+                if (mode === 'audio' && !audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+
+                resetTest();
+            });
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            attempts = [];
+            localStorage.removeItem('reaction-attempts');
+            updateStats();
+            renderAttempts();
+            document.getElementById('benchmarkMarker').style.left = '50%';
+            resetTest();
+        });
+
+        // Prevent spacebar from triggering
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                handleClick();
+            }
+        });
+
+        // Initialize
+        init();
+    </script>
+</body>
+</html>

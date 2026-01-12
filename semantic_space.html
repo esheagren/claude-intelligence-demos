@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Semantic Space: The Geometry of Language</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a0a2e 50%, #0a1a2a 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            color: #e0e0e0;
+            display: flex;
+        }
+
+        .canvas-container {
+            flex: 1;
+            position: relative;
+        }
+
+        #semantic-canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .header {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 300;
+            letter-spacing: 3px;
+            background: linear-gradient(90deg, #a855f7, #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header .subtitle {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.4);
+            margin-top: 5px;
+            letter-spacing: 2px;
+        }
+
+        .sidebar {
+            width: 350px;
+            background: rgba(10, 10, 20, 0.9);
+            border-left: 1px solid rgba(168, 85, 247, 0.2);
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .panel {
+            background: rgba(30, 20, 40, 0.6);
+            border: 1px solid rgba(168, 85, 247, 0.15);
+            border-radius: 10px;
+            padding: 18px;
+            margin-bottom: 18px;
+        }
+
+        .panel h3 {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #a855f7;
+            margin-bottom: 14px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(168, 85, 247, 0.2);
+        }
+
+        .search-box {
+            display: flex;
+            gap: 8px;
+        }
+
+        .search-box input {
+            flex: 1;
+            padding: 10px 14px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 6px;
+            color: #fff;
+            font-size: 13px;
+            outline: none;
+        }
+
+        .search-box input:focus {
+            border-color: #a855f7;
+        }
+
+        .search-box button {
+            padding: 10px 16px;
+            background: linear-gradient(135deg, #a855f7, #ec4899);
+            border: none;
+            border-radius: 6px;
+            color: #fff;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .word-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .word-chip {
+            padding: 6px 12px;
+            background: rgba(168, 85, 247, 0.15);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 20px;
+            font-size: 12px;
+            color: #d8b4fe;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .word-chip:hover {
+            background: rgba(168, 85, 247, 0.3);
+            color: #fff;
+        }
+
+        .word-chip.selected {
+            background: linear-gradient(135deg, #a855f7, #ec4899);
+            color: #fff;
+            border-color: transparent;
+        }
+
+        .analogy-builder {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr;
+            gap: 8px;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .analogy-input {
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 4px;
+            color: #fff;
+            font-size: 12px;
+            text-align: center;
+        }
+
+        .analogy-operator {
+            color: #a855f7;
+            font-weight: bold;
+        }
+
+        .btn {
+            padding: 10px 16px;
+            background: rgba(168, 85, 247, 0.2);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 6px;
+            color: #d8b4fe;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn:hover {
+            background: rgba(168, 85, 247, 0.3);
+            color: #fff;
+        }
+
+        .btn-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .similar-words {
+            margin-top: 12px;
+        }
+
+        .similar-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+            margin-bottom: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .similar-item:hover {
+            background: rgba(168, 85, 247, 0.2);
+        }
+
+        .similar-word {
+            font-size: 13px;
+            color: #fff;
+        }
+
+        .similarity-score {
+            font-size: 11px;
+            color: #a855f7;
+        }
+
+        .similarity-bar {
+            width: 60px;
+            height: 4px;
+            background: rgba(168, 85, 247, 0.2);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-left: 10px;
+        }
+
+        .similarity-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #a855f7, #ec4899);
+        }
+
+        .dimension-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .dimension-btn {
+            flex: 1;
+            padding: 8px;
+            background: rgba(168, 85, 247, 0.1);
+            border: 1px solid rgba(168, 85, 247, 0.2);
+            border-radius: 4px;
+            color: #a855f7;
+            cursor: pointer;
+            font-size: 11px;
+            text-align: center;
+        }
+
+        .dimension-btn.active {
+            background: rgba(168, 85, 247, 0.3);
+            border-color: #a855f7;
+            color: #fff;
+        }
+
+        .cluster-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .cluster-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .cluster-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .tooltip {
+            position: absolute;
+            background: rgba(30, 20, 50, 0.95);
+            border: 1px solid rgba(168, 85, 247, 0.4);
+            border-radius: 8px;
+            padding: 12px 16px;
+            pointer-events: none;
+            z-index: 100;
+            display: none;
+            max-width: 250px;
+        }
+
+        .tooltip.visible {
+            display: block;
+        }
+
+        .tooltip-word {
+            font-size: 16px;
+            color: #fff;
+            margin-bottom: 6px;
+        }
+
+        .tooltip-info {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .info-bar {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            font-size: 11px;
+        }
+
+        .stat-label { color: rgba(255, 255, 255, 0.5); }
+        .stat-value { color: #d8b4fe; }
+    </style>
+</head>
+<body>
+    <div class="canvas-container">
+        <canvas id="semantic-canvas"></canvas>
+        <div class="header">
+            <h1>SEMANTIC SPACE</h1>
+            <div class="subtitle">The Geometry of Language</div>
+        </div>
+        <div class="info-bar">
+            <div>Words: <span id="word-count">0</span> | Dimensions: <span id="dim-count">50</span></div>
+        </div>
+        <div class="tooltip" id="tooltip">
+            <div class="tooltip-word" id="tooltip-word"></div>
+            <div class="tooltip-info" id="tooltip-info"></div>
+        </div>
+    </div>
+
+    <div class="sidebar">
+        <div class="panel">
+            <h3>Word Search</h3>
+            <div class="search-box">
+                <input type="text" id="search-input" placeholder="Enter a word...">
+                <button id="search-btn">Find</button>
+            </div>
+            <div class="word-chips" id="selected-words"></div>
+        </div>
+
+        <div class="panel">
+            <h3>Word Categories</h3>
+            <div class="word-chips">
+                <span class="word-chip" data-words="happy,sad,angry,fear,love,joy">Emotions</span>
+                <span class="word-chip" data-words="red,blue,green,yellow,purple,orange">Colors</span>
+                <span class="word-chip" data-words="dog,cat,bird,fish,horse,lion">Animals</span>
+                <span class="word-chip" data-words="king,queen,prince,knight,castle,throne">Royalty</span>
+                <span class="word-chip" data-words="run,walk,jump,swim,fly,dance">Movement</span>
+                <span class="word-chip" data-words="sun,moon,star,sky,cloud,rain">Nature</span>
+                <span class="word-chip" data-words="think,know,believe,remember,forget,learn">Cognition</span>
+                <span class="word-chip" data-words="big,small,tall,short,wide,narrow">Size</span>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h3>Word Analogies</h3>
+            <p style="font-size: 11px; color: rgba(255,255,255,0.5); margin-bottom: 10px;">
+                king - man + woman = ?
+            </p>
+            <div class="analogy-builder">
+                <input type="text" class="analogy-input" id="analogy-a" placeholder="king" value="king">
+                <span class="analogy-operator">−</span>
+                <input type="text" class="analogy-input" id="analogy-b" placeholder="man" value="man">
+                <span class="analogy-operator">+</span>
+                <input type="text" class="analogy-input" id="analogy-c" placeholder="woman" value="woman">
+                <span class="analogy-operator">=</span>
+                <span id="analogy-result" style="color: #ec4899; font-weight: bold;">?</span>
+            </div>
+            <button class="btn" id="compute-analogy" style="width: 100%; margin-top: 12px;">Compute Analogy</button>
+        </div>
+
+        <div class="panel">
+            <h3>Similar Words</h3>
+            <div class="similar-words" id="similar-words">
+                <div style="color: rgba(255,255,255,0.4); font-size: 12px; text-align: center; padding: 20px;">
+                    Select a word to see similar words
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h3>Visualization</h3>
+            <div class="dimension-controls">
+                <div class="dimension-btn active" data-dim="2d">2D View</div>
+                <div class="dimension-btn" data-dim="3d">3D View</div>
+            </div>
+            <div class="btn-group" style="margin-top: 10px;">
+                <button class="btn" id="reset-view">Reset View</button>
+                <button class="btn" id="toggle-labels">Toggle Labels</button>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h3>Cluster Legend</h3>
+            <div class="cluster-legend" id="cluster-legend"></div>
+        </div>
+
+        <div class="panel">
+            <h3>Statistics</h3>
+            <div class="stat-row">
+                <span class="stat-label">Vocabulary Size</span>
+                <span class="stat-value" id="vocab-size">500</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Embedding Dimensions</span>
+                <span class="stat-value">50</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Visible Clusters</span>
+                <span class="stat-value" id="cluster-count">8</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // SEMANTIC SPACE VISUALIZATION
+        // Word embeddings and vector arithmetic
+        // ============================================
+
+        const canvas = document.getElementById('semantic-canvas');
+        const ctx = canvas.getContext('2d');
+        const tooltip = document.getElementById('tooltip');
+
+        // State
+        let words = [];
+        let embeddings = {};
+        let projectedPositions = {};
+        let selectedWords = new Set();
+        let hoveredWord = null;
+        let showLabels = true;
+        let is3D = false;
+
+        // View controls
+        let viewX = 0, viewY = 0;
+        let zoom = 1;
+        let rotation3D = { x: 0, y: 0 };
+
+        // Word clusters (semantic categories)
+        const clusters = {
+            emotions: { color: '#ef4444', words: ['happy', 'sad', 'angry', 'fear', 'love', 'joy', 'hate', 'peace', 'hope', 'despair'] },
+            colors: { color: '#f59e0b', words: ['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'pink', 'black', 'white', 'gray'] },
+            animals: { color: '#10b981', words: ['dog', 'cat', 'bird', 'fish', 'horse', 'lion', 'tiger', 'bear', 'wolf', 'deer'] },
+            royalty: { color: '#8b5cf6', words: ['king', 'queen', 'prince', 'princess', 'knight', 'castle', 'throne', 'crown', 'royal', 'noble'] },
+            movement: { color: '#06b6d4', words: ['run', 'walk', 'jump', 'swim', 'fly', 'dance', 'crawl', 'sprint', 'leap', 'climb'] },
+            nature: { color: '#84cc16', words: ['sun', 'moon', 'star', 'sky', 'cloud', 'rain', 'snow', 'wind', 'tree', 'flower'] },
+            cognition: { color: '#ec4899', words: ['think', 'know', 'believe', 'remember', 'forget', 'learn', 'understand', 'imagine', 'dream', 'wonder'] },
+            size: { color: '#6366f1', words: ['big', 'small', 'tall', 'short', 'wide', 'narrow', 'huge', 'tiny', 'vast', 'minute'] },
+            time: { color: '#f97316', words: ['day', 'night', 'morning', 'evening', 'hour', 'minute', 'year', 'month', 'week', 'second'] },
+            family: { color: '#14b8a6', words: ['mother', 'father', 'son', 'daughter', 'brother', 'sister', 'child', 'parent', 'family', 'home'] }
+        };
+
+        // Extended vocabulary
+        const vocabulary = [
+            // Base words from clusters
+            ...Object.values(clusters).flatMap(c => c.words),
+            // Additional common words
+            'man', 'woman', 'boy', 'girl', 'person', 'people', 'world', 'life', 'time', 'way',
+            'good', 'bad', 'new', 'old', 'great', 'high', 'low', 'long', 'short', 'right',
+            'work', 'place', 'hand', 'eye', 'head', 'heart', 'mind', 'body', 'water', 'fire',
+            'earth', 'air', 'light', 'dark', 'cold', 'hot', 'fast', 'slow', 'strong', 'weak',
+            'begin', 'end', 'come', 'go', 'see', 'hear', 'feel', 'speak', 'read', 'write',
+            'music', 'art', 'science', 'book', 'story', 'word', 'number', 'power', 'force', 'energy',
+            'city', 'country', 'house', 'room', 'door', 'window', 'road', 'river', 'mountain', 'sea',
+            'food', 'drink', 'bread', 'meat', 'fruit', 'apple', 'orange', 'gold', 'silver', 'iron',
+            'north', 'south', 'east', 'west', 'up', 'down', 'left', 'right', 'front', 'back',
+            'friend', 'enemy', 'love', 'hate', 'war', 'peace', 'truth', 'lie', 'god', 'death'
+        ];
+
+        // ============================================
+        // EMBEDDING GENERATION
+        // ============================================
+
+        function generateEmbeddings() {
+            const dims = 50;
+
+            // Get unique words
+            words = [...new Set(vocabulary)];
+
+            // Generate pseudo-embeddings with semantic structure
+            words.forEach(word => {
+                const embedding = new Array(dims).fill(0);
+
+                // Find which cluster(s) this word belongs to
+                const wordClusters = [];
+                Object.entries(clusters).forEach(([name, cluster]) => {
+                    if (cluster.words.includes(word)) {
+                        wordClusters.push(name);
+                    }
+                });
+
+                // Base random embedding
+                for (let i = 0; i < dims; i++) {
+                    embedding[i] = (Math.random() - 0.5) * 0.5;
+                }
+
+                // Add cluster-specific dimensions
+                const clusterOrder = Object.keys(clusters);
+                wordClusters.forEach(clusterName => {
+                    const clusterIdx = clusterOrder.indexOf(clusterName);
+                    // Boost specific dimensions for this cluster
+                    for (let i = 0; i < 5; i++) {
+                        const dimIdx = (clusterIdx * 5 + i) % dims;
+                        embedding[dimIdx] += (Math.random() * 0.5 + 0.5);
+                    }
+                });
+
+                // Special relationships
+                if (word === 'queen' || word === 'princess') {
+                    embedding[0] += 0.5; // Female dimension
+                }
+                if (word === 'king' || word === 'prince') {
+                    embedding[0] -= 0.5; // Male dimension
+                }
+                if (word === 'man' || word === 'boy' || word === 'father' || word === 'brother' || word === 'son') {
+                    embedding[0] -= 0.6;
+                }
+                if (word === 'woman' || word === 'girl' || word === 'mother' || word === 'sister' || word === 'daughter') {
+                    embedding[0] += 0.6;
+                }
+
+                // Normalize
+                const magnitude = Math.sqrt(embedding.reduce((sum, v) => sum + v * v, 0));
+                embeddings[word] = embedding.map(v => v / magnitude);
+            });
+
+            // Project to 2D/3D using simple PCA-like projection
+            projectEmbeddings();
+        }
+
+        function projectEmbeddings() {
+            // Simple projection using first 2-3 principal components
+            // (In reality, you'd use actual PCA or t-SNE)
+
+            words.forEach(word => {
+                const emb = embeddings[word];
+
+                // Use weighted sums of dimensions as x, y, z
+                let x = 0, y = 0, z = 0;
+                for (let i = 0; i < emb.length; i++) {
+                    x += emb[i] * Math.cos(i * 0.5);
+                    y += emb[i] * Math.sin(i * 0.5);
+                    z += emb[i] * Math.cos(i * 0.3 + 1);
+                }
+
+                projectedPositions[word] = { x: x * 100, y: y * 100, z: z * 100 };
+            });
+        }
+
+        // ============================================
+        // SIMILARITY FUNCTIONS
+        // ============================================
+
+        function cosineSimilarity(a, b) {
+            let dot = 0, magA = 0, magB = 0;
+            for (let i = 0; i < a.length; i++) {
+                dot += a[i] * b[i];
+                magA += a[i] * a[i];
+                magB += b[i] * b[i];
+            }
+            return dot / (Math.sqrt(magA) * Math.sqrt(magB));
+        }
+
+        function findSimilarWords(word, n = 10) {
+            if (!embeddings[word]) return [];
+
+            const emb = embeddings[word];
+            const similarities = [];
+
+            words.forEach(w => {
+                if (w !== word) {
+                    similarities.push({
+                        word: w,
+                        similarity: cosineSimilarity(emb, embeddings[w])
+                    });
+                }
+            });
+
+            similarities.sort((a, b) => b.similarity - a.similarity);
+            return similarities.slice(0, n);
+        }
+
+        function computeAnalogy(a, b, c) {
+            // a - b + c = ?
+            // king - man + woman = queen
+
+            if (!embeddings[a] || !embeddings[b] || !embeddings[c]) {
+                return null;
+            }
+
+            const result = embeddings[a].map((v, i) =>
+                v - embeddings[b][i] + embeddings[c][i]
+            );
+
+            // Normalize
+            const mag = Math.sqrt(result.reduce((sum, v) => sum + v * v, 0));
+            const normalized = result.map(v => v / mag);
+
+            // Find nearest word
+            let bestWord = null;
+            let bestSim = -Infinity;
+
+            words.forEach(word => {
+                if (word !== a && word !== b && word !== c) {
+                    const sim = cosineSimilarity(normalized, embeddings[word]);
+                    if (sim > bestSim) {
+                        bestSim = sim;
+                        bestWord = word;
+                    }
+                }
+            });
+
+            return { word: bestWord, similarity: bestSim };
+        }
+
+        // ============================================
+        // RENDERING
+        // ============================================
+
+        function resize() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+        }
+
+        function getWordColor(word) {
+            for (const [name, cluster] of Object.entries(clusters)) {
+                if (cluster.words.includes(word)) {
+                    return cluster.color;
+                }
+            }
+            return '#888';
+        }
+
+        function worldToScreen(pos) {
+            let x = pos.x;
+            let y = pos.y;
+            let z = pos.z || 0;
+
+            if (is3D) {
+                // Simple 3D rotation
+                const cosX = Math.cos(rotation3D.x);
+                const sinX = Math.sin(rotation3D.x);
+                const cosY = Math.cos(rotation3D.y);
+                const sinY = Math.sin(rotation3D.y);
+
+                const y1 = y * cosX - z * sinX;
+                const z1 = y * sinX + z * cosX;
+                const x1 = x * cosY + z1 * sinY;
+
+                x = x1;
+                y = y1;
+            }
+
+            return {
+                x: canvas.width / 2 + (x - viewX) * zoom,
+                y: canvas.height / 2 + (y - viewY) * zoom
+            };
+        }
+
+        function render() {
+            ctx.fillStyle = 'rgba(10, 10, 26, 1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw connections between selected words
+            if (selectedWords.size > 1) {
+                const selected = [...selectedWords];
+                ctx.strokeStyle = 'rgba(168, 85, 247, 0.2)';
+                ctx.lineWidth = 1;
+
+                for (let i = 0; i < selected.length; i++) {
+                    for (let j = i + 1; j < selected.length; j++) {
+                        const pos1 = worldToScreen(projectedPositions[selected[i]]);
+                        const pos2 = worldToScreen(projectedPositions[selected[j]]);
+
+                        ctx.beginPath();
+                        ctx.moveTo(pos1.x, pos1.y);
+                        ctx.lineTo(pos2.x, pos2.y);
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            // Draw words
+            words.forEach(word => {
+                const pos = worldToScreen(projectedPositions[word]);
+
+                // Check if on screen
+                if (pos.x < -50 || pos.x > canvas.width + 50 ||
+                    pos.y < -50 || pos.y > canvas.height + 50) {
+                    return;
+                }
+
+                const isSelected = selectedWords.has(word);
+                const isHovered = hoveredWord === word;
+                const color = getWordColor(word);
+
+                // Glow for selected/hovered
+                if (isSelected || isHovered) {
+                    const gradient = ctx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, 30);
+                    gradient.addColorStop(0, color + '40');
+                    gradient.addColorStop(1, 'transparent');
+                    ctx.fillStyle = gradient;
+                    ctx.beginPath();
+                    ctx.arc(pos.x, pos.y, 30, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // Point
+                const size = isSelected ? 8 : isHovered ? 6 : 4;
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, size, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Label
+                if (showLabels || isSelected || isHovered) {
+                    ctx.fillStyle = isSelected || isHovered ? '#fff' : 'rgba(255, 255, 255, 0.6)';
+                    ctx.font = (isSelected || isHovered) ? 'bold 12px sans-serif' : '10px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(word, pos.x, pos.y - size - 5);
+                }
+            });
+
+            // Update word count
+            document.getElementById('word-count').textContent = words.length;
+
+            requestAnimationFrame(render);
+        }
+
+        function updateSimilarWords(word) {
+            const container = document.getElementById('similar-words');
+
+            if (!embeddings[word]) {
+                container.innerHTML = '<div style="color: rgba(255,255,255,0.4); font-size: 12px; text-align: center; padding: 20px;">Word not found</div>';
+                return;
+            }
+
+            const similar = findSimilarWords(word);
+
+            container.innerHTML = similar.map(item => `
+                <div class="similar-item" data-word="${item.word}">
+                    <span class="similar-word">${item.word}</span>
+                    <div style="display: flex; align-items: center;">
+                        <span class="similarity-score">${(item.similarity * 100).toFixed(1)}%</span>
+                        <div class="similarity-bar">
+                            <div class="similarity-fill" style="width: ${item.similarity * 100}%"></div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            // Add click handlers
+            container.querySelectorAll('.similar-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const w = item.dataset.word;
+                    selectWord(w);
+                });
+            });
+        }
+
+        function selectWord(word) {
+            if (selectedWords.has(word)) {
+                selectedWords.delete(word);
+            } else {
+                selectedWords.add(word);
+            }
+            updateSelectedChips();
+
+            if (selectedWords.size === 1) {
+                updateSimilarWords([...selectedWords][0]);
+            }
+        }
+
+        function updateSelectedChips() {
+            const container = document.getElementById('selected-words');
+            container.innerHTML = [...selectedWords].map(word => `
+                <span class="word-chip selected" data-word="${word}">${word} ×</span>
+            `).join('');
+
+            container.querySelectorAll('.word-chip').forEach(chip => {
+                chip.addEventListener('click', () => {
+                    selectWord(chip.dataset.word);
+                });
+            });
+        }
+
+        function updateClusterLegend() {
+            const container = document.getElementById('cluster-legend');
+            container.innerHTML = Object.entries(clusters).map(([name, cluster]) => `
+                <div class="cluster-item">
+                    <div class="cluster-dot" style="background: ${cluster.color}"></div>
+                    <span>${name}</span>
+                </div>
+            `).join('');
+        }
+
+        // ============================================
+        // EVENT HANDLERS
+        // ============================================
+
+        function init() {
+            resize();
+            window.addEventListener('resize', resize);
+
+            generateEmbeddings();
+            updateClusterLegend();
+
+            // Mouse interaction
+            let isDragging = false;
+            let lastX, lastY;
+
+            canvas.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                lastX = e.clientX;
+                lastY = e.clientY;
+            });
+
+            canvas.addEventListener('mousemove', (e) => {
+                if (isDragging) {
+                    if (is3D) {
+                        rotation3D.y += (e.clientX - lastX) * 0.01;
+                        rotation3D.x += (e.clientY - lastY) * 0.01;
+                    } else {
+                        viewX -= (e.clientX - lastX) / zoom;
+                        viewY -= (e.clientY - lastY) / zoom;
+                    }
+                    lastX = e.clientX;
+                    lastY = e.clientY;
+                }
+
+                // Hover detection
+                const rect = canvas.getBoundingClientRect();
+                const mx = e.clientX - rect.left;
+                const my = e.clientY - rect.top;
+
+                hoveredWord = null;
+                words.forEach(word => {
+                    const pos = worldToScreen(projectedPositions[word]);
+                    const dist = Math.sqrt((mx - pos.x) ** 2 + (my - pos.y) ** 2);
+                    if (dist < 15) {
+                        hoveredWord = word;
+                    }
+                });
+
+                // Update tooltip
+                if (hoveredWord) {
+                    const pos = worldToScreen(projectedPositions[hoveredWord]);
+                    tooltip.style.left = (pos.x + 20) + 'px';
+                    tooltip.style.top = (pos.y) + 'px';
+                    document.getElementById('tooltip-word').textContent = hoveredWord;
+
+                    const similar = findSimilarWords(hoveredWord, 3);
+                    document.getElementById('tooltip-info').textContent =
+                        `Similar: ${similar.map(s => s.word).join(', ')}`;
+
+                    tooltip.classList.add('visible');
+                } else {
+                    tooltip.classList.remove('visible');
+                }
+            });
+
+            canvas.addEventListener('mouseup', () => isDragging = false);
+            canvas.addEventListener('mouseleave', () => {
+                isDragging = false;
+                tooltip.classList.remove('visible');
+            });
+
+            canvas.addEventListener('click', () => {
+                if (hoveredWord) {
+                    selectWord(hoveredWord);
+                }
+            });
+
+            canvas.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+                zoom *= zoomFactor;
+                zoom = Math.max(0.1, Math.min(10, zoom));
+            });
+
+            // Search
+            document.getElementById('search-btn').addEventListener('click', () => {
+                const word = document.getElementById('search-input').value.toLowerCase().trim();
+                if (embeddings[word]) {
+                    selectWord(word);
+                    // Center on word
+                    const pos = projectedPositions[word];
+                    viewX = pos.x;
+                    viewY = pos.y;
+                }
+                document.getElementById('search-input').value = '';
+            });
+
+            document.getElementById('search-input').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    document.getElementById('search-btn').click();
+                }
+            });
+
+            // Category chips
+            document.querySelectorAll('.word-chips .word-chip[data-words]').forEach(chip => {
+                chip.addEventListener('click', () => {
+                    const categoryWords = chip.dataset.words.split(',');
+                    selectedWords.clear();
+                    categoryWords.forEach(w => {
+                        if (embeddings[w]) selectedWords.add(w);
+                    });
+                    updateSelectedChips();
+                });
+            });
+
+            // Analogy computation
+            document.getElementById('compute-analogy').addEventListener('click', () => {
+                const a = document.getElementById('analogy-a').value.toLowerCase().trim();
+                const b = document.getElementById('analogy-b').value.toLowerCase().trim();
+                const c = document.getElementById('analogy-c').value.toLowerCase().trim();
+
+                const result = computeAnalogy(a, b, c);
+                if (result) {
+                    document.getElementById('analogy-result').textContent = result.word;
+                    selectWord(result.word);
+                } else {
+                    document.getElementById('analogy-result').textContent = '?';
+                }
+            });
+
+            // View controls
+            document.querySelectorAll('.dimension-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.dimension-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    is3D = btn.dataset.dim === '3d';
+                });
+            });
+
+            document.getElementById('reset-view').addEventListener('click', () => {
+                viewX = viewY = 0;
+                zoom = 1;
+                rotation3D = { x: 0, y: 0 };
+            });
+
+            document.getElementById('toggle-labels').addEventListener('click', () => {
+                showLabels = !showLabels;
+            });
+
+            render();
+        }
+
+        init();
+    </script>
+</body>
+</html>

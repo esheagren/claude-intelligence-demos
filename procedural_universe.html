@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Procedural Universe: Infinite Cosmos</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #000;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #fff;
+        }
+
+        #canvas {
+            display: block;
+            cursor: grab;
+        }
+
+        #canvas:active {
+            cursor: grabbing;
+        }
+
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+        }
+
+        .header {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            pointer-events: auto;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 300;
+            letter-spacing: 4px;
+            text-shadow: 0 0 30px rgba(100, 150, 255, 0.5);
+            margin-bottom: 8px;
+        }
+
+        .header .subtitle {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 2px;
+        }
+
+        .info-panel {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            background: rgba(0, 10, 30, 0.8);
+            border: 1px solid rgba(100, 150, 255, 0.2);
+            border-radius: 8px;
+            padding: 20px;
+            width: 300px;
+            pointer-events: auto;
+        }
+
+        .info-panel h3 {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #6af;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(100, 150, 255, 0.2);
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+
+        .info-label {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .info-value {
+            color: #fff;
+        }
+
+        .info-value.highlight {
+            color: #6af;
+        }
+
+        .selected-object {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            background: rgba(0, 10, 30, 0.9);
+            border: 1px solid rgba(100, 150, 255, 0.3);
+            border-radius: 8px;
+            padding: 20px;
+            max-width: 350px;
+            display: none;
+            pointer-events: auto;
+        }
+
+        .selected-object.visible {
+            display: block;
+        }
+
+        .object-name {
+            font-size: 18px;
+            color: #fff;
+            margin-bottom: 5px;
+        }
+
+        .object-type {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+        }
+
+        .object-description {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .object-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            font-size: 11px;
+        }
+
+        .stat {
+            background: rgba(100, 150, 255, 0.1);
+            padding: 8px;
+            border-radius: 4px;
+        }
+
+        .stat-label {
+            color: rgba(255, 255, 255, 0.5);
+            display: block;
+            margin-bottom: 3px;
+        }
+
+        .stat-value {
+            color: #fff;
+            font-size: 13px;
+        }
+
+        .controls {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: auto;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            background: rgba(100, 150, 255, 0.1);
+            border: 1px solid rgba(100, 150, 255, 0.3);
+            color: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            background: rgba(100, 150, 255, 0.2);
+            border-color: rgba(100, 150, 255, 0.5);
+        }
+
+        .scale-indicator {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .scale-bar {
+            width: 100px;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.3);
+            margin: 5px auto;
+        }
+
+        .minimap {
+            position: absolute;
+            top: 120px;
+            right: 30px;
+            width: 150px;
+            height: 150px;
+            background: rgba(0, 10, 30, 0.8);
+            border: 1px solid rgba(100, 150, 255, 0.2);
+            border-radius: 8px;
+            overflow: hidden;
+            pointer-events: auto;
+        }
+
+        #minimap-canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            pointer-events: none;
+        }
+
+        .crosshair::before,
+        .crosshair::after {
+            content: '';
+            position: absolute;
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .crosshair::before {
+            width: 100%;
+            height: 1px;
+            top: 50%;
+        }
+
+        .crosshair::after {
+            width: 1px;
+            height: 100%;
+            left: 50%;
+        }
+
+        .zoom-indicator {
+            position: absolute;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+            background: rgba(0, 10, 30, 0.8);
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(100, 150, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+
+    <div class="ui-layer">
+        <div class="header">
+            <h1>PROCEDURAL UNIVERSE</h1>
+            <div class="subtitle">Infinite Cosmos Generator</div>
+        </div>
+
+        <div class="info-panel">
+            <h3>Universe Statistics</h3>
+            <div class="info-row">
+                <span class="info-label">Visible Galaxies</span>
+                <span class="info-value" id="galaxy-count">0</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Visible Stars</span>
+                <span class="info-value" id="star-count">0</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Scale Level</span>
+                <span class="info-value highlight" id="scale-level">Galactic</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Position</span>
+                <span class="info-value" id="position">0, 0</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Seed</span>
+                <span class="info-value" id="seed">0</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Universe Age</span>
+                <span class="info-value" id="universe-age">13.8 Gy</span>
+            </div>
+        </div>
+
+        <div class="minimap">
+            <canvas id="minimap-canvas"></canvas>
+        </div>
+
+        <div class="selected-object" id="selected-object">
+            <div class="object-name" id="object-name"></div>
+            <div class="object-type" id="object-type"></div>
+            <div class="object-description" id="object-description"></div>
+            <div class="object-stats" id="object-stats"></div>
+        </div>
+
+        <div class="controls">
+            <button class="btn" id="regenerate">New Universe</button>
+            <button class="btn" id="warp">Random Warp</button>
+            <button class="btn" id="toggle-labels">Toggle Labels</button>
+        </div>
+
+        <div class="zoom-indicator" id="zoom-indicator">
+            Zoom: 1x | Scroll to zoom, drag to pan
+        </div>
+
+        <div class="crosshair"></div>
+
+        <div class="scale-indicator">
+            <div class="scale-bar"></div>
+            <span id="scale-text">1 million light-years</span>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // PROCEDURAL UNIVERSE GENERATOR
+        // An infinite, deterministic cosmos
+        // ============================================
+
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const minimapCanvas = document.getElementById('minimap-canvas');
+        const minimapCtx = minimapCanvas.getContext('2d');
+
+        // Universe state
+        let seed = Math.floor(Math.random() * 1000000);
+        let viewX = 0;
+        let viewY = 0;
+        let zoom = 1;
+        let showLabels = true;
+
+        // Scale levels
+        const SCALE_COSMIC = 0;      // Superclusters
+        const SCALE_GALACTIC = 1;    // Galaxy clusters
+        const SCALE_STELLAR = 2;     // Individual galaxies
+        const SCALE_PLANETARY = 3;   // Solar systems
+
+        // Object types
+        const TYPE_SUPERCLUSTER = 'supercluster';
+        const TYPE_GALAXY_CLUSTER = 'galaxy_cluster';
+        const TYPE_GALAXY = 'galaxy';
+        const TYPE_STAR = 'star';
+        const TYPE_PLANET = 'planet';
+
+        // Galaxy types
+        const GALAXY_TYPES = ['Spiral', 'Elliptical', 'Irregular', 'Lenticular', 'Ring'];
+
+        // Star spectral classes
+        const SPECTRAL_CLASSES = ['O', 'B', 'A', 'F', 'G', 'K', 'M'];
+        const STAR_COLORS = {
+            'O': '#9bb0ff',
+            'B': '#aabfff',
+            'A': '#cad7ff',
+            'F': '#f8f7ff',
+            'G': '#fff4ea',
+            'K': '#ffd2a1',
+            'M': '#ffcc6f'
+        };
+
+        // Selection
+        let selectedObject = null;
+        let hoveredObject = null;
+
+        // Visible objects cache
+        let visibleObjects = [];
+
+        // ============================================
+        // SEEDED RANDOM NUMBER GENERATOR
+        // ============================================
+
+        class SeededRandom {
+            constructor(seed) {
+                this.seed = seed;
+            }
+
+            next() {
+                this.seed = (this.seed * 1103515245 + 12345) & 0x7fffffff;
+                return this.seed / 0x7fffffff;
+            }
+
+            nextInt(min, max) {
+                return Math.floor(this.next() * (max - min + 1)) + min;
+            }
+
+            nextFloat(min, max) {
+                return this.next() * (max - min) + min;
+            }
+
+            pick(array) {
+                return array[this.nextInt(0, array.length - 1)];
+            }
+        }
+
+        // ============================================
+        // NAME GENERATORS
+        // ============================================
+
+        function generateGalaxyName(rng) {
+            const prefixes = ['Andromeda', 'Centaurus', 'Sculptor', 'Canes', 'Leo', 'Virgo', 'Coma', 'Perseus', 'Fornax', 'Eridanus', 'Hydra', 'Antlia', 'Dorado', 'Phoenix', 'Pavo', 'Tucana'];
+            const suffixes = ['Major', 'Minor', 'Dwarf', 'Prime', 'Alpha', 'Beta', 'Cluster', 'Cloud'];
+            const numbers = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+
+            if (rng.next() > 0.5) {
+                return `${rng.pick(prefixes)} ${rng.pick(suffixes)}`;
+            } else {
+                return `NGC ${rng.nextInt(1, 9999)}`;
+            }
+        }
+
+        function generateStarName(rng) {
+            const greek = ['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon', 'Zeta', 'Eta', 'Theta', 'Iota', 'Kappa', 'Lambda', 'Mu', 'Nu', 'Xi', 'Omicron', 'Pi', 'Rho', 'Sigma', 'Tau', 'Upsilon', 'Phi', 'Chi', 'Psi', 'Omega'];
+            const constellations = ['Centauri', 'Orionis', 'Cygni', 'Lyrae', 'Aquilae', 'Scorpii', 'Sagittarii', 'Tauri', 'Geminorum', 'Cancri'];
+
+            if (rng.next() > 0.7) {
+                return `${rng.pick(greek)} ${rng.pick(constellations)}`;
+            } else {
+                return `HD ${rng.nextInt(100000, 999999)}`;
+            }
+        }
+
+        function generatePlanetName(starName, index) {
+            const suffixes = ['b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'];
+            return `${starName} ${suffixes[index] || (index + 1)}`;
+        }
+
+        // ============================================
+        // OBJECT GENERATION
+        // ============================================
+
+        function getChunkSeed(chunkX, chunkY, baseSeed) {
+            // Create unique seed for each chunk
+            return (chunkX * 73856093 ^ chunkY * 19349663 ^ baseSeed) >>> 0;
+        }
+
+        function generateGalaxyCluster(worldX, worldY) {
+            const chunkSize = 10000;
+            const chunkX = Math.floor(worldX / chunkSize);
+            const chunkY = Math.floor(worldY / chunkSize);
+            const chunkSeed = getChunkSeed(chunkX, chunkY, seed);
+            const rng = new SeededRandom(chunkSeed);
+
+            const galaxies = [];
+            const galaxyCount = rng.nextInt(20, 100);
+
+            for (let i = 0; i < galaxyCount; i++) {
+                const gx = chunkX * chunkSize + rng.nextFloat(0, chunkSize);
+                const gy = chunkY * chunkSize + rng.nextFloat(0, chunkSize);
+
+                const galaxy = {
+                    type: TYPE_GALAXY,
+                    x: gx,
+                    y: gy,
+                    name: generateGalaxyName(rng),
+                    galaxyType: rng.pick(GALAXY_TYPES),
+                    size: rng.nextFloat(30, 150),
+                    starCount: rng.nextInt(100000000, 400000000000),
+                    age: rng.nextFloat(1, 13.5),
+                    luminosity: rng.nextFloat(0.1, 10),
+                    rotation: rng.nextFloat(0, Math.PI * 2),
+                    spiralArms: rng.nextInt(2, 6),
+                    color: `hsl(${rng.nextInt(200, 280)}, ${rng.nextInt(30, 70)}%, ${rng.nextInt(40, 70)}%)`
+                };
+
+                galaxies.push(galaxy);
+            }
+
+            return galaxies;
+        }
+
+        function generateStarsInGalaxy(galaxy) {
+            const galaxySeed = getChunkSeed(Math.floor(galaxy.x), Math.floor(galaxy.y), seed + 1000);
+            const rng = new SeededRandom(galaxySeed);
+
+            const stars = [];
+            const visibleStars = Math.min(500, Math.floor(galaxy.starCount / 1000000000));
+
+            for (let i = 0; i < visibleStars; i++) {
+                // Distribute stars according to galaxy shape
+                let sx, sy;
+                if (galaxy.galaxyType === 'Spiral') {
+                    const arm = rng.nextInt(0, galaxy.spiralArms - 1);
+                    const armAngle = (arm / galaxy.spiralArms) * Math.PI * 2;
+                    const dist = rng.nextFloat(0, 1) ** 0.5 * galaxy.size * 0.4;
+                    const spiralAngle = armAngle + dist * 0.1 + rng.nextFloat(-0.3, 0.3);
+                    sx = galaxy.x + Math.cos(spiralAngle + galaxy.rotation) * dist;
+                    sy = galaxy.y + Math.sin(spiralAngle + galaxy.rotation) * dist;
+                } else if (galaxy.galaxyType === 'Elliptical') {
+                    const angle = rng.nextFloat(0, Math.PI * 2);
+                    const dist = rng.nextFloat(0, 1) ** 0.5 * galaxy.size * 0.3;
+                    sx = galaxy.x + Math.cos(angle) * dist * 1.5;
+                    sy = galaxy.y + Math.sin(angle) * dist;
+                } else {
+                    const dist = rng.nextFloat(0, galaxy.size * 0.4);
+                    const angle = rng.nextFloat(0, Math.PI * 2);
+                    sx = galaxy.x + Math.cos(angle) * dist;
+                    sy = galaxy.y + Math.sin(angle) * dist;
+                }
+
+                const spectralClass = rng.pick(SPECTRAL_CLASSES);
+
+                const star = {
+                    type: TYPE_STAR,
+                    x: sx,
+                    y: sy,
+                    name: generateStarName(rng),
+                    spectralClass: spectralClass,
+                    color: STAR_COLORS[spectralClass],
+                    mass: rng.nextFloat(0.1, 50),
+                    radius: rng.nextFloat(0.1, 100),
+                    temperature: rng.nextInt(2500, 50000),
+                    luminosity: rng.nextFloat(0.0001, 100000),
+                    age: rng.nextFloat(0.001, galaxy.age),
+                    planetCount: rng.nextInt(0, 12),
+                    hasHabitableZone: rng.next() > 0.8,
+                    size: rng.nextFloat(1, 4)
+                };
+
+                stars.push(star);
+            }
+
+            return stars;
+        }
+
+        function generatePlanets(star) {
+            const starSeed = getChunkSeed(Math.floor(star.x * 1000), Math.floor(star.y * 1000), seed + 2000);
+            const rng = new SeededRandom(starSeed);
+
+            const planets = [];
+            const planetTypes = ['Rocky', 'Gas Giant', 'Ice Giant', 'Desert', 'Ocean', 'Volcanic', 'Earth-like', 'Frozen'];
+
+            for (let i = 0; i < star.planetCount; i++) {
+                const distance = (i + 1) * rng.nextFloat(0.3, 2);
+                const angle = rng.nextFloat(0, Math.PI * 2);
+
+                const planet = {
+                    type: TYPE_PLANET,
+                    x: star.x + Math.cos(angle) * distance * 0.001,
+                    y: star.y + Math.sin(angle) * distance * 0.001,
+                    name: generatePlanetName(star.name, i),
+                    planetType: rng.pick(planetTypes),
+                    radius: rng.nextFloat(0.1, 15),
+                    mass: rng.nextFloat(0.01, 1000),
+                    orbitalPeriod: distance ** 1.5,
+                    hasAtmosphere: rng.next() > 0.3,
+                    hasMoons: rng.nextInt(0, 20),
+                    temperature: Math.floor(star.temperature / (distance ** 0.5) / 10),
+                    habitability: star.hasHabitableZone && distance > 0.8 && distance < 1.5 ? rng.nextFloat(0, 1) : 0,
+                    orbitAngle: angle,
+                    orbitRadius: distance * 0.001,
+                    color: `hsl(${rng.nextInt(0, 360)}, ${rng.nextInt(20, 60)}%, ${rng.nextInt(30, 60)}%)`
+                };
+
+                planets.push(planet);
+            }
+
+            return planets;
+        }
+
+        // ============================================
+        // RENDERING
+        // ============================================
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            minimapCanvas.width = 150;
+            minimapCanvas.height = 150;
+        }
+
+        function worldToScreen(wx, wy) {
+            return {
+                x: (wx - viewX) * zoom + canvas.width / 2,
+                y: (wy - viewY) * zoom + canvas.height / 2
+            };
+        }
+
+        function screenToWorld(sx, sy) {
+            return {
+                x: (sx - canvas.width / 2) / zoom + viewX,
+                y: (sy - canvas.height / 2) / zoom + viewY
+            };
+        }
+
+        function getScaleLevel() {
+            if (zoom < 0.1) return SCALE_COSMIC;
+            if (zoom < 1) return SCALE_GALACTIC;
+            if (zoom < 50) return SCALE_STELLAR;
+            return SCALE_PLANETARY;
+        }
+
+        function render() {
+            ctx.fillStyle = '#000005';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const scaleLevel = getScaleLevel();
+            visibleObjects = [];
+
+            // Draw background stars
+            drawBackgroundStars();
+
+            // Draw cosmic web filaments at large scale
+            if (scaleLevel <= SCALE_GALACTIC) {
+                drawCosmicWeb();
+            }
+
+            // Get visible chunks and generate objects
+            const viewportWorld = {
+                left: screenToWorld(0, 0).x,
+                right: screenToWorld(canvas.width, 0).x,
+                top: screenToWorld(0, 0).y,
+                bottom: screenToWorld(0, canvas.height).y
+            };
+
+            // Draw galaxies
+            if (scaleLevel >= SCALE_GALACTIC) {
+                const chunkSize = 10000;
+                const startChunkX = Math.floor(viewportWorld.left / chunkSize) - 1;
+                const endChunkX = Math.ceil(viewportWorld.right / chunkSize) + 1;
+                const startChunkY = Math.floor(viewportWorld.top / chunkSize) - 1;
+                const endChunkY = Math.ceil(viewportWorld.bottom / chunkSize) + 1;
+
+                for (let cx = startChunkX; cx <= endChunkX; cx++) {
+                    for (let cy = startChunkY; cy <= endChunkY; cy++) {
+                        const galaxies = generateGalaxyCluster(cx * chunkSize, cy * chunkSize);
+                        galaxies.forEach(galaxy => {
+                            const screen = worldToScreen(galaxy.x, galaxy.y);
+                            if (screen.x > -100 && screen.x < canvas.width + 100 &&
+                                screen.y > -100 && screen.y < canvas.height + 100) {
+                                drawGalaxy(galaxy, screen, scaleLevel);
+                                visibleObjects.push(galaxy);
+
+                                // Draw stars if zoomed in enough
+                                if (scaleLevel >= SCALE_STELLAR && zoom > 5) {
+                                    const stars = generateStarsInGalaxy(galaxy);
+                                    stars.forEach(star => {
+                                        const starScreen = worldToScreen(star.x, star.y);
+                                        if (starScreen.x > -10 && starScreen.x < canvas.width + 10 &&
+                                            starScreen.y > -10 && starScreen.y < canvas.height + 10) {
+                                            drawStar(star, starScreen, scaleLevel);
+                                            visibleObjects.push(star);
+                                        }
+                                    });
+                                }
+                            }
+                        });
+                    }
+                }
+            }
+
+            // Update UI
+            updateUI();
+
+            // Render minimap
+            renderMinimap();
+
+            requestAnimationFrame(render);
+        }
+
+        function drawBackgroundStars() {
+            const rng = new SeededRandom(seed + 999);
+            const starDensity = 0.0003;
+            const count = canvas.width * canvas.height * starDensity;
+
+            for (let i = 0; i < count; i++) {
+                const x = rng.nextFloat(0, canvas.width);
+                const y = rng.nextFloat(0, canvas.height);
+                const brightness = rng.nextFloat(0.1, 0.6);
+                const size = rng.nextFloat(0.5, 1.5);
+
+                ctx.beginPath();
+                ctx.arc(x, y, size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 255, 255, ${brightness})`;
+                ctx.fill();
+            }
+        }
+
+        function drawCosmicWeb() {
+            const webRng = new SeededRandom(seed + 500);
+            const nodeCount = 50;
+            const nodes = [];
+
+            for (let i = 0; i < nodeCount; i++) {
+                nodes.push({
+                    x: webRng.nextFloat(-50000, 50000),
+                    y: webRng.nextFloat(-50000, 50000)
+                });
+            }
+
+            ctx.strokeStyle = 'rgba(50, 80, 150, 0.1)';
+            ctx.lineWidth = 1;
+
+            nodes.forEach((node, i) => {
+                nodes.forEach((other, j) => {
+                    if (i < j) {
+                        const dist = Math.sqrt((node.x - other.x) ** 2 + (node.y - other.y) ** 2);
+                        if (dist < 20000) {
+                            const screen1 = worldToScreen(node.x, node.y);
+                            const screen2 = worldToScreen(other.x, other.y);
+
+                            ctx.beginPath();
+                            ctx.moveTo(screen1.x, screen1.y);
+                            ctx.lineTo(screen2.x, screen2.y);
+                            ctx.stroke();
+                        }
+                    }
+                });
+            });
+        }
+
+        function drawGalaxy(galaxy, screen, scaleLevel) {
+            const screenSize = galaxy.size * zoom;
+
+            if (screenSize < 2) {
+                // Draw as point
+                ctx.beginPath();
+                ctx.arc(screen.x, screen.y, Math.max(1, screenSize), 0, Math.PI * 2);
+                ctx.fillStyle = galaxy.color;
+                ctx.fill();
+            } else {
+                // Draw detailed galaxy
+                ctx.save();
+                ctx.translate(screen.x, screen.y);
+                ctx.rotate(galaxy.rotation);
+
+                if (galaxy.galaxyType === 'Spiral') {
+                    drawSpiralGalaxy(galaxy, screenSize);
+                } else if (galaxy.galaxyType === 'Elliptical') {
+                    drawEllipticalGalaxy(galaxy, screenSize);
+                } else {
+                    drawIrregularGalaxy(galaxy, screenSize);
+                }
+
+                ctx.restore();
+
+                // Draw label
+                if (showLabels && screenSize > 20) {
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                    ctx.font = '11px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(galaxy.name, screen.x, screen.y + screenSize / 2 + 15);
+                }
+            }
+        }
+
+        function drawSpiralGalaxy(galaxy, size) {
+            const arms = galaxy.spiralArms;
+
+            // Core
+            const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, size * 0.15);
+            gradient.addColorStop(0, 'rgba(255, 255, 200, 0.8)');
+            gradient.addColorStop(1, 'rgba(255, 255, 200, 0)');
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(0, 0, size * 0.15, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Spiral arms
+            for (let arm = 0; arm < arms; arm++) {
+                const armAngle = (arm / arms) * Math.PI * 2;
+
+                ctx.beginPath();
+                for (let t = 0; t < 4; t += 0.1) {
+                    const angle = armAngle + t;
+                    const r = t * size * 0.1;
+                    const x = Math.cos(angle) * r;
+                    const y = Math.sin(angle) * r;
+
+                    if (t === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                ctx.strokeStyle = `rgba(100, 150, 255, ${0.3 - arm * 0.05})`;
+                ctx.lineWidth = size * 0.05;
+                ctx.stroke();
+            }
+
+            // Disk glow
+            const diskGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, size * 0.4);
+            diskGradient.addColorStop(0, 'rgba(100, 130, 200, 0.2)');
+            diskGradient.addColorStop(1, 'rgba(100, 130, 200, 0)');
+            ctx.fillStyle = diskGradient;
+            ctx.beginPath();
+            ctx.ellipse(0, 0, size * 0.4, size * 0.25, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawEllipticalGalaxy(galaxy, size) {
+            const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, size * 0.3);
+            gradient.addColorStop(0, 'rgba(255, 230, 180, 0.8)');
+            gradient.addColorStop(0.5, 'rgba(255, 200, 150, 0.4)');
+            gradient.addColorStop(1, 'rgba(255, 180, 120, 0)');
+
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.ellipse(0, 0, size * 0.3, size * 0.2, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawIrregularGalaxy(galaxy, size) {
+            const rng = new SeededRandom(Math.floor(galaxy.x * 100) + Math.floor(galaxy.y));
+
+            for (let i = 0; i < 20; i++) {
+                const x = rng.nextFloat(-size * 0.2, size * 0.2);
+                const y = rng.nextFloat(-size * 0.15, size * 0.15);
+                const r = rng.nextFloat(size * 0.02, size * 0.08);
+
+                const gradient = ctx.createRadialGradient(x, y, 0, x, y, r);
+                gradient.addColorStop(0, `rgba(${rng.nextInt(150, 255)}, ${rng.nextInt(150, 255)}, 255, 0.6)`);
+                gradient.addColorStop(1, 'rgba(100, 150, 255, 0)');
+
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(x, y, r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function drawStar(star, screen, scaleLevel) {
+            const screenSize = star.size * zoom * 0.1;
+
+            // Glow
+            const gradient = ctx.createRadialGradient(screen.x, screen.y, 0, screen.x, screen.y, screenSize * 3);
+            gradient.addColorStop(0, star.color);
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(screen.x, screen.y, screenSize * 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Core
+            ctx.fillStyle = star.color;
+            ctx.beginPath();
+            ctx.arc(screen.x, screen.y, screenSize, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Label for larger stars
+            if (showLabels && screenSize > 3 && zoom > 20) {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                ctx.font = '9px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(star.name, screen.x, screen.y + screenSize + 12);
+            }
+        }
+
+        function renderMinimap() {
+            minimapCtx.fillStyle = 'rgba(0, 5, 15, 0.9)';
+            minimapCtx.fillRect(0, 0, 150, 150);
+
+            // Draw some reference galaxies
+            const rng = new SeededRandom(seed);
+            for (let i = 0; i < 30; i++) {
+                const wx = rng.nextFloat(-50000, 50000);
+                const wy = rng.nextFloat(-50000, 50000);
+                const mx = 75 + (wx / 1000);
+                const my = 75 + (wy / 1000);
+
+                if (mx > 0 && mx < 150 && my > 0 && my < 150) {
+                    minimapCtx.fillStyle = 'rgba(100, 150, 255, 0.5)';
+                    minimapCtx.beginPath();
+                    minimapCtx.arc(mx, my, 2, 0, Math.PI * 2);
+                    minimapCtx.fill();
+                }
+            }
+
+            // Draw viewport indicator
+            const vpX = 75 + (viewX / 1000);
+            const vpY = 75 + (viewY / 1000);
+
+            minimapCtx.strokeStyle = '#fff';
+            minimapCtx.lineWidth = 1;
+            minimapCtx.strokeRect(vpX - 5, vpY - 5, 10, 10);
+        }
+
+        function updateUI() {
+            const scaleLevel = getScaleLevel();
+            const scaleNames = ['Cosmic', 'Galactic', 'Stellar', 'Planetary'];
+
+            document.getElementById('scale-level').textContent = scaleNames[scaleLevel];
+            document.getElementById('position').textContent = `${Math.floor(viewX)}, ${Math.floor(viewY)}`;
+            document.getElementById('seed').textContent = seed;
+            document.getElementById('zoom-indicator').textContent = `Zoom: ${zoom.toFixed(2)}x | Scroll to zoom, drag to pan`;
+
+            const galaxies = visibleObjects.filter(o => o.type === TYPE_GALAXY);
+            const stars = visibleObjects.filter(o => o.type === TYPE_STAR);
+
+            document.getElementById('galaxy-count').textContent = galaxies.length;
+            document.getElementById('star-count').textContent = stars.length;
+
+            // Scale indicator
+            const scaleUnits = [
+                '100 million light-years',
+                '10 million light-years',
+                '1 million light-years',
+                '100,000 light-years',
+                '10,000 light-years',
+                '1,000 light-years',
+                '100 light-years'
+            ];
+            const scaleIndex = Math.min(scaleUnits.length - 1, Math.max(0, Math.floor(Math.log10(zoom) + 3)));
+            document.getElementById('scale-text').textContent = scaleUnits[scaleIndex];
+        }
+
+        function showObjectInfo(obj) {
+            const panel = document.getElementById('selected-object');
+            document.getElementById('object-name').textContent = obj.name;
+
+            let typeText = obj.type.replace('_', ' ').toUpperCase();
+            if (obj.galaxyType) typeText += ` - ${obj.galaxyType}`;
+            if (obj.spectralClass) typeText += ` - Class ${obj.spectralClass}`;
+            document.getElementById('object-type').textContent = typeText;
+
+            let description = '';
+            let stats = '';
+
+            if (obj.type === TYPE_GALAXY) {
+                description = `A ${obj.galaxyType.toLowerCase()} galaxy containing approximately ${formatNumber(obj.starCount)} stars. ` +
+                    `This ancient structure formed ${obj.age.toFixed(1)} billion years ago.`;
+                stats = `
+                    <div class="stat"><span class="stat-label">Stars</span><span class="stat-value">${formatNumber(obj.starCount)}</span></div>
+                    <div class="stat"><span class="stat-label">Age</span><span class="stat-value">${obj.age.toFixed(1)} Gy</span></div>
+                    <div class="stat"><span class="stat-label">Luminosity</span><span class="stat-value">${obj.luminosity.toFixed(2)} L*</span></div>
+                    <div class="stat"><span class="stat-label">Type</span><span class="stat-value">${obj.galaxyType}</span></div>
+                `;
+            } else if (obj.type === TYPE_STAR) {
+                description = `A ${obj.spectralClass}-class star with ${obj.planetCount} known planets. ` +
+                    (obj.hasHabitableZone ? 'This star has a habitable zone where liquid water could exist.' : '');
+                stats = `
+                    <div class="stat"><span class="stat-label">Class</span><span class="stat-value">${obj.spectralClass}</span></div>
+                    <div class="stat"><span class="stat-label">Mass</span><span class="stat-value">${obj.mass.toFixed(2)} M☉</span></div>
+                    <div class="stat"><span class="stat-label">Temperature</span><span class="stat-value">${obj.temperature} K</span></div>
+                    <div class="stat"><span class="stat-label">Planets</span><span class="stat-value">${obj.planetCount}</span></div>
+                    <div class="stat"><span class="stat-label">Age</span><span class="stat-value">${obj.age.toFixed(2)} Gy</span></div>
+                    <div class="stat"><span class="stat-label">Luminosity</span><span class="stat-value">${obj.luminosity.toFixed(4)} L☉</span></div>
+                `;
+            }
+
+            document.getElementById('object-description').textContent = description;
+            document.getElementById('object-stats').innerHTML = stats;
+
+            panel.classList.add('visible');
+            selectedObject = obj;
+        }
+
+        function formatNumber(num) {
+            if (num >= 1e12) return (num / 1e12).toFixed(1) + ' trillion';
+            if (num >= 1e9) return (num / 1e9).toFixed(1) + ' billion';
+            if (num >= 1e6) return (num / 1e6).toFixed(1) + ' million';
+            if (num >= 1e3) return (num / 1e3).toFixed(1) + ' thousand';
+            return num.toString();
+        }
+
+        // ============================================
+        // INPUT HANDLING
+        // ============================================
+
+        let isDragging = false;
+        let lastMouseX, lastMouseY;
+
+        canvas.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                const dx = e.clientX - lastMouseX;
+                const dy = e.clientY - lastMouseY;
+                viewX -= dx / zoom;
+                viewY -= dy / zoom;
+                lastMouseX = e.clientX;
+                lastMouseY = e.clientY;
+            }
+
+            // Check for hover
+            const worldPos = screenToWorld(e.clientX, e.clientY);
+            let closest = null;
+            let closestDist = Infinity;
+
+            visibleObjects.forEach(obj => {
+                const dist = Math.sqrt((obj.x - worldPos.x) ** 2 + (obj.y - worldPos.y) ** 2);
+                const threshold = (obj.size || 10) / zoom;
+                if (dist < threshold && dist < closestDist) {
+                    closest = obj;
+                    closestDist = dist;
+                }
+            });
+
+            hoveredObject = closest;
+            canvas.style.cursor = closest ? 'pointer' : 'grab';
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        canvas.addEventListener('click', (e) => {
+            if (hoveredObject) {
+                showObjectInfo(hoveredObject);
+            } else {
+                document.getElementById('selected-object').classList.remove('visible');
+                selectedObject = null;
+            }
+        });
+
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+            zoom *= zoomFactor;
+            zoom = Math.max(0.01, Math.min(1000, zoom));
+        });
+
+        // Controls
+        document.getElementById('regenerate').addEventListener('click', () => {
+            seed = Math.floor(Math.random() * 1000000);
+            viewX = 0;
+            viewY = 0;
+            zoom = 1;
+        });
+
+        document.getElementById('warp').addEventListener('click', () => {
+            const rng = new SeededRandom(Date.now());
+            viewX = rng.nextFloat(-50000, 50000);
+            viewY = rng.nextFloat(-50000, 50000);
+        });
+
+        document.getElementById('toggle-labels').addEventListener('click', () => {
+            showLabels = !showLabels;
+        });
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+
+        function init() {
+            resize();
+            window.addEventListener('resize', resize);
+            render();
+        }
+
+        init();
+    </script>
+</body>
+</html>

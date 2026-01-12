@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doodle Jump</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(180deg, #f5f5dc 0%, #ffe4b5 100%);
+            font-family: 'Comic Sans MS', 'Segoe UI', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        h1 {
+            font-size: 42px;
+            color: #2e7d32;
+            text-shadow: 2px 2px 0 #1b5e20;
+            margin-bottom: 15px;
+        }
+
+        .stats-bar {
+            display: flex;
+            gap: 40px;
+            margin-bottom: 15px;
+        }
+
+        .stat {
+            text-align: center;
+            background: rgba(46, 125, 50, 0.2);
+            padding: 10px 25px;
+            border-radius: 15px;
+            border: 2px dashed #2e7d32;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #2e7d32;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #558b2f;
+        }
+
+        .game-container {
+            position: relative;
+            border: 4px solid #2e7d32;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            background: #f5f5dc;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(245, 245, 220, 0.95);
+            text-align: center;
+            z-index: 10;
+        }
+
+        .overlay.hidden {
+            display: none;
+        }
+
+        .overlay h2 {
+            font-size: 36px;
+            color: #2e7d32;
+            margin-bottom: 20px;
+        }
+
+        .overlay p {
+            font-size: 16px;
+            color: #558b2f;
+            margin-bottom: 10px;
+        }
+
+        .overlay .score-big {
+            font-size: 64px;
+            font-weight: bold;
+            color: #2e7d32;
+            margin: 15px 0;
+        }
+
+        .overlay button {
+            padding: 15px 40px;
+            font-size: 20px;
+            background: #4caf50;
+            border: none;
+            border-radius: 25px;
+            color: #fff;
+            cursor: pointer;
+            font-family: inherit;
+            box-shadow: 0 4px 0 #2e7d32;
+            transition: all 0.1s;
+            margin-top: 15px;
+        }
+
+        .overlay button:hover {
+            background: #66bb6a;
+        }
+
+        .overlay button:active {
+            transform: translateY(4px);
+            box-shadow: none;
+        }
+
+        .instructions {
+            font-size: 14px;
+            color: #777;
+            margin-top: 15px;
+            line-height: 1.6;
+        }
+
+        .platform-legend {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #555;
+        }
+
+        .legend-color {
+            width: 30px;
+            height: 12px;
+            border-radius: 6px;
+        }
+
+        .new-best {
+            color: #ff9800;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Doodle Jump</h1>
+
+    <div class="stats-bar">
+        <div class="stat">
+            <div class="stat-value" id="currentScore">0</div>
+            <div class="stat-label">Height</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value" id="bestScore">0</div>
+            <div class="stat-label">Best</div>
+        </div>
+    </div>
+
+    <div class="game-container">
+        <canvas id="game" width="400" height="600"></canvas>
+
+        <div class="overlay" id="startOverlay">
+            <h2>Doodle Jump</h2>
+            <p>Jump from platform to platform!</p>
+            <p>Climb as high as you can!</p>
+
+            <div class="platform-legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #4caf50;"></div>
+                    <span>Normal</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #2196f3;"></div>
+                    <span>Moving</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #9c27b0;"></div>
+                    <span>Spring</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #f44336;"></div>
+                    <span>Breakable</span>
+                </div>
+            </div>
+
+            <button id="startBtn">Start</button>
+
+            <p class="instructions">
+                Use arrow keys or tilt device to move<br>
+                You wrap around the screen edges!
+            </p>
+        </div>
+
+        <div class="overlay hidden" id="gameOverOverlay">
+            <h2>Game Over!</h2>
+            <div class="score-big" id="finalScore">0</div>
+            <p>Height Reached</p>
+            <p id="newBestText" class="new-best" style="display: none;">New Record!</p>
+            <button id="restartBtn">Try Again</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('game');
+        const ctx = canvas.getContext('2d');
+
+        // Game constants
+        const GRAVITY = 0.35;
+        const JUMP_POWER = -12;
+        const SPRING_POWER = -18;
+        const PLAYER_WIDTH = 40;
+        const PLAYER_HEIGHT = 40;
+        const PLATFORM_WIDTH = 70;
+        const PLATFORM_HEIGHT = 15;
+        const MOVE_SPEED = 6;
+
+        // Game state
+        let player = {
+            x: 180,
+            y: 400,
+            vx: 0,
+            vy: 0,
+            facingRight: true
+        };
+
+        let platforms = [];
+        let score = 0;
+        let bestScore = 0;
+        let gameRunning = false;
+        let animationId = null;
+        let cameraY = 0;
+        let maxHeight = 0;
+
+        // Controls
+        let keys = {
+            left: false,
+            right: false
+        };
+
+        // Platform types
+        const PLATFORM_NORMAL = 'normal';
+        const PLATFORM_MOVING = 'moving';
+        const PLATFORM_SPRING = 'spring';
+        const PLATFORM_BREAKABLE = 'breakable';
+
+        function init() {
+            bestScore = parseInt(localStorage.getItem('doodlejump-best') || '0');
+            document.getElementById('bestScore').textContent = bestScore;
+
+            // Event listeners
+            document.getElementById('startBtn').addEventListener('click', startGame);
+            document.getElementById('restartBtn').addEventListener('click', startGame);
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = true;
+                if (e.key === 'ArrowRight' || e.key === 'd') keys.right = true;
+            });
+
+            document.addEventListener('keyup', (e) => {
+                if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = false;
+                if (e.key === 'ArrowRight' || e.key === 'd') keys.right = false;
+            });
+
+            // Touch/tilt controls
+            if (window.DeviceOrientationEvent) {
+                window.addEventListener('deviceorientation', (e) => {
+                    if (!gameRunning) return;
+                    const tilt = e.gamma; // -90 to 90
+                    if (tilt !== null) {
+                        player.vx = tilt * 0.3;
+                    }
+                });
+            }
+
+            // Touch controls fallback
+            canvas.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                const rect = canvas.getBoundingClientRect();
+                const x = e.touches[0].clientX - rect.left;
+                if (x < canvas.width / 2) {
+                    keys.left = true;
+                    keys.right = false;
+                } else {
+                    keys.right = true;
+                    keys.left = false;
+                }
+            });
+
+            canvas.addEventListener('touchend', () => {
+                keys.left = false;
+                keys.right = false;
+            });
+
+            // Initial render
+            generateInitialPlatforms();
+            render();
+        }
+
+        function generateInitialPlatforms() {
+            platforms = [];
+            // Starting platform
+            platforms.push({
+                x: 180 - PLATFORM_WIDTH / 2,
+                y: 450,
+                type: PLATFORM_NORMAL,
+                broken: false,
+                moveDir: 1,
+                springBounced: false
+            });
+
+            // Generate more platforms
+            for (let y = 350; y > -1000; y -= 80 + Math.random() * 40) {
+                addPlatform(y);
+            }
+        }
+
+        function addPlatform(y) {
+            const x = Math.random() * (canvas.width - PLATFORM_WIDTH);
+
+            // Determine platform type based on height
+            let type = PLATFORM_NORMAL;
+            const rand = Math.random();
+            const difficultyFactor = Math.min(1, Math.abs(y) / 10000);
+
+            if (rand < 0.1 + difficultyFactor * 0.1) {
+                type = PLATFORM_BREAKABLE;
+            } else if (rand < 0.2 + difficultyFactor * 0.15) {
+                type = PLATFORM_MOVING;
+            } else if (rand < 0.25) {
+                type = PLATFORM_SPRING;
+            }
+
+            platforms.push({
+                x: x,
+                y: y,
+                type: type,
+                broken: false,
+                moveDir: Math.random() < 0.5 ? 1 : -1,
+                springBounced: false
+            });
+        }
+
+        function startGame() {
+            // Reset game state
+            player = {
+                x: 180,
+                y: 400,
+                vx: 0,
+                vy: 0,
+                facingRight: true
+            };
+
+            cameraY = 0;
+            maxHeight = 0;
+            score = 0;
+            gameRunning = true;
+
+            generateInitialPlatforms();
+
+            document.getElementById('currentScore').textContent = score;
+            document.getElementById('startOverlay').classList.add('hidden');
+            document.getElementById('gameOverOverlay').classList.add('hidden');
+
+            // Start game loop
+            if (animationId) cancelAnimationFrame(animationId);
+            gameLoop();
+        }
+
+        function gameLoop() {
+            update();
+            render();
+
+            if (gameRunning) {
+                animationId = requestAnimationFrame(gameLoop);
+            }
+        }
+
+        function update() {
+            // Handle input
+            if (keys.left) {
+                player.vx = -MOVE_SPEED;
+                player.facingRight = false;
+            } else if (keys.right) {
+                player.vx = MOVE_SPEED;
+                player.facingRight = true;
+            } else {
+                player.vx *= 0.8; // Friction
+            }
+
+            // Apply gravity
+            player.vy += GRAVITY;
+
+            // Move player
+            player.x += player.vx;
+            player.y += player.vy;
+
+            // Screen wrap
+            if (player.x + PLAYER_WIDTH < 0) {
+                player.x = canvas.width;
+            } else if (player.x > canvas.width) {
+                player.x = -PLAYER_WIDTH;
+            }
+
+            // Update moving platforms
+            for (const platform of platforms) {
+                if (platform.type === PLATFORM_MOVING && !platform.broken) {
+                    platform.x += platform.moveDir * 2;
+                    if (platform.x <= 0 || platform.x + PLATFORM_WIDTH >= canvas.width) {
+                        platform.moveDir *= -1;
+                    }
+                }
+            }
+
+            // Check platform collisions (only when falling)
+            if (player.vy > 0) {
+                for (const platform of platforms) {
+                    if (platform.broken) continue;
+
+                    const playerBottom = player.y + PLAYER_HEIGHT;
+                    const platformTop = platform.y - cameraY;
+
+                    if (playerBottom >= platformTop &&
+                        playerBottom <= platformTop + PLATFORM_HEIGHT + player.vy &&
+                        player.x + PLAYER_WIDTH > platform.x &&
+                        player.x < platform.x + PLATFORM_WIDTH) {
+
+                        if (platform.type === PLATFORM_BREAKABLE) {
+                            platform.broken = true;
+                        } else if (platform.type === PLATFORM_SPRING) {
+                            player.vy = SPRING_POWER;
+                            platform.springBounced = true;
+                            setTimeout(() => platform.springBounced = false, 200);
+                        } else {
+                            player.vy = JUMP_POWER;
+                        }
+
+                        player.y = platformTop - PLAYER_HEIGHT;
+                    }
+                }
+            }
+
+            // Update camera (scroll up)
+            const scrollThreshold = canvas.height / 3;
+            if (player.y < scrollThreshold) {
+                const diff = scrollThreshold - player.y;
+                cameraY -= diff;
+                player.y = scrollThreshold;
+
+                // Update max height and score
+                const newHeight = Math.floor(-cameraY / 10);
+                if (newHeight > maxHeight) {
+                    maxHeight = newHeight;
+                    score = maxHeight;
+                    document.getElementById('currentScore').textContent = score;
+                }
+            }
+
+            // Generate new platforms as we go up
+            const highestPlatform = Math.min(...platforms.map(p => p.y));
+            while (highestPlatform > cameraY - 200) {
+                const newY = highestPlatform - (80 + Math.random() * 40);
+                addPlatform(newY);
+                break;
+            }
+
+            // Remove platforms that are off screen (below)
+            platforms = platforms.filter(p => p.y - cameraY < canvas.height + 100);
+
+            // Check game over (fell below screen)
+            if (player.y > canvas.height + 50) {
+                gameOver();
+            }
+        }
+
+        function gameOver() {
+            gameRunning = false;
+
+            // Check for new best
+            let newBest = false;
+            if (score > bestScore) {
+                bestScore = score;
+                localStorage.setItem('doodlejump-best', bestScore.toString());
+                document.getElementById('bestScore').textContent = bestScore;
+                newBest = true;
+            }
+
+            // Show game over screen
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('newBestText').style.display = newBest ? 'block' : 'none';
+            document.getElementById('gameOverOverlay').classList.remove('hidden');
+        }
+
+        function render() {
+            // Clear with background
+            ctx.fillStyle = '#f5f5dc';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw grid paper lines
+            ctx.strokeStyle = 'rgba(200, 200, 180, 0.5)';
+            ctx.lineWidth = 1;
+            for (let y = 0; y < canvas.height; y += 20) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+            for (let x = 0; x < canvas.width; x += 20) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+
+            // Draw platforms
+            for (const platform of platforms) {
+                const screenY = platform.y - cameraY;
+                if (screenY > canvas.height + 50 || screenY < -50) continue;
+
+                if (platform.broken) {
+                    // Draw broken platform pieces
+                    drawBrokenPlatform(platform.x, screenY);
+                } else {
+                    drawPlatform(platform.x, screenY, platform.type, platform.springBounced);
+                }
+            }
+
+            // Draw player
+            drawPlayer(player.x, player.y);
+        }
+
+        function drawPlatform(x, y, type, springBounced) {
+            ctx.save();
+
+            let color;
+            switch (type) {
+                case PLATFORM_MOVING:
+                    color = '#2196f3';
+                    break;
+                case PLATFORM_SPRING:
+                    color = '#9c27b0';
+                    break;
+                case PLATFORM_BREAKABLE:
+                    color = '#f44336';
+                    break;
+                default:
+                    color = '#4caf50';
+            }
+
+            // Platform body
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.roundRect(x, y, PLATFORM_WIDTH, PLATFORM_HEIGHT, 8);
+            ctx.fill();
+
+            // Highlight
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.beginPath();
+            ctx.roundRect(x + 3, y + 2, PLATFORM_WIDTH - 6, 5, 3);
+            ctx.fill();
+
+            // Spring on spring platforms
+            if (type === PLATFORM_SPRING) {
+                const springHeight = springBounced ? 5 : 15;
+                ctx.fillStyle = '#ce93d8';
+                ctx.fillRect(x + PLATFORM_WIDTH / 2 - 8, y - springHeight, 16, springHeight);
+
+                // Spring coil lines
+                ctx.strokeStyle = '#7b1fa2';
+                ctx.lineWidth = 2;
+                for (let i = 0; i < 3; i++) {
+                    const lineY = y - springHeight + 3 + i * (springHeight / 3);
+                    ctx.beginPath();
+                    ctx.moveTo(x + PLATFORM_WIDTH / 2 - 6, lineY);
+                    ctx.lineTo(x + PLATFORM_WIDTH / 2 + 6, lineY);
+                    ctx.stroke();
+                }
+            }
+
+            // Cracks on breakable platforms
+            if (type === PLATFORM_BREAKABLE) {
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(x + 20, y);
+                ctx.lineTo(x + 25, y + PLATFORM_HEIGHT);
+                ctx.moveTo(x + 45, y);
+                ctx.lineTo(x + 50, y + PLATFORM_HEIGHT);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        function drawBrokenPlatform(x, y) {
+            ctx.fillStyle = '#f44336';
+
+            // Left piece
+            ctx.save();
+            ctx.translate(x + 15, y + 20);
+            ctx.rotate(0.3);
+            ctx.fillRect(-15, -8, 25, 10);
+            ctx.restore();
+
+            // Right piece
+            ctx.save();
+            ctx.translate(x + 55, y + 25);
+            ctx.rotate(-0.4);
+            ctx.fillRect(-15, -8, 25, 10);
+            ctx.restore();
+        }
+
+        function drawPlayer(x, y) {
+            ctx.save();
+            ctx.translate(x + PLAYER_WIDTH / 2, y + PLAYER_HEIGHT / 2);
+
+            // Flip if facing left
+            if (!player.facingRight) {
+                ctx.scale(-1, 1);
+            }
+
+            // Body (green doodle creature)
+            ctx.fillStyle = '#8bc34a';
+            ctx.beginPath();
+            ctx.ellipse(0, 5, 18, 15, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Head
+            ctx.fillStyle = '#8bc34a';
+            ctx.beginPath();
+            ctx.arc(0, -8, 14, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Eyes (white)
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.ellipse(-5, -10, 6, 7, 0, 0, Math.PI * 2);
+            ctx.ellipse(7, -10, 6, 7, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Pupils
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(-3, -10, 3, 0, Math.PI * 2);
+            ctx.arc(9, -10, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Mouth
+            ctx.strokeStyle = '#33691e';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(3, -3, 5, 0.2, Math.PI - 0.2);
+            ctx.stroke();
+
+            // Nose/snout
+            ctx.fillStyle = '#7cb342';
+            ctx.beginPath();
+            ctx.ellipse(12, -6, 5, 4, 0.3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Nostrils
+            ctx.fillStyle = '#558b2f';
+            ctx.beginPath();
+            ctx.arc(14, -7, 1.5, 0, Math.PI * 2);
+            ctx.arc(14, -4, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Feet
+            ctx.fillStyle = '#689f38';
+            ctx.beginPath();
+            ctx.ellipse(-10, 18, 6, 4, -0.3, 0, Math.PI * 2);
+            ctx.ellipse(10, 18, 6, 4, 0.3, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        // Initialize
+        init();
+    </script>
+</body>
+</html>

@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Reasoning Engine</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a0a2a 50%, #0a1a2a 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #00ffaa, #00aaff, #aa00ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 30px;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            gap: 20px;
+        }
+
+        .panel {
+            background: rgba(20, 20, 40, 0.8);
+            border: 1px solid #333;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .panel h2 {
+            color: #00aaff;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+
+        .knowledge-base {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .fact {
+            background: rgba(0, 100, 150, 0.2);
+            border-left: 3px solid #00aaff;
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .fact:hover {
+            background: rgba(0, 100, 150, 0.4);
+        }
+
+        .fact.rule {
+            border-left-color: #aa00ff;
+            background: rgba(100, 0, 150, 0.2);
+        }
+
+        .fact.rule:hover {
+            background: rgba(100, 0, 150, 0.4);
+        }
+
+        .reasoning-canvas {
+            height: 500px;
+            position: relative;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        #reasoningGraph {
+            width: 100%;
+            height: 100%;
+        }
+
+        .input-section {
+            margin-top: 20px;
+        }
+
+        .input-section input, .input-section select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid #444;
+            border-radius: 5px;
+            color: #fff;
+            font-family: inherit;
+        }
+
+        .input-section button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(90deg, #00aaff, #00ffaa);
+            border: none;
+            border-radius: 5px;
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 10px;
+        }
+
+        .input-section button:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 20px rgba(0, 170, 255, 0.5);
+        }
+
+        .inference-log {
+            max-height: 300px;
+            overflow-y: auto;
+            font-size: 0.85em;
+        }
+
+        .log-entry {
+            padding: 8px;
+            margin-bottom: 5px;
+            border-radius: 3px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .log-entry.step {
+            background: rgba(0, 150, 100, 0.2);
+            border-left: 3px solid #00ff88;
+        }
+
+        .log-entry.conclusion {
+            background: rgba(255, 200, 0, 0.2);
+            border-left: 3px solid #ffcc00;
+        }
+
+        .log-entry.error {
+            background: rgba(255, 50, 50, 0.2);
+            border-left: 3px solid #ff3333;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .stat {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5em;
+            color: #00ffaa;
+        }
+
+        .stat-label {
+            font-size: 0.8em;
+            color: #888;
+        }
+
+        .mode-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 8px;
+            background: rgba(100, 100, 100, 0.3);
+            border: 1px solid #444;
+            border-radius: 5px;
+            color: #aaa;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .mode-btn.active {
+            background: rgba(0, 170, 255, 0.3);
+            border-color: #00aaff;
+            color: #fff;
+        }
+
+        .example-queries {
+            margin-top: 15px;
+        }
+
+        .example-query {
+            padding: 8px;
+            background: rgba(50, 50, 80, 0.5);
+            border-radius: 5px;
+            margin-bottom: 5px;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: all 0.3s;
+        }
+
+        .example-query:hover {
+            background: rgba(80, 80, 120, 0.5);
+        }
+
+        .proof-tree {
+            font-family: monospace;
+            font-size: 0.8em;
+            white-space: pre;
+            overflow-x: auto;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Interactive Reasoning Engine</h1>
+        <p class="subtitle">Forward & Backward Chaining | Unification | Proof Trees</p>
+
+        <div class="main-layout">
+            <div class="panel">
+                <h2>Knowledge Base</h2>
+                <div class="mode-buttons">
+                    <button class="mode-btn active" data-mode="facts">Facts</button>
+                    <button class="mode-btn" data-mode="rules">Rules</button>
+                </div>
+                <div class="knowledge-base" id="knowledgeBase"></div>
+
+                <div class="input-section">
+                    <input type="text" id="newFact" placeholder="Add fact: parent(tom, mary)">
+                    <button onclick="addFact()">Add Fact</button>
+                    <input type="text" id="newRule" placeholder="Add rule: grandparent(X,Z) :- parent(X,Y), parent(Y,Z)">
+                    <button onclick="addRule()">Add Rule</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>Reasoning Visualization</h2>
+                <div class="reasoning-canvas">
+                    <canvas id="reasoningGraph"></canvas>
+                </div>
+                <div class="proof-tree" id="proofTree"></div>
+            </div>
+
+            <div class="panel">
+                <h2>Query Interface</h2>
+                <div class="input-section">
+                    <select id="reasoningMode">
+                        <option value="backward">Backward Chaining (Goal-driven)</option>
+                        <option value="forward">Forward Chaining (Data-driven)</option>
+                    </select>
+                    <input type="text" id="query" placeholder="Query: grandparent(X, mary)">
+                    <button onclick="executeQuery()">Execute Query</button>
+                    <button onclick="stepQuery()">Step Through</button>
+                </div>
+
+                <div class="example-queries">
+                    <div class="example-query" onclick="setQuery('parent(tom, X)')">parent(tom, X)</div>
+                    <div class="example-query" onclick="setQuery('grandparent(X, Y)')">grandparent(X, Y)</div>
+                    <div class="example-query" onclick="setQuery('ancestor(X, mary)')">ancestor(X, mary)</div>
+                    <div class="example-query" onclick="setQuery('mortal(X)')">mortal(X)</div>
+                </div>
+
+                <h2 style="margin-top: 20px;">Inference Log</h2>
+                <div class="inference-log" id="inferenceLog"></div>
+
+                <div class="stats">
+                    <div class="stat">
+                        <div class="stat-value" id="factCount">0</div>
+                        <div class="stat-label">Facts</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="ruleCount">0</div>
+                        <div class="stat-label">Rules</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="inferenceSteps">0</div>
+                        <div class="stat-label">Steps</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="solutions">0</div>
+                        <div class="stat-label">Solutions</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Knowledge representation
+        let facts = [];
+        let rules = [];
+        let inferenceSteps = 0;
+        let currentSolutions = [];
+        let graphNodes = [];
+        let graphEdges = [];
+        let animationFrame = null;
+
+        const canvas = document.getElementById('reasoningGraph');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // Parse a term like "parent(tom, mary)" or variable "X"
+        function parseTerm(str) {
+            str = str.trim();
+            const match = str.match(/^(\w+)\((.+)\)$/);
+            if (match) {
+                const functor = match[1];
+                const argsStr = match[2];
+                const args = parseArgs(argsStr);
+                return { type: 'compound', functor, args };
+            } else if (str.match(/^[A-Z_]\w*$/)) {
+                return { type: 'variable', name: str };
+            } else {
+                return { type: 'atom', value: str };
+            }
+        }
+
+        function parseArgs(str) {
+            const args = [];
+            let depth = 0;
+            let current = '';
+            for (let char of str) {
+                if (char === '(' ) depth++;
+                else if (char === ')') depth--;
+                else if (char === ',' && depth === 0) {
+                    args.push(parseTerm(current));
+                    current = '';
+                    continue;
+                }
+                current += char;
+            }
+            if (current.trim()) args.push(parseTerm(current));
+            return args;
+        }
+
+        // Parse a rule like "grandparent(X,Z) :- parent(X,Y), parent(Y,Z)"
+        function parseRule(str) {
+            const parts = str.split(':-').map(s => s.trim());
+            const head = parseTerm(parts[0]);
+            const body = parts[1] ? parts[1].split(/,(?![^(]*\))/).map(s => parseTerm(s.trim())) : [];
+            return { head, body };
+        }
+
+        // Unification algorithm
+        function unify(term1, term2, substitution = {}) {
+            const sub = { ...substitution };
+
+            function apply(term, sub) {
+                if (term.type === 'variable') {
+                    if (sub[term.name]) return apply(sub[term.name], sub);
+                    return term;
+                } else if (term.type === 'compound') {
+                    return {
+                        type: 'compound',
+                        functor: term.functor,
+                        args: term.args.map(a => apply(a, sub))
+                    };
+                }
+                return term;
+            }
+
+            function unifyTerms(t1, t2, sub) {
+                t1 = apply(t1, sub);
+                t2 = apply(t2, sub);
+
+                if (t1.type === 'variable') {
+                    if (t2.type === 'variable' && t1.name === t2.name) return sub;
+                    return { ...sub, [t1.name]: t2 };
+                }
+                if (t2.type === 'variable') {
+                    return { ...sub, [t2.name]: t1 };
+                }
+                if (t1.type === 'atom' && t2.type === 'atom') {
+                    return t1.value === t2.value ? sub : null;
+                }
+                if (t1.type === 'compound' && t2.type === 'compound') {
+                    if (t1.functor !== t2.functor) return null;
+                    if (t1.args.length !== t2.args.length) return null;
+                    for (let i = 0; i < t1.args.length; i++) {
+                        sub = unifyTerms(t1.args[i], t2.args[i], sub);
+                        if (sub === null) return null;
+                    }
+                    return sub;
+                }
+                return null;
+            }
+
+            return unifyTerms(term1, term2, sub);
+        }
+
+        // Rename variables in a rule to avoid clashes
+        let varCounter = 0;
+        function renameVariables(rule) {
+            const mapping = {};
+            function rename(term) {
+                if (term.type === 'variable') {
+                    if (!mapping[term.name]) {
+                        mapping[term.name] = { type: 'variable', name: `_V${varCounter++}` };
+                    }
+                    return mapping[term.name];
+                } else if (term.type === 'compound') {
+                    return {
+                        type: 'compound',
+                        functor: term.functor,
+                        args: term.args.map(rename)
+                    };
+                }
+                return term;
+            }
+            return {
+                head: rename(rule.head),
+                body: rule.body.map(rename)
+            };
+        }
+
+        // Apply substitution to term
+        function applySubstitution(term, sub) {
+            if (term.type === 'variable') {
+                if (sub[term.name]) return applySubstitution(sub[term.name], sub);
+                return term;
+            } else if (term.type === 'compound') {
+                return {
+                    type: 'compound',
+                    functor: term.functor,
+                    args: term.args.map(a => applySubstitution(a, sub))
+                };
+            }
+            return term;
+        }
+
+        // Convert term back to string
+        function termToString(term) {
+            if (term.type === 'variable') return term.name;
+            if (term.type === 'atom') return term.value;
+            if (term.type === 'compound') {
+                const args = term.args.map(termToString).join(', ');
+                return `${term.functor}(${args})`;
+            }
+            return '?';
+        }
+
+        // Backward chaining with proof tree
+        function backwardChain(goals, substitution = {}, depth = 0, proofTree = null) {
+            if (depth > 50) return []; // Prevent infinite recursion
+
+            if (goals.length === 0) {
+                return [{ substitution, proofTree }];
+            }
+
+            const goal = applySubstitution(goals[0], substitution);
+            const remainingGoals = goals.slice(1);
+            const solutions = [];
+
+            logInference(`${'  '.repeat(depth)}Trying to prove: ${termToString(goal)}`, 'step');
+
+            // Try facts
+            for (const fact of facts) {
+                const factTerm = parseTerm(fact);
+                const newSub = unify(goal, factTerm, substitution);
+                if (newSub !== null) {
+                    logInference(`${'  '.repeat(depth)}Matched fact: ${fact}`, 'step');
+                    const newProof = {
+                        goal: termToString(goal),
+                        type: 'fact',
+                        children: []
+                    };
+                    const subSolutions = backwardChain(remainingGoals, newSub, depth, newProof);
+                    solutions.push(...subSolutions);
+                }
+            }
+
+            // Try rules
+            for (const rule of rules) {
+                const renamedRule = renameVariables(parseRule(rule));
+                const newSub = unify(goal, renamedRule.head, substitution);
+                if (newSub !== null) {
+                    logInference(`${'  '.repeat(depth)}Applying rule: ${rule}`, 'step');
+                    const newGoals = [...renamedRule.body, ...remainingGoals];
+                    const newProof = {
+                        goal: termToString(goal),
+                        type: 'rule',
+                        rule: rule,
+                        children: []
+                    };
+                    const subSolutions = backwardChain(newGoals, newSub, depth + 1, newProof);
+                    solutions.push(...subSolutions);
+                }
+            }
+
+            inferenceSteps++;
+            return solutions;
+        }
+
+        // Forward chaining
+        function forwardChain() {
+            let newFacts = [...facts];
+            let changed = true;
+            let iterations = 0;
+            const maxIterations = 100;
+
+            while (changed && iterations < maxIterations) {
+                changed = false;
+                iterations++;
+
+                for (const rule of rules) {
+                    const parsedRule = parseRule(rule);
+                    const bindings = findAllBindings(parsedRule.body, {});
+
+                    for (const binding of bindings) {
+                        const newFact = termToString(applySubstitution(parsedRule.head, binding));
+                        if (!newFacts.includes(newFact)) {
+                            newFacts.push(newFact);
+                            logInference(`Derived new fact: ${newFact}`, 'conclusion');
+                            changed = true;
+                            inferenceSteps++;
+                        }
+                    }
+                }
+            }
+
+            return newFacts;
+        }
+
+        function findAllBindings(goals, substitution) {
+            if (goals.length === 0) return [substitution];
+
+            const goal = applySubstitution(goals[0], substitution);
+            const remainingGoals = goals.slice(1);
+            const bindings = [];
+
+            for (const fact of facts) {
+                const factTerm = parseTerm(fact);
+                const newSub = unify(goal, factTerm, substitution);
+                if (newSub !== null) {
+                    bindings.push(...findAllBindings(remainingGoals, newSub));
+                }
+            }
+
+            return bindings;
+        }
+
+        // Visualization
+        function visualizeReasoning() {
+            ctx.fillStyle = 'rgba(10, 10, 30, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const time = Date.now() / 1000;
+
+            // Draw edges
+            for (const edge of graphEdges) {
+                const from = graphNodes[edge.from];
+                const to = graphNodes[edge.to];
+                if (from && to) {
+                    ctx.beginPath();
+                    ctx.moveTo(from.x, from.y);
+                    ctx.lineTo(to.x, to.y);
+                    ctx.strokeStyle = `rgba(0, 170, 255, ${0.3 + 0.2 * Math.sin(time * 2 + edge.from)})`;
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+            }
+
+            // Draw nodes
+            for (let i = 0; i < graphNodes.length; i++) {
+                const node = graphNodes[i];
+
+                // Update position with gentle movement
+                node.x += (node.targetX - node.x) * 0.05;
+                node.y += (node.targetY - node.y) * 0.05;
+                node.x += Math.sin(time + i) * 0.5;
+                node.y += Math.cos(time * 1.3 + i) * 0.5;
+
+                // Draw glow
+                const gradient = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, 30);
+                gradient.addColorStop(0, node.color);
+                gradient.addColorStop(1, 'transparent');
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, 30, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Draw node
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, 8, 0, Math.PI * 2);
+                ctx.fillStyle = node.color;
+                ctx.fill();
+
+                // Draw label
+                ctx.fillStyle = '#fff';
+                ctx.font = '10px Courier New';
+                ctx.textAlign = 'center';
+                ctx.fillText(node.label, node.x, node.y + 20);
+            }
+
+            animationFrame = requestAnimationFrame(visualizeReasoning);
+        }
+
+        function buildGraph(solutions) {
+            graphNodes = [];
+            graphEdges = [];
+
+            const nodeMap = {};
+            let nodeId = 0;
+
+            // Add facts as nodes
+            for (const fact of facts) {
+                const parsed = parseTerm(fact);
+                if (!nodeMap[fact]) {
+                    const angle = (nodeId / facts.length) * Math.PI * 2;
+                    const radius = 150;
+                    nodeMap[fact] = nodeId;
+                    graphNodes.push({
+                        id: nodeId++,
+                        label: fact.length > 15 ? fact.substring(0, 15) + '...' : fact,
+                        x: canvas.width / 2,
+                        y: canvas.height / 2,
+                        targetX: canvas.width / 2 + Math.cos(angle) * radius,
+                        targetY: canvas.height / 2 + Math.sin(angle) * radius,
+                        color: 'rgba(0, 255, 170, 0.8)'
+                    });
+                }
+            }
+
+            // Add solutions as connected nodes
+            for (const sol of solutions) {
+                const solStr = JSON.stringify(sol.substitution);
+                if (!nodeMap[solStr]) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const radius = 80;
+                    nodeMap[solStr] = nodeId;
+                    graphNodes.push({
+                        id: nodeId++,
+                        label: 'Solution',
+                        x: canvas.width / 2,
+                        y: canvas.height / 2,
+                        targetX: canvas.width / 2 + Math.cos(angle) * radius,
+                        targetY: canvas.height / 2 + Math.sin(angle) * radius,
+                        color: 'rgba(255, 200, 0, 0.8)'
+                    });
+                }
+            }
+        }
+
+        function logInference(message, type) {
+            const log = document.getElementById('inferenceLog');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = message;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('inferenceLog').innerHTML = '';
+        }
+
+        function updateStats() {
+            document.getElementById('factCount').textContent = facts.length;
+            document.getElementById('ruleCount').textContent = rules.length;
+            document.getElementById('inferenceSteps').textContent = inferenceSteps;
+            document.getElementById('solutions').textContent = currentSolutions.length;
+        }
+
+        function displayKnowledgeBase() {
+            const kb = document.getElementById('knowledgeBase');
+            kb.innerHTML = '';
+
+            const mode = document.querySelector('.mode-btn.active').dataset.mode;
+            const items = mode === 'facts' ? facts : rules;
+
+            for (const item of items) {
+                const div = document.createElement('div');
+                div.className = `fact ${mode === 'rules' ? 'rule' : ''}`;
+                div.textContent = item;
+                div.onclick = () => {
+                    if (mode === 'facts') {
+                        facts = facts.filter(f => f !== item);
+                    } else {
+                        rules = rules.filter(r => r !== item);
+                    }
+                    displayKnowledgeBase();
+                    updateStats();
+                };
+                kb.appendChild(div);
+            }
+        }
+
+        function addFact() {
+            const input = document.getElementById('newFact');
+            const fact = input.value.trim();
+            if (fact && !facts.includes(fact)) {
+                facts.push(fact);
+                input.value = '';
+                displayKnowledgeBase();
+                updateStats();
+            }
+        }
+
+        function addRule() {
+            const input = document.getElementById('newRule');
+            const rule = input.value.trim();
+            if (rule && rule.includes(':-') && !rules.includes(rule)) {
+                rules.push(rule);
+                input.value = '';
+                displayKnowledgeBase();
+                updateStats();
+            }
+        }
+
+        function setQuery(q) {
+            document.getElementById('query').value = q;
+        }
+
+        function executeQuery() {
+            const queryStr = document.getElementById('query').value.trim();
+            if (!queryStr) return;
+
+            clearLog();
+            inferenceSteps = 0;
+            currentSolutions = [];
+
+            const mode = document.getElementById('reasoningMode').value;
+            const goal = parseTerm(queryStr);
+
+            logInference(`Query: ${queryStr}`, 'step');
+            logInference(`Mode: ${mode === 'backward' ? 'Backward Chaining' : 'Forward Chaining'}`, 'step');
+            logInference('---', 'step');
+
+            if (mode === 'backward') {
+                const solutions = backwardChain([goal]);
+                currentSolutions = solutions;
+
+                if (solutions.length > 0) {
+                    logInference('---', 'step');
+                    logInference(`Found ${solutions.length} solution(s):`, 'conclusion');
+                    for (const sol of solutions) {
+                        const bindings = Object.entries(sol.substitution)
+                            .filter(([k, v]) => !k.startsWith('_'))
+                            .map(([k, v]) => `${k} = ${termToString(v)}`)
+                            .join(', ');
+                        logInference(bindings || 'true', 'conclusion');
+                    }
+                } else {
+                    logInference('No solutions found.', 'error');
+                }
+
+                buildGraph(solutions);
+                displayProofTree(solutions);
+            } else {
+                const derivedFacts = forwardChain();
+                logInference('---', 'step');
+                logInference(`Derived ${derivedFacts.length - facts.length} new facts`, 'conclusion');
+            }
+
+            updateStats();
+        }
+
+        function displayProofTree(solutions) {
+            const treeDiv = document.getElementById('proofTree');
+            if (solutions.length === 0) {
+                treeDiv.textContent = 'No proof found';
+                return;
+            }
+
+            let tree = 'Proof Tree:\n';
+            for (let i = 0; i < Math.min(solutions.length, 3); i++) {
+                const sol = solutions[i];
+                tree += `\nSolution ${i + 1}:\n`;
+                const bindings = Object.entries(sol.substitution)
+                    .filter(([k, v]) => !k.startsWith('_'))
+                    .map(([k, v]) => `  ${k} = ${termToString(v)}`)
+                    .join('\n');
+                tree += bindings || '  (ground query)';
+            }
+            treeDiv.textContent = tree;
+        }
+
+        function stepQuery() {
+            // Simplified step-through (same as execute for now)
+            executeQuery();
+        }
+
+        // Initialize with sample knowledge base
+        function initializeKnowledgeBase() {
+            facts = [
+                'parent(tom, mary)',
+                'parent(tom, john)',
+                'parent(mary, ann)',
+                'parent(mary, pat)',
+                'parent(john, jim)',
+                'human(socrates)',
+                'human(plato)',
+                'human(aristotle)',
+                'greek(socrates)',
+                'teacher(socrates, plato)',
+                'teacher(plato, aristotle)'
+            ];
+
+            rules = [
+                'grandparent(X, Z) :- parent(X, Y), parent(Y, Z)',
+                'ancestor(X, Y) :- parent(X, Y)',
+                'ancestor(X, Z) :- parent(X, Y), ancestor(Y, Z)',
+                'mortal(X) :- human(X)',
+                'philosopher(X) :- greek(X), human(X)',
+                'student(X, Y) :- teacher(Y, X)'
+            ];
+
+            displayKnowledgeBase();
+            updateStats();
+        }
+
+        // Mode button handlers
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                displayKnowledgeBase();
+            });
+        });
+
+        // Initialize
+        initializeKnowledgeBase();
+        visualizeReasoning();
+    </script>
+</body>
+</html>

@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game of Life Variants</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #0a0a0a;
+            min-height: 100vh;
+            color: #e0e0e0;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .canvas-area {
+            flex: 1;
+            position: relative;
+        }
+
+        #lifeCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            cursor: crosshair;
+        }
+
+        .header-overlay {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+        }
+
+        h1 {
+            font-size: 1.8em;
+            background: linear-gradient(135deg, #81ecec, #00cec9);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            color: #888;
+            font-size: 0.9em;
+        }
+
+        .controls-panel {
+            width: 300px;
+            background: rgba(20, 20, 30, 0.95);
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .control-group {
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        .control-group h3 {
+            color: #00cec9;
+            margin-bottom: 12px;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .control-row {
+            margin-bottom: 10px;
+        }
+
+        .control-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .control-row label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+            font-size: 0.85em;
+        }
+
+        .control-row label span {
+            color: #00cec9;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 5px;
+            border-radius: 3px;
+            background: #333;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #81ecec, #00cec9);
+            cursor: pointer;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            color: #e0e0e0;
+            font-family: monospace;
+            font-size: 14px;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #00cec9;
+        }
+
+        .rule-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .rule-btn {
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.1);
+            color: #e0e0e0;
+            cursor: pointer;
+            font-size: 0.85em;
+            text-align: left;
+            transition: all 0.2s;
+        }
+
+        .rule-btn:hover {
+            background: rgba(0, 206, 201, 0.3);
+        }
+
+        .rule-btn.active {
+            background: linear-gradient(135deg, #81ecec, #00cec9);
+            color: #111;
+        }
+
+        .rule-btn .rule-name {
+            font-weight: bold;
+        }
+
+        .rule-btn .rule-code {
+            font-size: 0.8em;
+            opacity: 0.7;
+            font-family: monospace;
+        }
+
+        .btn {
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85em;
+        }
+
+        .btn.primary {
+            background: linear-gradient(135deg, #81ecec, #00cec9);
+            color: #111;
+            font-weight: bold;
+        }
+
+        .btn.secondary {
+            background: rgba(255,255,255,0.1);
+            color: #e0e0e0;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .button-row {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .stat-box {
+            background: rgba(0,0,0,0.3);
+            border-radius: 6px;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.2em;
+            color: #00cec9;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            font-size: 0.7em;
+            color: #888;
+        }
+
+        .pattern-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+        }
+
+        .pattern-btn {
+            padding: 8px;
+            border: none;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.1);
+            color: #e0e0e0;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: all 0.2s;
+        }
+
+        .pattern-btn:hover {
+            background: rgba(0, 206, 201, 0.3);
+        }
+
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .checkbox-row input {
+            width: 16px;
+            height: 16px;
+            accent-color: #00cec9;
+        }
+
+        .info-box {
+            background: rgba(0, 206, 201, 0.1);
+            border-left: 3px solid #00cec9;
+            padding: 10px;
+            border-radius: 0 8px 8px 0;
+            font-size: 0.8em;
+            line-height: 1.5;
+        }
+
+        .mouse-info {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.7);
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 0.85em;
+        }
+
+        .mouse-info span {
+            color: #00cec9;
+        }
+
+        .color-picker {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .color-option {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        .color-option.active {
+            border-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="canvas-area">
+            <canvas id="lifeCanvas"></canvas>
+            <div class="header-overlay">
+                <h1>Game of Life Variants</h1>
+                <p class="subtitle">Cellular automata rule explorer</p>
+            </div>
+            <div class="mouse-info">
+                <span>Click/Drag</span>: Draw cells | <span>Right-click</span>: Erase | <span>Space</span>: Play/Pause
+            </div>
+        </div>
+
+        <div class="controls-panel">
+            <div class="control-group">
+                <h3>Statistics</h3>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-value" id="population">0</div>
+                        <div class="stat-label">Population</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="generation">0</div>
+                        <div class="stat-label">Generation</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="fpsDisplay">0</div>
+                        <div class="stat-label">FPS</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="density">0%</div>
+                        <div class="stat-label">Density</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Rule Set</h3>
+                <div class="rule-buttons" id="ruleButtons">
+                    <button class="rule-btn active" data-rule="B3/S23">
+                        <div class="rule-name">Conway's Life</div>
+                        <div class="rule-code">B3/S23</div>
+                    </button>
+                    <button class="rule-btn" data-rule="B36/S23">
+                        <div class="rule-name">HighLife</div>
+                        <div class="rule-code">B36/S23</div>
+                    </button>
+                    <button class="rule-btn" data-rule="B3678/S34678">
+                        <div class="rule-name">Day & Night</div>
+                        <div class="rule-code">B3678/S34678</div>
+                    </button>
+                    <button class="rule-btn" data-rule="B2/S">
+                        <div class="rule-name">Seeds</div>
+                        <div class="rule-code">B2/S</div>
+                    </button>
+                    <button class="rule-btn" data-rule="B3/S012345678">
+                        <div class="rule-name">Life without Death</div>
+                        <div class="rule-code">B3/S012345678</div>
+                    </button>
+                    <button class="rule-btn" data-rule="B1357/S1357">
+                        <div class="rule-name">Replicator</div>
+                        <div class="rule-code">B1357/S1357</div>
+                    </button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Custom Rule</h3>
+                <div class="control-row">
+                    <label>Birth/Survival (e.g., B3/S23)</label>
+                    <input type="text" id="customRule" placeholder="B3/S23">
+                </div>
+                <button class="btn secondary" id="applyCustomRule" style="width: 100%;">Apply Custom Rule</button>
+            </div>
+
+            <div class="control-group">
+                <h3>Simulation</h3>
+                <div class="control-row">
+                    <label>Speed <span id="speedVal">10</span> gen/s</label>
+                    <input type="range" id="speed" min="1" max="60" value="10">
+                </div>
+                <div class="control-row">
+                    <label>Cell Size <span id="cellSizeVal">4</span>px</label>
+                    <input type="range" id="cellSize" min="2" max="10" value="4">
+                </div>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="wrapEdges" checked>
+                    <label for="wrapEdges">Wrap Edges (Torus)</label>
+                </div>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="showGrid">
+                    <label for="showGrid">Show Grid</label>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Controls</h3>
+                <div class="button-row">
+                    <button class="btn primary" id="playPause">▶ Play</button>
+                    <div class="button-grid">
+                        <button class="btn secondary" id="stepBtn">Step</button>
+                        <button class="btn secondary" id="clearBtn">Clear</button>
+                        <button class="btn secondary" id="randomBtn">Random</button>
+                        <button class="btn secondary" id="invertBtn">Invert</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Patterns</h3>
+                <div class="pattern-buttons">
+                    <button class="pattern-btn" data-pattern="glider">Glider</button>
+                    <button class="pattern-btn" data-pattern="lwss">LWSS</button>
+                    <button class="pattern-btn" data-pattern="blinker">Blinker</button>
+                    <button class="pattern-btn" data-pattern="pulsar">Pulsar</button>
+                    <button class="pattern-btn" data-pattern="gosper">Gosper Gun</button>
+                    <button class="pattern-btn" data-pattern="rpentomino">R-pentomino</button>
+                    <button class="pattern-btn" data-pattern="acorn">Acorn</button>
+                    <button class="pattern-btn" data-pattern="diehard">Diehard</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Cell Color</h3>
+                <div class="color-picker" id="colorPicker">
+                    <div class="color-option active" data-color="#00cec9" style="background: #00cec9;"></div>
+                    <div class="color-option" data-color="#81ecec" style="background: #81ecec;"></div>
+                    <div class="color-option" data-color="#74b9ff" style="background: #74b9ff;"></div>
+                    <div class="color-option" data-color="#a29bfe" style="background: #a29bfe;"></div>
+                    <div class="color-option" data-color="#fd79a8" style="background: #fd79a8;"></div>
+                    <div class="color-option" data-color="#fab1a0" style="background: #fab1a0;"></div>
+                    <div class="color-option" data-color="#55efc4" style="background: #55efc4;"></div>
+                    <div class="color-option" data-color="#ffeaa7" style="background: #ffeaa7;"></div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>About</h3>
+                <div class="info-box">
+                    <strong>B3/S23</strong>: Birth with 3 neighbors, Survive with 2 or 3.<br><br>
+                    <strong>HighLife</strong> has an extra replicator birth rule.<br><br>
+                    <strong>Day & Night</strong> is symmetric under on/off exchange.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('lifeCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Settings
+        let cellSize = 4;
+        let speed = 10;
+        let wrapEdges = true;
+        let showGrid = false;
+        let cellColor = '#00cec9';
+
+        // Rules (parsed from B/S notation)
+        let birthRule = [3];
+        let surviveRule = [2, 3];
+
+        // Grid state
+        let grid = [];
+        let cols, rows;
+        let running = false;
+        let generation = 0;
+
+        // Stats
+        let fps = 0;
+        let lastTime = performance.now();
+        let frameCount = 0;
+        let lastUpdate = 0;
+
+        // Mouse state
+        let mouseDown = false;
+        let erasing = false;
+
+        // Patterns
+        const patterns = {
+            glider: [
+                [0, 1, 0],
+                [0, 0, 1],
+                [1, 1, 1]
+            ],
+            lwss: [
+                [0, 1, 0, 0, 1],
+                [1, 0, 0, 0, 0],
+                [1, 0, 0, 0, 1],
+                [1, 1, 1, 1, 0]
+            ],
+            blinker: [
+                [1, 1, 1]
+            ],
+            pulsar: [
+                [0,0,1,1,1,0,0,0,1,1,1,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [1,0,0,0,0,1,0,1,0,0,0,0,1],
+                [1,0,0,0,0,1,0,1,0,0,0,0,1],
+                [1,0,0,0,0,1,0,1,0,0,0,0,1],
+                [0,0,1,1,1,0,0,0,1,1,1,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,1,1,1,0,0,0,1,1,1,0,0],
+                [1,0,0,0,0,1,0,1,0,0,0,0,1],
+                [1,0,0,0,0,1,0,1,0,0,0,0,1],
+                [1,0,0,0,0,1,0,1,0,0,0,0,1],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,1,1,1,0,0,0,1,1,1,0,0]
+            ],
+            gosper: [
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1],
+                [0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1],
+                [1,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [1,1,0,0,0,0,0,0,0,0,1,0,0,0,1,0,1,1,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+            ],
+            rpentomino: [
+                [0, 1, 1],
+                [1, 1, 0],
+                [0, 1, 0]
+            ],
+            acorn: [
+                [0, 1, 0, 0, 0, 0, 0],
+                [0, 0, 0, 1, 0, 0, 0],
+                [1, 1, 0, 0, 1, 1, 1]
+            ],
+            diehard: [
+                [0, 0, 0, 0, 0, 0, 1, 0],
+                [1, 1, 0, 0, 0, 0, 0, 0],
+                [0, 1, 0, 0, 0, 1, 1, 1]
+            ]
+        };
+
+        function parseRule(ruleString) {
+            // Parse B/S notation like "B3/S23"
+            const match = ruleString.match(/B(\d*)\/?S(\d*)/i);
+            if (match) {
+                const birth = match[1].split('').map(Number);
+                const survive = match[2].split('').map(Number);
+                return { birth, survive };
+            }
+            return null;
+        }
+
+        function initGrid() {
+            cols = Math.floor(canvas.width / cellSize);
+            rows = Math.floor(canvas.height / cellSize);
+            grid = [];
+            for (let y = 0; y < rows; y++) {
+                grid[y] = [];
+                for (let x = 0; x < cols; x++) {
+                    grid[y][x] = 0;
+                }
+            }
+            generation = 0;
+        }
+
+        function countNeighbors(x, y) {
+            let count = 0;
+            for (let dy = -1; dy <= 1; dy++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                    if (dx === 0 && dy === 0) continue;
+
+                    let nx = x + dx;
+                    let ny = y + dy;
+
+                    if (wrapEdges) {
+                        nx = (nx + cols) % cols;
+                        ny = (ny + rows) % rows;
+                    } else {
+                        if (nx < 0 || nx >= cols || ny < 0 || ny >= rows) continue;
+                    }
+
+                    count += grid[ny][nx];
+                }
+            }
+            return count;
+        }
+
+        function step() {
+            const newGrid = [];
+            for (let y = 0; y < rows; y++) {
+                newGrid[y] = [];
+                for (let x = 0; x < cols; x++) {
+                    const neighbors = countNeighbors(x, y);
+                    const alive = grid[y][x];
+
+                    if (alive) {
+                        newGrid[y][x] = surviveRule.includes(neighbors) ? 1 : 0;
+                    } else {
+                        newGrid[y][x] = birthRule.includes(neighbors) ? 1 : 0;
+                    }
+                }
+            }
+            grid = newGrid;
+            generation++;
+        }
+
+        function draw() {
+            ctx.fillStyle = '#0a0a0a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw cells
+            ctx.fillStyle = cellColor;
+            let population = 0;
+
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    if (grid[y][x]) {
+                        ctx.fillRect(x * cellSize, y * cellSize, cellSize - 1, cellSize - 1);
+                        population++;
+                    }
+                }
+            }
+
+            // Draw grid
+            if (showGrid) {
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+                ctx.lineWidth = 0.5;
+                for (let x = 0; x <= cols; x++) {
+                    ctx.beginPath();
+                    ctx.moveTo(x * cellSize, 0);
+                    ctx.lineTo(x * cellSize, rows * cellSize);
+                    ctx.stroke();
+                }
+                for (let y = 0; y <= rows; y++) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, y * cellSize);
+                    ctx.lineTo(cols * cellSize, y * cellSize);
+                    ctx.stroke();
+                }
+            }
+
+            // Update stats
+            document.getElementById('population').textContent = population;
+            document.getElementById('generation').textContent = generation;
+            document.getElementById('density').textContent = ((population / (cols * rows)) * 100).toFixed(1) + '%';
+        }
+
+        function update() {
+            const now = performance.now();
+
+            if (running && now - lastUpdate >= 1000 / speed) {
+                step();
+                lastUpdate = now;
+            }
+
+            draw();
+
+            frameCount++;
+            if (now - lastTime >= 1000) {
+                fps = frameCount;
+                frameCount = 0;
+                lastTime = now;
+                document.getElementById('fpsDisplay').textContent = fps;
+            }
+
+            requestAnimationFrame(update);
+        }
+
+        function resize() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+            initGrid();
+        }
+
+        function setCell(x, y, value) {
+            const cx = Math.floor(x / cellSize);
+            const cy = Math.floor(y / cellSize);
+            if (cx >= 0 && cx < cols && cy >= 0 && cy < rows) {
+                grid[cy][cx] = value;
+            }
+        }
+
+        function placePattern(pattern, centerX, centerY) {
+            const startX = centerX - Math.floor(pattern[0].length / 2);
+            const startY = centerY - Math.floor(pattern.length / 2);
+
+            for (let y = 0; y < pattern.length; y++) {
+                for (let x = 0; x < pattern[y].length; x++) {
+                    const gx = startX + x;
+                    const gy = startY + y;
+                    if (gx >= 0 && gx < cols && gy >= 0 && gy < rows) {
+                        grid[gy][gx] = pattern[y][x];
+                    }
+                }
+            }
+        }
+
+        function randomize() {
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    grid[y][x] = Math.random() < 0.3 ? 1 : 0;
+                }
+            }
+            generation = 0;
+        }
+
+        function clear() {
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    grid[y][x] = 0;
+                }
+            }
+            generation = 0;
+        }
+
+        function invert() {
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    grid[y][x] = 1 - grid[y][x];
+                }
+            }
+        }
+
+        // Event listeners
+        document.querySelectorAll('.rule-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.rule-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const rule = parseRule(btn.dataset.rule);
+                if (rule) {
+                    birthRule = rule.birth;
+                    surviveRule = rule.survive;
+                }
+                document.getElementById('customRule').value = btn.dataset.rule;
+            });
+        });
+
+        document.getElementById('applyCustomRule').addEventListener('click', () => {
+            const ruleStr = document.getElementById('customRule').value;
+            const rule = parseRule(ruleStr);
+            if (rule) {
+                birthRule = rule.birth;
+                surviveRule = rule.survive;
+                document.querySelectorAll('.rule-btn').forEach(b => b.classList.remove('active'));
+            }
+        });
+
+        document.getElementById('speed').addEventListener('input', e => {
+            speed = parseInt(e.target.value);
+            document.getElementById('speedVal').textContent = speed;
+        });
+
+        document.getElementById('cellSize').addEventListener('input', e => {
+            cellSize = parseInt(e.target.value);
+            document.getElementById('cellSizeVal').textContent = cellSize;
+            initGrid();
+        });
+
+        document.getElementById('wrapEdges').addEventListener('change', e => {
+            wrapEdges = e.target.checked;
+        });
+
+        document.getElementById('showGrid').addEventListener('change', e => {
+            showGrid = e.target.checked;
+        });
+
+        document.getElementById('playPause').addEventListener('click', () => {
+            running = !running;
+            document.getElementById('playPause').textContent = running ? '⏸ Pause' : '▶ Play';
+        });
+
+        document.getElementById('stepBtn').addEventListener('click', () => {
+            step();
+        });
+
+        document.getElementById('clearBtn').addEventListener('click', clear);
+        document.getElementById('randomBtn').addEventListener('click', randomize);
+        document.getElementById('invertBtn').addEventListener('click', invert);
+
+        document.querySelectorAll('.pattern-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const pattern = patterns[btn.dataset.pattern];
+                if (pattern) {
+                    placePattern(pattern, Math.floor(cols / 2), Math.floor(rows / 2));
+                }
+            });
+        });
+
+        document.querySelectorAll('.color-option').forEach(opt => {
+            opt.addEventListener('click', () => {
+                document.querySelectorAll('.color-option').forEach(o => o.classList.remove('active'));
+                opt.classList.add('active');
+                cellColor = opt.dataset.color;
+            });
+        });
+
+        // Canvas mouse interactions
+        canvas.addEventListener('mousedown', e => {
+            mouseDown = true;
+            erasing = e.button === 2;
+            const rect = canvas.getBoundingClientRect();
+            setCell(e.clientX - rect.left, e.clientY - rect.top, erasing ? 0 : 1);
+        });
+
+        canvas.addEventListener('mousemove', e => {
+            if (mouseDown) {
+                const rect = canvas.getBoundingClientRect();
+                setCell(e.clientX - rect.left, e.clientY - rect.top, erasing ? 0 : 1);
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            mouseDown = false;
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            mouseDown = false;
+        });
+
+        canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+        // Keyboard
+        document.addEventListener('keydown', e => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                running = !running;
+                document.getElementById('playPause').textContent = running ? '⏸ Pause' : '▶ Play';
+            }
+        });
+
+        window.addEventListener('resize', resize);
+
+        // Initialize
+        resize();
+        update();
+    </script>
+</body>
+</html>

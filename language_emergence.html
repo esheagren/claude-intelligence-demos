@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Language Emergence Simulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a0a 50%, #0a1a1a 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #ffaa00, #ff6600, #ffaa00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 30px;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 20px;
+        }
+
+        .panel {
+            background: rgba(20, 20, 20, 0.8);
+            border: 1px solid #333;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .panel h2 {
+            color: #ffaa00;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+
+        #worldCanvas {
+            width: 100%;
+            height: 600px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .controls button {
+            padding: 10px 20px;
+            background: linear-gradient(90deg, #ffaa00, #ff6600);
+            border: none;
+            border-radius: 5px;
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .controls button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(255, 170, 0, 0.4);
+        }
+
+        .controls button.secondary {
+            background: linear-gradient(90deg, #444, #666);
+            color: #fff;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .stat-box {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.8em;
+            color: #ffaa00;
+        }
+
+        .stat-label {
+            font-size: 0.8em;
+            color: #888;
+        }
+
+        .lexicon-display {
+            max-height: 300px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .word-entry {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            margin-bottom: 5px;
+            background: rgba(255, 170, 0, 0.1);
+            border-radius: 5px;
+            border-left: 3px solid #ffaa00;
+        }
+
+        .word-symbol {
+            font-size: 1.2em;
+            color: #ffaa00;
+            font-weight: bold;
+        }
+
+        .word-meaning {
+            color: #aaa;
+            font-size: 0.9em;
+        }
+
+        .word-usage {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 0.8em;
+        }
+
+        .communication-log {
+            max-height: 250px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            font-size: 0.85em;
+        }
+
+        .log-entry {
+            padding: 8px;
+            margin-bottom: 5px;
+            border-radius: 5px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .log-entry.success {
+            background: rgba(0, 200, 100, 0.2);
+            border-left: 3px solid #00cc66;
+        }
+
+        .log-entry.failure {
+            background: rgba(200, 50, 50, 0.2);
+            border-left: 3px solid #cc3333;
+        }
+
+        .log-entry.invention {
+            background: rgba(100, 100, 255, 0.2);
+            border-left: 3px solid #6666ff;
+        }
+
+        .settings-section {
+            margin-bottom: 20px;
+        }
+
+        .setting-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .setting-row label {
+            flex: 0 0 120px;
+            color: #aaa;
+            font-size: 0.9em;
+        }
+
+        .setting-row input[type="range"] {
+            flex: 1;
+        }
+
+        .setting-row span {
+            width: 40px;
+            text-align: right;
+        }
+
+        .concepts-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+
+        .concept {
+            padding: 8px;
+            background: rgba(100, 100, 100, 0.2);
+            border: 1px solid #444;
+            border-radius: 5px;
+            text-align: center;
+            font-size: 0.8em;
+            transition: all 0.3s;
+        }
+
+        .concept.named {
+            background: rgba(255, 170, 0, 0.2);
+            border-color: #ffaa00;
+        }
+
+        .evolution-chart {
+            height: 150px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #evolutionCanvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .agent-tooltip {
+            position: absolute;
+            background: rgba(20, 20, 20, 0.95);
+            border: 1px solid #ffaa00;
+            border-radius: 8px;
+            padding: 15px;
+            font-size: 0.85em;
+            pointer-events: none;
+            z-index: 100;
+            max-width: 250px;
+        }
+
+        .agent-tooltip h3 {
+            color: #ffaa00;
+            margin-bottom: 10px;
+        }
+
+        .tooltip-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Language Emergence Simulator</h1>
+        <p class="subtitle">Agents Learn to Communicate Through Interaction</p>
+
+        <div class="controls">
+            <button onclick="startSimulation()">Start</button>
+            <button onclick="stopSimulation()" class="secondary">Pause</button>
+            <button onclick="stepSimulation()">Step</button>
+            <button onclick="resetSimulation()">Reset</button>
+            <button onclick="addAgents(5)">+5 Agents</button>
+        </div>
+
+        <div class="main-layout">
+            <div class="panel">
+                <h2>World</h2>
+                <canvas id="worldCanvas"></canvas>
+            </div>
+
+            <div class="panel">
+                <h2>Statistics</h2>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-value" id="agentCount">0</div>
+                        <div class="stat-label">Agents</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="vocabularySize">0</div>
+                        <div class="stat-label">Words</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="successRate">0%</div>
+                        <div class="stat-label">Success Rate</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="interactions">0</div>
+                        <div class="stat-label">Interactions</div>
+                    </div>
+                </div>
+
+                <h2>Settings</h2>
+                <div class="settings-section">
+                    <div class="setting-row">
+                        <label>Learning Rate:</label>
+                        <input type="range" id="learningRate" min="1" max="20" value="10">
+                        <span id="learningRateValue">0.10</span>
+                    </div>
+                    <div class="setting-row">
+                        <label>Forgetting:</label>
+                        <input type="range" id="forgetRate" min="0" max="10" value="2">
+                        <span id="forgetRateValue">0.02</span>
+                    </div>
+                    <div class="setting-row">
+                        <label>Invention:</label>
+                        <input type="range" id="inventionRate" min="1" max="20" value="5">
+                        <span id="inventionRateValue">0.05</span>
+                    </div>
+                </div>
+
+                <h2>Concepts</h2>
+                <div class="concepts-grid" id="conceptsGrid"></div>
+
+                <h2>Emerged Lexicon</h2>
+                <div class="lexicon-display" id="lexiconDisplay"></div>
+
+                <h2>Communication Log</h2>
+                <div class="communication-log" id="communicationLog"></div>
+
+                <h2>Language Evolution</h2>
+                <div class="evolution-chart">
+                    <canvas id="evolutionCanvas"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Concepts that agents can communicate about
+        const concepts = [
+            'food', 'water', 'danger', 'friend', 'shelter',
+            'hot', 'cold', 'big', 'small', 'fast',
+            'slow', 'up', 'down', 'yes', 'no',
+            'help', 'come', 'go', 'stop', 'look'
+        ];
+
+        // Possible symbols for words
+        const symbols = 'αβγδεζηθικλμνξοπρστυφχψω';
+        const modifiers = ['̄', '́', '̀', '̂', '̌', '̇', '̈', '̃'];
+
+        class Agent {
+            constructor(x, y, id) {
+                this.id = id;
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 2;
+                this.vy = (Math.random() - 0.5) * 2;
+                this.color = `hsl(${Math.random() * 360}, 70%, 50%)`;
+
+                // Lexicon: concept -> { word: string, strength: number }
+                this.lexicon = {};
+
+                // History of successful communications
+                this.successCount = 0;
+                this.failureCount = 0;
+            }
+
+            // Generate a random new word
+            inventWord() {
+                const base = symbols[Math.floor(Math.random() * symbols.length)];
+                const suffix = symbols[Math.floor(Math.random() * symbols.length)];
+                const mod = Math.random() < 0.3 ? modifiers[Math.floor(Math.random() * modifiers.length)] : '';
+                return base + mod + suffix;
+            }
+
+            // Get word for a concept (or invent one)
+            getWord(concept) {
+                if (this.lexicon[concept] && this.lexicon[concept].strength > 0.1) {
+                    return this.lexicon[concept].word;
+                }
+
+                // Invent a new word
+                const word = this.inventWord();
+                this.lexicon[concept] = { word, strength: 0.3 };
+                return word;
+            }
+
+            // Understand a word (returns concept or null)
+            understand(word) {
+                let bestMatch = null;
+                let bestStrength = 0;
+
+                for (const concept in this.lexicon) {
+                    if (this.lexicon[concept].word === word &&
+                        this.lexicon[concept].strength > bestStrength) {
+                        bestMatch = concept;
+                        bestStrength = this.lexicon[concept].strength;
+                    }
+                }
+
+                return bestStrength > 0.2 ? bestMatch : null;
+            }
+
+            // Learn a word-concept association
+            learn(concept, word, success) {
+                const learningRate = parseFloat(document.getElementById('learningRate').value) / 100;
+
+                if (!this.lexicon[concept]) {
+                    this.lexicon[concept] = { word, strength: 0 };
+                }
+
+                if (success) {
+                    // Reinforce the association
+                    if (this.lexicon[concept].word === word) {
+                        this.lexicon[concept].strength = Math.min(1,
+                            this.lexicon[concept].strength + learningRate);
+                    } else {
+                        // Lateral inhibition - weaken old association, learn new
+                        this.lexicon[concept].strength *= 0.8;
+                        if (this.lexicon[concept].strength < 0.3) {
+                            this.lexicon[concept] = { word, strength: learningRate };
+                        }
+                    }
+                    this.successCount++;
+                } else {
+                    // Weaken association on failure
+                    if (this.lexicon[concept]) {
+                        this.lexicon[concept].strength *= 0.9;
+                    }
+                    this.failureCount++;
+                }
+            }
+
+            // Decay/forget unused associations
+            forget() {
+                const forgetRate = parseFloat(document.getElementById('forgetRate').value) / 1000;
+                for (const concept in this.lexicon) {
+                    this.lexicon[concept].strength -= forgetRate;
+                    if (this.lexicon[concept].strength <= 0) {
+                        delete this.lexicon[concept];
+                    }
+                }
+            }
+
+            // Move agent
+            update(width, height) {
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Bounce off walls
+                if (this.x < 20 || this.x > width - 20) this.vx *= -1;
+                if (this.y < 20 || this.y > height - 20) this.vy *= -1;
+
+                // Random direction changes
+                if (Math.random() < 0.02) {
+                    this.vx += (Math.random() - 0.5) * 0.5;
+                    this.vy += (Math.random() - 0.5) * 0.5;
+                }
+
+                // Speed limit
+                const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                if (speed > 3) {
+                    this.vx = (this.vx / speed) * 3;
+                    this.vy = (this.vy / speed) * 3;
+                }
+
+                this.x = Math.max(20, Math.min(width - 20, this.x));
+                this.y = Math.max(20, Math.min(height - 20, this.y));
+            }
+        }
+
+        let agents = [];
+        let isRunning = false;
+        let animationFrame = null;
+        let totalInteractions = 0;
+        let successfulInteractions = 0;
+        let evolutionHistory = [];
+        let globalLexicon = {}; // Track most common words for each concept
+
+        const canvas = document.getElementById('worldCanvas');
+        const ctx = canvas.getContext('2d');
+        const evolutionCanvas = document.getElementById('evolutionCanvas');
+        const evolutionCtx = evolutionCanvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.clientWidth - 40;
+            canvas.height = 600;
+            evolutionCanvas.width = evolutionCanvas.parentElement.clientWidth;
+            evolutionCanvas.height = 150;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        function initializeAgents(count) {
+            agents = [];
+            for (let i = 0; i < count; i++) {
+                agents.push(new Agent(
+                    100 + Math.random() * (canvas.width - 200),
+                    100 + Math.random() * (canvas.height - 200),
+                    i
+                ));
+            }
+        }
+
+        function addAgents(count) {
+            for (let i = 0; i < count; i++) {
+                agents.push(new Agent(
+                    100 + Math.random() * (canvas.width - 200),
+                    100 + Math.random() * (canvas.height - 200),
+                    agents.length
+                ));
+            }
+            updateStats();
+        }
+
+        function attemptCommunication(speaker, listener) {
+            // Pick a random concept to communicate
+            const concept = concepts[Math.floor(Math.random() * concepts.length)];
+
+            // Speaker produces a word
+            const word = speaker.getWord(concept);
+
+            // Listener tries to understand
+            const understood = listener.understand(word);
+
+            const success = understood === concept;
+
+            // Both agents learn from the interaction
+            speaker.learn(concept, word, success);
+            listener.learn(concept, word, success);
+
+            totalInteractions++;
+            if (success) successfulInteractions++;
+
+            // Log the communication
+            logCommunication(speaker, listener, concept, word, success);
+
+            // Update global lexicon
+            updateGlobalLexicon();
+
+            return { speaker, listener, concept, word, success };
+        }
+
+        function updateGlobalLexicon() {
+            globalLexicon = {};
+
+            for (const concept of concepts) {
+                const wordCounts = {};
+
+                for (const agent of agents) {
+                    if (agent.lexicon[concept] && agent.lexicon[concept].strength > 0.3) {
+                        const word = agent.lexicon[concept].word;
+                        wordCounts[word] = (wordCounts[word] || 0) + agent.lexicon[concept].strength;
+                    }
+                }
+
+                // Find most common word
+                let bestWord = null;
+                let bestCount = 0;
+                for (const word in wordCounts) {
+                    if (wordCounts[word] > bestCount) {
+                        bestWord = word;
+                        bestCount = wordCounts[word];
+                    }
+                }
+
+                if (bestWord && bestCount > 1) {
+                    globalLexicon[concept] = { word: bestWord, usage: bestCount };
+                }
+            }
+        }
+
+        function logCommunication(speaker, listener, concept, word, success) {
+            const log = document.getElementById('communicationLog');
+
+            // Check if this is a new word invention
+            const isNew = !globalLexicon[concept] ||
+                globalLexicon[concept].word !== word;
+
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${success ? 'success' : 'failure'}${isNew && success ? ' invention' : ''}`;
+            entry.innerHTML = `
+                <strong>Agent ${speaker.id}</strong> → <strong>Agent ${listener.id}</strong><br>
+                "${word}" means "${concept}" — ${success ? '✓ Understood!' : '✗ Misunderstood'}
+            `;
+
+            log.insertBefore(entry, log.firstChild);
+
+            // Limit log size
+            while (log.children.length > 50) {
+                log.removeChild(log.lastChild);
+            }
+        }
+
+        function simulate() {
+            // Update agent positions
+            for (const agent of agents) {
+                agent.update(canvas.width, canvas.height);
+                agent.forget();
+            }
+
+            // Check for nearby agents and attempt communication
+            for (let i = 0; i < agents.length; i++) {
+                for (let j = i + 1; j < agents.length; j++) {
+                    const dx = agents[i].x - agents[j].x;
+                    const dy = agents[i].y - agents[j].y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < 60 && Math.random() < 0.1) {
+                        // Randomly choose speaker/listener
+                        if (Math.random() < 0.5) {
+                            attemptCommunication(agents[i], agents[j]);
+                        } else {
+                            attemptCommunication(agents[j], agents[i]);
+                        }
+                    }
+                }
+            }
+
+            // Record evolution history
+            if (totalInteractions % 10 === 0) {
+                evolutionHistory.push({
+                    time: Date.now(),
+                    vocabularySize: Object.keys(globalLexicon).length,
+                    successRate: totalInteractions > 0 ?
+                        successfulInteractions / totalInteractions : 0
+                });
+
+                // Limit history
+                if (evolutionHistory.length > 100) {
+                    evolutionHistory.shift();
+                }
+            }
+
+            updateStats();
+            render();
+
+            if (isRunning) {
+                animationFrame = requestAnimationFrame(simulate);
+            }
+        }
+
+        function render() {
+            ctx.fillStyle = 'rgba(10, 10, 10, 0.3)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const time = Date.now() / 1000;
+
+            // Draw communication lines between nearby agents
+            for (let i = 0; i < agents.length; i++) {
+                for (let j = i + 1; j < agents.length; j++) {
+                    const dx = agents[i].x - agents[j].x;
+                    const dy = agents[i].y - agents[j].y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < 80) {
+                        const alpha = (1 - dist / 80) * 0.3;
+                        ctx.beginPath();
+                        ctx.moveTo(agents[i].x, agents[i].y);
+                        ctx.lineTo(agents[j].x, agents[j].y);
+                        ctx.strokeStyle = `rgba(255, 170, 0, ${alpha})`;
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            // Draw agents
+            for (const agent of agents) {
+                // Glow based on vocabulary size
+                const vocabSize = Object.keys(agent.lexicon).length;
+                const glowRadius = 10 + vocabSize * 2;
+
+                const gradient = ctx.createRadialGradient(
+                    agent.x, agent.y, 0,
+                    agent.x, agent.y, glowRadius
+                );
+                gradient.addColorStop(0, agent.color);
+                gradient.addColorStop(1, 'transparent');
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(agent.x, agent.y, glowRadius, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Agent body
+                ctx.beginPath();
+                ctx.arc(agent.x, agent.y, 12, 0, Math.PI * 2);
+                ctx.fillStyle = agent.color;
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Agent ID
+                ctx.fillStyle = '#fff';
+                ctx.font = '10px Courier New';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(agent.id, agent.x, agent.y);
+
+                // Show vocabulary size
+                ctx.fillStyle = '#888';
+                ctx.font = '8px Courier New';
+                ctx.fillText(`${vocabSize}w`, agent.x, agent.y + 20);
+            }
+
+            // Draw evolution chart
+            renderEvolutionChart();
+        }
+
+        function renderEvolutionChart() {
+            evolutionCtx.fillStyle = 'rgba(10, 10, 10, 0.1)';
+            evolutionCtx.fillRect(0, 0, evolutionCanvas.width, evolutionCanvas.height);
+
+            if (evolutionHistory.length < 2) return;
+
+            const w = evolutionCanvas.width;
+            const h = evolutionCanvas.height;
+
+            // Draw vocabulary size line
+            evolutionCtx.beginPath();
+            evolutionCtx.strokeStyle = '#ffaa00';
+            evolutionCtx.lineWidth = 2;
+
+            for (let i = 0; i < evolutionHistory.length; i++) {
+                const x = (i / (evolutionHistory.length - 1)) * w;
+                const y = h - (evolutionHistory[i].vocabularySize / concepts.length) * (h - 20) - 10;
+
+                if (i === 0) evolutionCtx.moveTo(x, y);
+                else evolutionCtx.lineTo(x, y);
+            }
+            evolutionCtx.stroke();
+
+            // Draw success rate line
+            evolutionCtx.beginPath();
+            evolutionCtx.strokeStyle = '#00cc66';
+            evolutionCtx.lineWidth = 2;
+
+            for (let i = 0; i < evolutionHistory.length; i++) {
+                const x = (i / (evolutionHistory.length - 1)) * w;
+                const y = h - evolutionHistory[i].successRate * (h - 20) - 10;
+
+                if (i === 0) evolutionCtx.moveTo(x, y);
+                else evolutionCtx.lineTo(x, y);
+            }
+            evolutionCtx.stroke();
+
+            // Legend
+            evolutionCtx.fillStyle = '#ffaa00';
+            evolutionCtx.font = '10px Courier New';
+            evolutionCtx.fillText('Vocabulary', 10, 15);
+            evolutionCtx.fillStyle = '#00cc66';
+            evolutionCtx.fillText('Success Rate', 80, 15);
+        }
+
+        function updateStats() {
+            document.getElementById('agentCount').textContent = agents.length;
+            document.getElementById('vocabularySize').textContent = Object.keys(globalLexicon).length;
+            document.getElementById('interactions').textContent = totalInteractions;
+
+            const rate = totalInteractions > 0 ?
+                Math.round((successfulInteractions / totalInteractions) * 100) : 0;
+            document.getElementById('successRate').textContent = rate + '%';
+
+            updateConceptsGrid();
+            updateLexiconDisplay();
+        }
+
+        function updateConceptsGrid() {
+            const grid = document.getElementById('conceptsGrid');
+            grid.innerHTML = '';
+
+            for (const concept of concepts) {
+                const div = document.createElement('div');
+                div.className = 'concept' + (globalLexicon[concept] ? ' named' : '');
+                div.textContent = concept;
+                if (globalLexicon[concept]) {
+                    div.title = `"${globalLexicon[concept].word}"`;
+                }
+                grid.appendChild(div);
+            }
+        }
+
+        function updateLexiconDisplay() {
+            const display = document.getElementById('lexiconDisplay');
+            display.innerHTML = '';
+
+            const entries = Object.entries(globalLexicon)
+                .sort((a, b) => b[1].usage - a[1].usage);
+
+            for (const [concept, data] of entries) {
+                const div = document.createElement('div');
+                div.className = 'word-entry';
+                div.innerHTML = `
+                    <span class="word-symbol">${data.word}</span>
+                    <span class="word-meaning">${concept}</span>
+                    <span class="word-usage">${data.usage.toFixed(1)}</span>
+                `;
+                display.appendChild(div);
+            }
+
+            if (entries.length === 0) {
+                display.innerHTML = '<div style="color: #666; text-align: center;">No shared vocabulary yet...</div>';
+            }
+        }
+
+        function startSimulation() {
+            if (!isRunning) {
+                isRunning = true;
+                simulate();
+            }
+        }
+
+        function stopSimulation() {
+            isRunning = false;
+            if (animationFrame) {
+                cancelAnimationFrame(animationFrame);
+            }
+        }
+
+        function stepSimulation() {
+            stopSimulation();
+            simulate();
+            isRunning = false;
+        }
+
+        function resetSimulation() {
+            stopSimulation();
+            totalInteractions = 0;
+            successfulInteractions = 0;
+            evolutionHistory = [];
+            globalLexicon = {};
+            document.getElementById('communicationLog').innerHTML = '';
+            initializeAgents(10);
+            updateStats();
+            render();
+        }
+
+        // Event listeners for settings
+        document.getElementById('learningRate').addEventListener('input', (e) => {
+            document.getElementById('learningRateValue').textContent =
+                (parseInt(e.target.value) / 100).toFixed(2);
+        });
+
+        document.getElementById('forgetRate').addEventListener('input', (e) => {
+            document.getElementById('forgetRateValue').textContent =
+                (parseInt(e.target.value) / 1000).toFixed(3);
+        });
+
+        document.getElementById('inventionRate').addEventListener('input', (e) => {
+            document.getElementById('inventionRateValue').textContent =
+                (parseInt(e.target.value) / 100).toFixed(2);
+        });
+
+        // Initialize
+        initializeAgents(10);
+        updateStats();
+        render();
+    </script>
+</body>
+</html>

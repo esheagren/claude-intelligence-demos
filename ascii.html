@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASCII Art Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0f;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            min-height: 100vh;
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: #111;
+            padding: 20px;
+            border-right: 1px solid #222;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        .sidebar h1 {
+            font-size: 20px;
+            margin-bottom: 5px;
+            color: #00ff00;
+        }
+
+        .subtitle {
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .section {
+            margin-bottom: 20px;
+        }
+
+        .section h3 {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #888;
+            margin-bottom: 10px;
+        }
+
+        .control {
+            margin-bottom: 12px;
+        }
+
+        .control label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #aaa;
+            margin-bottom: 5px;
+        }
+
+        .control .value {
+            color: #00ff00;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 4px;
+            border-radius: 2px;
+            background: #333;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #00ff00;
+            cursor: pointer;
+        }
+
+        select {
+            width: 100%;
+            padding: 8px;
+            background: #1a1a1a;
+            color: #fff;
+            border: 1px solid #333;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .checkbox-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .checkbox-control input {
+            width: 16px;
+            height: 16px;
+        }
+
+        .checkbox-control label {
+            font-size: 12px;
+            color: #aaa;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background: #1a1a1a;
+            color: #fff;
+            border: 1px solid #333;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-bottom: 8px;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: #252525;
+            border-color: #00ff00;
+        }
+
+        button.primary {
+            background: #00ff00;
+            color: #000;
+            font-weight: bold;
+            border: none;
+        }
+
+        button.primary:hover {
+            background: #00cc00;
+        }
+
+        .divider {
+            height: 1px;
+            background: #222;
+            margin: 15px 0;
+        }
+
+        .main-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .drop-zone {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 3px dashed #333;
+            margin: 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .drop-zone:hover, .drop-zone.drag-over {
+            border-color: #00ff00;
+            background: rgba(0, 255, 0, 0.05);
+        }
+
+        .drop-zone.hidden {
+            display: none;
+        }
+
+        .drop-icon {
+            font-size: 64px;
+            opacity: 0.5;
+            margin-bottom: 20px;
+        }
+
+        .drop-text {
+            font-size: 16px;
+            color: #888;
+        }
+
+        .drop-hint {
+            font-size: 12px;
+            color: #555;
+            margin-top: 10px;
+        }
+
+        .output-container {
+            flex: 1;
+            display: none;
+            flex-direction: column;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        .output-container.visible {
+            display: flex;
+        }
+
+        .output-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .output-info {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .output-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .output-actions button {
+            width: auto;
+            margin: 0;
+            padding: 8px 16px;
+        }
+
+        .ascii-output {
+            flex: 1;
+            overflow: auto;
+            background: #000;
+            border-radius: 8px;
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+            white-space: pre;
+            line-height: 1;
+            font-size: 8px;
+        }
+
+        .ascii-output.colored span {
+            display: inline;
+        }
+
+        .color-picker-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .color-picker-row input[type="color"] {
+            width: 40px;
+            height: 30px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .color-picker-row label {
+            font-size: 12px;
+            color: #888;
+            display: flex;
+            align-items: center;
+        }
+
+        .char-set-preview {
+            font-size: 10px;
+            color: #666;
+            margin-top: 5px;
+            word-break: break-all;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            background: #1a1a1a;
+            color: #fff;
+            border: 1px solid #333;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .hidden-canvas {
+            display: none;
+        }
+
+        @media (max-width: 700px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid #222;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h1>ASCII Art</h1>
+            <p class="subtitle">Convert images to text art</p>
+
+            <div class="section">
+                <h3>Image</h3>
+                <button class="primary" id="uploadBtn">Upload Image</button>
+                <button id="webcamBtn">Use Webcam</button>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="section">
+                <h3>Resolution</h3>
+                <div class="control">
+                    <label>Width (chars) <span class="value" id="widthVal">100</span></label>
+                    <input type="range" id="widthSlider" min="20" max="200" value="100">
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>Character Set</h3>
+                <select id="charSet">
+                    <option value="standard">Standard</option>
+                    <option value="simple">Simple</option>
+                    <option value="blocks">Blocks</option>
+                    <option value="braille">Braille</option>
+                    <option value="binary">Binary</option>
+                    <option value="custom">Custom</option>
+                </select>
+                <div class="char-set-preview" id="charPreview">@%#*+=-:. </div>
+                <div id="customInput" style="display: none; margin-top: 10px;">
+                    <input type="text" id="customChars" placeholder="Enter characters (dark to light)">
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="section">
+                <h3>Adjustments</h3>
+                <div class="control">
+                    <label>Brightness <span class="value" id="brightnessVal">0</span></label>
+                    <input type="range" id="brightness" min="-100" max="100" value="0">
+                </div>
+                <div class="control">
+                    <label>Contrast <span class="value" id="contrastVal">0</span></label>
+                    <input type="range" id="contrast" min="-100" max="100" value="0">
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="section">
+                <h3>Output</h3>
+                <div class="checkbox-control">
+                    <input type="checkbox" id="colorMode">
+                    <label for="colorMode">Color output</label>
+                </div>
+                <div class="checkbox-control">
+                    <input type="checkbox" id="invertMode">
+                    <label for="invertMode">Invert</label>
+                </div>
+                <div class="color-picker-row">
+                    <label>Text:</label>
+                    <input type="color" id="textColor" value="#00ff00">
+                    <label>BG:</label>
+                    <input type="color" id="bgColor" value="#000000">
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="section">
+                <h3>Font Size</h3>
+                <div class="control">
+                    <label>Size <span class="value" id="fontVal">8px</span></label>
+                    <input type="range" id="fontSize" min="4" max="16" value="8">
+                </div>
+            </div>
+        </div>
+
+        <div class="main-area">
+            <div class="drop-zone" id="dropZone">
+                <div class="drop-icon">🖼️</div>
+                <div class="drop-text">Drop an image here</div>
+                <div class="drop-hint">or click to browse</div>
+            </div>
+
+            <div class="output-container" id="outputContainer">
+                <div class="output-header">
+                    <div class="output-info" id="outputInfo">100 x 50 characters</div>
+                    <div class="output-actions">
+                        <button id="copyBtn">Copy Text</button>
+                        <button id="saveTextBtn">Save .txt</button>
+                        <button id="saveImageBtn">Save Image</button>
+                        <button id="newImageBtn">New Image</button>
+                    </div>
+                </div>
+                <div class="ascii-output" id="asciiOutput"></div>
+            </div>
+        </div>
+    </div>
+
+    <input type="file" id="fileInput" accept="image/*" style="display: none;">
+    <canvas id="hiddenCanvas" class="hidden-canvas"></canvas>
+    <video id="webcamVideo" style="display: none;"></video>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const dropZone = document.getElementById('dropZone');
+        const outputContainer = document.getElementById('outputContainer');
+        const asciiOutput = document.getElementById('asciiOutput');
+        const hiddenCanvas = document.getElementById('hiddenCanvas');
+        const ctx = hiddenCanvas.getContext('2d');
+
+        let currentImage = null;
+        let webcamStream = null;
+        let webcamInterval = null;
+
+        // Character sets (from dark to light)
+        const charSets = {
+            standard: '@%#*+=-:. ',
+            simple: '@#=-. ',
+            blocks: '█▓▒░ ',
+            braille: '⣿⣷⣯⣟⡿⢿⣻⣽⣾⣶⣦⣤⣀⡀  ',
+            binary: '10 ',
+            custom: '@%#*+=-:. '
+        };
+
+        let settings = {
+            width: 100,
+            charSet: 'standard',
+            brightness: 0,
+            contrast: 0,
+            colorMode: false,
+            invertMode: false,
+            textColor: '#00ff00',
+            bgColor: '#000000',
+            fontSize: 8
+        };
+
+        function loadImage(src) {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = () => {
+                currentImage = img;
+                stopWebcam();
+                processImage();
+                dropZone.classList.add('hidden');
+                outputContainer.classList.add('visible');
+            };
+            img.src = src;
+        }
+
+        function processImage() {
+            if (!currentImage) return;
+
+            const chars = charSets[settings.charSet];
+            const width = settings.width;
+            const aspectRatio = currentImage.height / currentImage.width;
+            const charAspect = 0.5; // Characters are taller than wide
+            const height = Math.floor(width * aspectRatio * charAspect);
+
+            hiddenCanvas.width = width;
+            hiddenCanvas.height = height;
+
+            ctx.drawImage(currentImage, 0, 0, width, height);
+            const imageData = ctx.getImageData(0, 0, width, height);
+            const data = imageData.data;
+
+            let output = '';
+            let colorOutput = '';
+
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const idx = (y * width + x) * 4;
+                    let r = data[idx];
+                    let g = data[idx + 1];
+                    let b = data[idx + 2];
+
+                    // Apply brightness
+                    r = Math.max(0, Math.min(255, r + settings.brightness * 2.55));
+                    g = Math.max(0, Math.min(255, g + settings.brightness * 2.55));
+                    b = Math.max(0, Math.min(255, b + settings.brightness * 2.55));
+
+                    // Apply contrast
+                    const factor = (259 * (settings.contrast + 255)) / (255 * (259 - settings.contrast));
+                    r = Math.max(0, Math.min(255, factor * (r - 128) + 128));
+                    g = Math.max(0, Math.min(255, factor * (g - 128) + 128));
+                    b = Math.max(0, Math.min(255, factor * (b - 128) + 128));
+
+                    // Calculate brightness
+                    let brightness = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+                    if (settings.invertMode) {
+                        brightness = 1 - brightness;
+                    }
+
+                    // Map to character
+                    const charIndex = Math.floor(brightness * (chars.length - 1));
+                    const char = chars[chars.length - 1 - charIndex] || ' ';
+
+                    output += char;
+
+                    if (settings.colorMode) {
+                        const color = `rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`;
+                        colorOutput += `<span style="color:${color}">${char}</span>`;
+                    }
+                }
+                output += '\n';
+                if (settings.colorMode) colorOutput += '\n';
+            }
+
+            if (settings.colorMode) {
+                asciiOutput.innerHTML = colorOutput;
+                asciiOutput.classList.add('colored');
+            } else {
+                asciiOutput.textContent = output;
+                asciiOutput.classList.remove('colored');
+                asciiOutput.style.color = settings.textColor;
+            }
+
+            asciiOutput.style.backgroundColor = settings.bgColor;
+            asciiOutput.style.fontSize = settings.fontSize + 'px';
+            asciiOutput.style.lineHeight = (settings.fontSize * 1.2) + 'px';
+
+            document.getElementById('outputInfo').textContent = `${width} x ${height} characters`;
+        }
+
+        function startWebcam() {
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(stream => {
+                    webcamStream = stream;
+                    const video = document.getElementById('webcamVideo');
+                    video.srcObject = stream;
+                    video.play();
+
+                    video.onloadedmetadata = () => {
+                        currentImage = video;
+                        dropZone.classList.add('hidden');
+                        outputContainer.classList.add('visible');
+
+                        webcamInterval = setInterval(processImage, 100);
+                    };
+                })
+                .catch(err => {
+                    console.error('Webcam error:', err);
+                    alert('Could not access webcam');
+                });
+        }
+
+        function stopWebcam() {
+            if (webcamInterval) {
+                clearInterval(webcamInterval);
+                webcamInterval = null;
+            }
+            if (webcamStream) {
+                webcamStream.getTracks().forEach(track => track.stop());
+                webcamStream = null;
+            }
+        }
+
+        function copyToClipboard() {
+            const text = asciiOutput.textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.getElementById('copyBtn');
+                btn.textContent = 'Copied!';
+                setTimeout(() => btn.textContent = 'Copy Text', 2000);
+            });
+        }
+
+        function saveAsText() {
+            const text = asciiOutput.textContent;
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.download = 'ascii-art.txt';
+            link.href = url;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function saveAsImage() {
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+
+            const lines = asciiOutput.textContent.split('\n');
+            const fontSize = settings.fontSize;
+            const lineHeight = fontSize * 1.2;
+            const charWidth = fontSize * 0.6;
+
+            tempCanvas.width = (settings.width + 2) * charWidth;
+            tempCanvas.height = (lines.length + 2) * lineHeight;
+
+            tempCtx.fillStyle = settings.bgColor;
+            tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+
+            tempCtx.font = `${fontSize}px Courier New`;
+            tempCtx.fillStyle = settings.textColor;
+
+            lines.forEach((line, i) => {
+                tempCtx.fillText(line, charWidth, (i + 1.5) * lineHeight);
+            });
+
+            const link = document.createElement('a');
+            link.download = 'ascii-art.png';
+            link.href = tempCanvas.toDataURL('image/png');
+            link.click();
+        }
+
+        function resetToDropZone() {
+            stopWebcam();
+            currentImage = null;
+            dropZone.classList.remove('hidden');
+            outputContainer.classList.remove('visible');
+        }
+
+        // Event listeners
+        dropZone.addEventListener('click', () => fileInput.click());
+        document.getElementById('uploadBtn').addEventListener('click', () => fileInput.click());
+        document.getElementById('webcamBtn').addEventListener('click', startWebcam);
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('drag-over');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (e) => loadImage(e.target.result);
+                reader.readAsDataURL(file);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => loadImage(e.target.result);
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Settings controls
+        document.getElementById('widthSlider').addEventListener('input', (e) => {
+            settings.width = parseInt(e.target.value);
+            document.getElementById('widthVal').textContent = settings.width;
+            if (currentImage) processImage();
+        });
+
+        document.getElementById('charSet').addEventListener('change', (e) => {
+            settings.charSet = e.target.value;
+            document.getElementById('charPreview').textContent = charSets[settings.charSet];
+            document.getElementById('customInput').style.display = settings.charSet === 'custom' ? 'block' : 'none';
+            if (currentImage) processImage();
+        });
+
+        document.getElementById('customChars').addEventListener('input', (e) => {
+            charSets.custom = e.target.value || '@%#*+=-:. ';
+            document.getElementById('charPreview').textContent = charSets.custom;
+            if (currentImage && settings.charSet === 'custom') processImage();
+        });
+
+        document.getElementById('brightness').addEventListener('input', (e) => {
+            settings.brightness = parseInt(e.target.value);
+            document.getElementById('brightnessVal').textContent = settings.brightness;
+            if (currentImage) processImage();
+        });
+
+        document.getElementById('contrast').addEventListener('input', (e) => {
+            settings.contrast = parseInt(e.target.value);
+            document.getElementById('contrastVal').textContent = settings.contrast;
+            if (currentImage) processImage();
+        });
+
+        document.getElementById('colorMode').addEventListener('change', (e) => {
+            settings.colorMode = e.target.checked;
+            if (currentImage) processImage();
+        });
+
+        document.getElementById('invertMode').addEventListener('change', (e) => {
+            settings.invertMode = e.target.checked;
+            if (currentImage) processImage();
+        });
+
+        document.getElementById('textColor').addEventListener('input', (e) => {
+            settings.textColor = e.target.value;
+            if (currentImage) processImage();
+        });
+
+        document.getElementById('bgColor').addEventListener('input', (e) => {
+            settings.bgColor = e.target.value;
+            if (currentImage) processImage();
+        });
+
+        document.getElementById('fontSize').addEventListener('input', (e) => {
+            settings.fontSize = parseInt(e.target.value);
+            document.getElementById('fontVal').textContent = settings.fontSize + 'px';
+            if (currentImage) processImage();
+        });
+
+        document.getElementById('copyBtn').addEventListener('click', copyToClipboard);
+        document.getElementById('saveTextBtn').addEventListener('click', saveAsText);
+        document.getElementById('saveImageBtn').addEventListener('click', saveAsImage);
+        document.getElementById('newImageBtn').addEventListener('click', resetToDropZone);
+    </script>
+</body>
+</html>

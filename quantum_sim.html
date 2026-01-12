@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum State Visualizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #050510 0%, #0a0a20 50%, #050515 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #00ffff, #ff00ff, #00ffff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 30px;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 300px 1fr 300px;
+            gap: 20px;
+        }
+
+        .panel {
+            background: rgba(20, 20, 40, 0.8);
+            border: 1px solid #333;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .panel h2 {
+            color: #00ffff;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+
+        .qubit-display {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .qubit {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .qubit-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .qubit-name {
+            color: #00ffff;
+            font-weight: bold;
+        }
+
+        .qubit-state {
+            color: #ff00ff;
+            font-family: serif;
+            font-style: italic;
+        }
+
+        .bloch-mini {
+            width: 80px;
+            height: 80px;
+            margin: 10px auto;
+        }
+
+        .amplitude-bars {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .amplitude-bar {
+            flex: 1;
+            text-align: center;
+        }
+
+        .amplitude-bar .bar {
+            height: 40px;
+            background: #222;
+            border-radius: 3px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .amplitude-bar .fill {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            transition: height 0.3s;
+        }
+
+        .amplitude-bar .fill.zero {
+            background: linear-gradient(to top, #00ffff, #00aaaa);
+        }
+
+        .amplitude-bar .fill.one {
+            background: linear-gradient(to top, #ff00ff, #aa00aa);
+        }
+
+        .amplitude-bar label {
+            font-size: 0.8em;
+            color: #888;
+        }
+
+        .canvas-container {
+            position: relative;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        #mainCanvas {
+            width: 100%;
+            height: 500px;
+        }
+
+        .gate-palette {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .gate {
+            padding: 10px;
+            background: rgba(0, 100, 150, 0.3);
+            border: 1px solid #0088aa;
+            border-radius: 5px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .gate:hover {
+            background: rgba(0, 150, 200, 0.4);
+            transform: scale(1.05);
+        }
+
+        .gate.pauli {
+            border-color: #ff6666;
+            background: rgba(150, 50, 50, 0.3);
+        }
+
+        .gate.hadamard {
+            border-color: #66ff66;
+            background: rgba(50, 150, 50, 0.3);
+        }
+
+        .gate.phase {
+            border-color: #ffff66;
+            background: rgba(150, 150, 50, 0.3);
+        }
+
+        .gate.cnot {
+            border-color: #ff66ff;
+            background: rgba(150, 50, 150, 0.3);
+            grid-column: span 2;
+        }
+
+        .gate-name {
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .gate-desc {
+            font-size: 0.7em;
+            color: #aaa;
+        }
+
+        .circuit-display {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 15px;
+            min-height: 100px;
+            font-family: monospace;
+        }
+
+        .circuit-line {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+        }
+
+        .circuit-qubit {
+            width: 30px;
+            color: #00ffff;
+        }
+
+        .circuit-wire {
+            flex: 1;
+            height: 2px;
+            background: #444;
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .circuit-gate {
+            width: 30px;
+            height: 30px;
+            background: rgba(0, 100, 150, 0.5);
+            border: 1px solid #00aaff;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8em;
+            margin: 0 5px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .controls button {
+            flex: 1;
+            padding: 10px;
+            background: linear-gradient(90deg, #00aaaa, #00ffff);
+            border: none;
+            border-radius: 5px;
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .controls button:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+        }
+
+        .controls button.secondary {
+            background: linear-gradient(90deg, #444, #666);
+            color: #fff;
+        }
+
+        .measurement-result {
+            background: rgba(255, 0, 255, 0.1);
+            border: 1px solid #ff00ff;
+            border-radius: 5px;
+            padding: 15px;
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .measurement-value {
+            font-size: 2em;
+            color: #ff00ff;
+            font-family: monospace;
+        }
+
+        .probability-display {
+            margin-top: 15px;
+        }
+
+        .prob-row {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+        }
+
+        .prob-state {
+            width: 60px;
+            font-family: monospace;
+            color: #00ffff;
+        }
+
+        .prob-bar-container {
+            flex: 1;
+            height: 20px;
+            background: #222;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 0 10px;
+        }
+
+        .prob-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #00ffff, #ff00ff);
+            transition: width 0.3s;
+        }
+
+        .prob-value {
+            width: 50px;
+            text-align: right;
+            font-size: 0.9em;
+        }
+
+        .entanglement-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: rgba(255, 0, 255, 0.1);
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+
+        .entanglement-indicator.entangled {
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 5px rgba(255, 0, 255, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(255, 0, 255, 0.8); }
+        }
+
+        .info-panel {
+            font-size: 0.85em;
+            color: #aaa;
+            line-height: 1.6;
+        }
+
+        .matrix-display {
+            font-family: monospace;
+            font-size: 0.8em;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Quantum State Visualizer</h1>
+        <p class="subtitle">Bloch Sphere | Quantum Gates | Superposition & Entanglement</p>
+
+        <div class="main-grid">
+            <div class="panel">
+                <h2>Quantum Gates</h2>
+                <div class="gate-palette">
+                    <div class="gate hadamard" onclick="applyGate('H', 0)">
+                        <div class="gate-name">H</div>
+                        <div class="gate-desc">Hadamard</div>
+                    </div>
+                    <div class="gate pauli" onclick="applyGate('X', 0)">
+                        <div class="gate-name">X</div>
+                        <div class="gate-desc">Pauli-X</div>
+                    </div>
+                    <div class="gate pauli" onclick="applyGate('Y', 0)">
+                        <div class="gate-name">Y</div>
+                        <div class="gate-desc">Pauli-Y</div>
+                    </div>
+                    <div class="gate pauli" onclick="applyGate('Z', 0)">
+                        <div class="gate-name">Z</div>
+                        <div class="gate-desc">Pauli-Z</div>
+                    </div>
+                    <div class="gate phase" onclick="applyGate('S', 0)">
+                        <div class="gate-name">S</div>
+                        <div class="gate-desc">Phase</div>
+                    </div>
+                    <div class="gate phase" onclick="applyGate('T', 0)">
+                        <div class="gate-name">T</div>
+                        <div class="gate-desc">π/8</div>
+                    </div>
+                    <div class="gate cnot" onclick="applyGate('CNOT', 0)">
+                        <div class="gate-name">CNOT</div>
+                        <div class="gate-desc">Controlled-NOT</div>
+                    </div>
+                    <div class="gate" onclick="applyGate('SWAP', 0)">
+                        <div class="gate-name">SWAP</div>
+                        <div class="gate-desc">Swap</div>
+                    </div>
+                </div>
+
+                <h2>Qubit Selection</h2>
+                <div class="qubit-display" id="qubitDisplay"></div>
+
+                <div class="controls" style="margin-top: 15px;">
+                    <button onclick="addQubit()">+ Qubit</button>
+                    <button class="secondary" onclick="resetState()">Reset</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>Bloch Sphere Visualization</h2>
+                <div class="canvas-container">
+                    <canvas id="mainCanvas"></canvas>
+                </div>
+
+                <div class="controls">
+                    <button onclick="measure()">Measure</button>
+                    <button class="secondary" onclick="randomState()">Random State</button>
+                    <button class="secondary" onclick="bellState()">Bell State</button>
+                </div>
+
+                <div class="measurement-result" id="measurementResult" style="display: none;">
+                    <div>Measurement Result:</div>
+                    <div class="measurement-value" id="measurementValue">|0⟩</div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>Quantum State</h2>
+                <div class="probability-display" id="probabilityDisplay"></div>
+
+                <div class="entanglement-indicator" id="entanglementIndicator">
+                    <span>Entanglement:</span>
+                    <span id="entanglementStatus">None</span>
+                </div>
+
+                <h2 style="margin-top: 20px;">State Vector</h2>
+                <div class="matrix-display" id="stateVector"></div>
+
+                <h2 style="margin-top: 20px;">Circuit</h2>
+                <div class="circuit-display" id="circuitDisplay"></div>
+
+                <div class="info-panel">
+                    <p>This visualizer simulates quantum computing concepts:</p>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li>Superposition: states exist in multiple states</li>
+                        <li>Entanglement: correlated quantum states</li>
+                        <li>Measurement: wave function collapse</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Complex number operations
+        class Complex {
+            constructor(re = 0, im = 0) {
+                this.re = re;
+                this.im = im;
+            }
+
+            add(other) {
+                return new Complex(this.re + other.re, this.im + other.im);
+            }
+
+            sub(other) {
+                return new Complex(this.re - other.re, this.im - other.im);
+            }
+
+            mul(other) {
+                return new Complex(
+                    this.re * other.re - this.im * other.im,
+                    this.re * other.im + this.im * other.re
+                );
+            }
+
+            scale(s) {
+                return new Complex(this.re * s, this.im * s);
+            }
+
+            conj() {
+                return new Complex(this.re, -this.im);
+            }
+
+            abs() {
+                return Math.sqrt(this.re * this.re + this.im * this.im);
+            }
+
+            phase() {
+                return Math.atan2(this.im, this.re);
+            }
+
+            toString() {
+                if (Math.abs(this.im) < 0.001) return this.re.toFixed(3);
+                if (Math.abs(this.re) < 0.001) return `${this.im.toFixed(3)}i`;
+                const sign = this.im >= 0 ? '+' : '';
+                return `${this.re.toFixed(3)}${sign}${this.im.toFixed(3)}i`;
+            }
+        }
+
+        // Quantum gates as 2x2 matrices
+        const gates = {
+            I: [[new Complex(1), new Complex(0)], [new Complex(0), new Complex(1)]],
+            X: [[new Complex(0), new Complex(1)], [new Complex(1), new Complex(0)]],
+            Y: [[new Complex(0), new Complex(0, -1)], [new Complex(0, 1), new Complex(0)]],
+            Z: [[new Complex(1), new Complex(0)], [new Complex(0), new Complex(-1)]],
+            H: [[new Complex(1/Math.sqrt(2)), new Complex(1/Math.sqrt(2))],
+                [new Complex(1/Math.sqrt(2)), new Complex(-1/Math.sqrt(2))]],
+            S: [[new Complex(1), new Complex(0)], [new Complex(0), new Complex(0, 1)]],
+            T: [[new Complex(1), new Complex(0)],
+                [new Complex(0), new Complex(Math.cos(Math.PI/4), Math.sin(Math.PI/4))]]
+        };
+
+        // Quantum state
+        let numQubits = 2;
+        let stateVector = [];
+        let selectedQubit = 0;
+        let circuitHistory = [];
+
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = 500;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        function initializeState() {
+            const dim = Math.pow(2, numQubits);
+            stateVector = new Array(dim).fill(null).map(() => new Complex(0));
+            stateVector[0] = new Complex(1);
+            circuitHistory = [];
+            updateDisplay();
+        }
+
+        function applyGate(gateName, qubit) {
+            selectedQubit = qubit;
+
+            if (gateName === 'CNOT') {
+                applyCNOT(0, 1);
+            } else if (gateName === 'SWAP') {
+                applySWAP(0, 1);
+            } else {
+                applySingleQubitGate(gates[gateName], selectedQubit);
+            }
+
+            circuitHistory.push({ gate: gateName, qubit: selectedQubit });
+            updateDisplay();
+        }
+
+        function applySingleQubitGate(gate, qubit) {
+            const dim = stateVector.length;
+            const newState = new Array(dim).fill(null).map(() => new Complex(0));
+
+            for (let i = 0; i < dim; i++) {
+                const bit = (i >> (numQubits - 1 - qubit)) & 1;
+                const partner = i ^ (1 << (numQubits - 1 - qubit));
+
+                if (bit === 0) {
+                    newState[i] = newState[i].add(gate[0][0].mul(stateVector[i]));
+                    newState[i] = newState[i].add(gate[0][1].mul(stateVector[partner]));
+                    newState[partner] = newState[partner].add(gate[1][0].mul(stateVector[i]));
+                    newState[partner] = newState[partner].add(gate[1][1].mul(stateVector[partner]));
+                }
+            }
+
+            stateVector = newState;
+        }
+
+        function applyCNOT(control, target) {
+            const dim = stateVector.length;
+            const newState = [...stateVector];
+
+            for (let i = 0; i < dim; i++) {
+                const controlBit = (i >> (numQubits - 1 - control)) & 1;
+                if (controlBit === 1) {
+                    const flipped = i ^ (1 << (numQubits - 1 - target));
+                    [newState[i], newState[flipped]] = [stateVector[flipped], stateVector[i]];
+                }
+            }
+
+            stateVector = newState;
+        }
+
+        function applySWAP(q1, q2) {
+            const dim = stateVector.length;
+            const newState = new Array(dim).fill(null).map(() => new Complex(0));
+
+            for (let i = 0; i < dim; i++) {
+                const bit1 = (i >> (numQubits - 1 - q1)) & 1;
+                const bit2 = (i >> (numQubits - 1 - q2)) & 1;
+
+                let newIndex = i;
+                newIndex = (newIndex & ~(1 << (numQubits - 1 - q1))) | (bit2 << (numQubits - 1 - q1));
+                newIndex = (newIndex & ~(1 << (numQubits - 1 - q2))) | (bit1 << (numQubits - 1 - q2));
+
+                newState[newIndex] = stateVector[i];
+            }
+
+            stateVector = newState;
+        }
+
+        function measure() {
+            // Calculate probabilities
+            const probs = stateVector.map(amp => amp.abs() * amp.abs());
+
+            // Random measurement
+            const r = Math.random();
+            let cumulative = 0;
+            let result = 0;
+
+            for (let i = 0; i < probs.length; i++) {
+                cumulative += probs[i];
+                if (r < cumulative) {
+                    result = i;
+                    break;
+                }
+            }
+
+            // Collapse state
+            stateVector = stateVector.map(() => new Complex(0));
+            stateVector[result] = new Complex(1);
+
+            // Display result
+            const resultStr = result.toString(2).padStart(numQubits, '0');
+            document.getElementById('measurementResult').style.display = 'block';
+            document.getElementById('measurementValue').textContent = `|${resultStr}⟩`;
+
+            circuitHistory.push({ gate: 'M', qubit: -1 });
+            updateDisplay();
+        }
+
+        function randomState() {
+            const dim = stateVector.length;
+            let normSq = 0;
+
+            // Generate random amplitudes
+            for (let i = 0; i < dim; i++) {
+                stateVector[i] = new Complex(
+                    Math.random() * 2 - 1,
+                    Math.random() * 2 - 1
+                );
+                normSq += stateVector[i].abs() * stateVector[i].abs();
+            }
+
+            // Normalize
+            const norm = Math.sqrt(normSq);
+            for (let i = 0; i < dim; i++) {
+                stateVector[i] = stateVector[i].scale(1 / norm);
+            }
+
+            updateDisplay();
+        }
+
+        function bellState() {
+            resetState();
+            applyGate('H', 0);
+            applyGate('CNOT', 0);
+        }
+
+        function addQubit() {
+            if (numQubits < 4) {
+                numQubits++;
+                initializeState();
+            }
+        }
+
+        function resetState() {
+            document.getElementById('measurementResult').style.display = 'none';
+            initializeState();
+        }
+
+        function getBlochCoordinates(qubit) {
+            // Calculate reduced density matrix for single qubit
+            const dim = stateVector.length;
+            let rho00 = new Complex(0);
+            let rho01 = new Complex(0);
+            let rho10 = new Complex(0);
+            let rho11 = new Complex(0);
+
+            for (let i = 0; i < dim; i++) {
+                const bit = (i >> (numQubits - 1 - qubit)) & 1;
+                const amp = stateVector[i];
+
+                for (let j = 0; j < dim; j++) {
+                    const jbit = (j >> (numQubits - 1 - qubit)) & 1;
+
+                    // Check if other qubits match
+                    const iOther = i ^ (bit << (numQubits - 1 - qubit));
+                    const jOther = j ^ (jbit << (numQubits - 1 - qubit));
+
+                    if (iOther === jOther) {
+                        const ampJ = stateVector[j];
+                        const term = amp.mul(ampJ.conj());
+
+                        if (bit === 0 && jbit === 0) rho00 = rho00.add(term);
+                        else if (bit === 0 && jbit === 1) rho01 = rho01.add(term);
+                        else if (bit === 1 && jbit === 0) rho10 = rho10.add(term);
+                        else rho11 = rho11.add(term);
+                    }
+                }
+            }
+
+            // Bloch vector from density matrix
+            const x = rho01.add(rho10).re;
+            const y = rho01.sub(rho10).im;
+            const z = rho00.sub(rho11).re;
+
+            return { x, y, z };
+        }
+
+        function calculateEntanglement() {
+            if (numQubits < 2) return 0;
+
+            // Simple entanglement measure: check if state is separable
+            // For 2 qubits, check if |ψ⟩ = |a⟩⊗|b⟩
+            const dim = stateVector.length;
+
+            // Calculate reduced density matrix for first qubit
+            let rho00 = 0, rho11 = 0;
+            for (let i = 0; i < dim; i++) {
+                const bit = (i >> (numQubits - 1)) & 1;
+                const prob = stateVector[i].abs() * stateVector[i].abs();
+                if (bit === 0) rho00 += prob;
+                else rho11 += prob;
+            }
+
+            // Von Neumann entropy approximation
+            const p = rho00;
+            if (p < 0.001 || p > 0.999) return 0;
+
+            const entropy = -p * Math.log2(p) - (1 - p) * Math.log2(1 - p);
+            return entropy;
+        }
+
+        function updateDisplay() {
+            updateQubitDisplay();
+            updateProbabilityDisplay();
+            updateStateVector();
+            updateCircuitDisplay();
+            updateEntanglement();
+            render();
+        }
+
+        function updateQubitDisplay() {
+            const container = document.getElementById('qubitDisplay');
+            container.innerHTML = '';
+
+            for (let q = 0; q < numQubits; q++) {
+                const bloch = getBlochCoordinates(q);
+                const prob0 = (1 + bloch.z) / 2;
+                const prob1 = (1 - bloch.z) / 2;
+
+                const div = document.createElement('div');
+                div.className = 'qubit';
+                div.innerHTML = `
+                    <div class="qubit-header">
+                        <span class="qubit-name">q${q}</span>
+                        <span class="qubit-state">θ=${Math.acos(bloch.z).toFixed(2)}, φ=${Math.atan2(bloch.y, bloch.x).toFixed(2)}</span>
+                    </div>
+                    <div class="amplitude-bars">
+                        <div class="amplitude-bar">
+                            <div class="bar">
+                                <div class="fill zero" style="height: ${prob0 * 100}%"></div>
+                            </div>
+                            <label>|0⟩ ${(prob0 * 100).toFixed(0)}%</label>
+                        </div>
+                        <div class="amplitude-bar">
+                            <div class="bar">
+                                <div class="fill one" style="height: ${prob1 * 100}%"></div>
+                            </div>
+                            <label>|1⟩ ${(prob1 * 100).toFixed(0)}%</label>
+                        </div>
+                    </div>
+                `;
+                div.onclick = () => { selectedQubit = q; updateDisplay(); };
+                if (q === selectedQubit) div.style.borderColor = '#00ffff';
+                container.appendChild(div);
+            }
+        }
+
+        function updateProbabilityDisplay() {
+            const container = document.getElementById('probabilityDisplay');
+            container.innerHTML = '';
+
+            for (let i = 0; i < stateVector.length; i++) {
+                const prob = stateVector[i].abs() * stateVector[i].abs();
+                const stateStr = i.toString(2).padStart(numQubits, '0');
+
+                const div = document.createElement('div');
+                div.className = 'prob-row';
+                div.innerHTML = `
+                    <span class="prob-state">|${stateStr}⟩</span>
+                    <div class="prob-bar-container">
+                        <div class="prob-bar" style="width: ${prob * 100}%"></div>
+                    </div>
+                    <span class="prob-value">${(prob * 100).toFixed(1)}%</span>
+                `;
+                container.appendChild(div);
+            }
+        }
+
+        function updateStateVector() {
+            const container = document.getElementById('stateVector');
+            let html = '|ψ⟩ = ';
+
+            const terms = [];
+            for (let i = 0; i < stateVector.length; i++) {
+                const amp = stateVector[i];
+                if (amp.abs() > 0.001) {
+                    const stateStr = i.toString(2).padStart(numQubits, '0');
+                    terms.push(`(${amp.toString()})|${stateStr}⟩`);
+                }
+            }
+
+            html += terms.join(' + ') || '0';
+            container.textContent = html;
+        }
+
+        function updateCircuitDisplay() {
+            const container = document.getElementById('circuitDisplay');
+            container.innerHTML = '';
+
+            for (let q = 0; q < numQubits; q++) {
+                const line = document.createElement('div');
+                line.className = 'circuit-line';
+
+                const qubitLabel = document.createElement('span');
+                qubitLabel.className = 'circuit-qubit';
+                qubitLabel.textContent = `q${q}:`;
+                line.appendChild(qubitLabel);
+
+                const wire = document.createElement('div');
+                wire.className = 'circuit-wire';
+
+                for (const op of circuitHistory) {
+                    if (op.qubit === q || op.qubit === -1 || (op.gate === 'CNOT' && q < 2)) {
+                        const gateEl = document.createElement('span');
+                        gateEl.className = 'circuit-gate';
+
+                        if (op.gate === 'CNOT') {
+                            gateEl.textContent = q === 0 ? '●' : '⊕';
+                        } else if (op.gate === 'M') {
+                            gateEl.textContent = 'M';
+                            gateEl.style.background = 'rgba(255, 0, 255, 0.3)';
+                        } else {
+                            gateEl.textContent = op.gate;
+                        }
+
+                        wire.appendChild(gateEl);
+                    }
+                }
+
+                line.appendChild(wire);
+                container.appendChild(line);
+            }
+        }
+
+        function updateEntanglement() {
+            const entanglement = calculateEntanglement();
+            const indicator = document.getElementById('entanglementIndicator');
+            const status = document.getElementById('entanglementStatus');
+
+            if (entanglement > 0.1) {
+                indicator.classList.add('entangled');
+                status.textContent = `Strong (${entanglement.toFixed(2)} bits)`;
+                status.style.color = '#ff00ff';
+            } else if (entanglement > 0.01) {
+                indicator.classList.remove('entangled');
+                status.textContent = `Weak (${entanglement.toFixed(2)} bits)`;
+                status.style.color = '#aa00aa';
+            } else {
+                indicator.classList.remove('entangled');
+                status.textContent = 'None (Separable)';
+                status.style.color = '#888';
+            }
+        }
+
+        function render() {
+            const w = canvas.width;
+            const h = canvas.height;
+            const time = Date.now() / 1000;
+
+            ctx.fillStyle = 'rgba(5, 5, 16, 0.3)';
+            ctx.fillRect(0, 0, w, h);
+
+            // Draw Bloch sphere for each qubit
+            const sphereRadius = Math.min(w / (numQubits + 1), h / 2) * 0.7;
+
+            for (let q = 0; q < numQubits; q++) {
+                const cx = (w / (numQubits + 1)) * (q + 1);
+                const cy = h / 2;
+
+                drawBlochSphere(cx, cy, sphereRadius, q, time);
+            }
+
+            // Draw entanglement connections
+            if (numQubits > 1) {
+                const entanglement = calculateEntanglement();
+                if (entanglement > 0.01) {
+                    for (let i = 0; i < numQubits - 1; i++) {
+                        const x1 = (w / (numQubits + 1)) * (i + 1);
+                        const x2 = (w / (numQubits + 1)) * (i + 2);
+
+                        ctx.beginPath();
+                        ctx.moveTo(x1 + sphereRadius, h / 2);
+                        ctx.lineTo(x2 - sphereRadius, h / 2);
+                        ctx.strokeStyle = `rgba(255, 0, 255, ${entanglement * 0.5})`;
+                        ctx.lineWidth = entanglement * 5;
+                        ctx.stroke();
+
+                        // Animated particles along entanglement line
+                        const particlePos = (Math.sin(time * 3) + 1) / 2;
+                        const px = x1 + sphereRadius + (x2 - x1 - 2 * sphereRadius) * particlePos;
+                        ctx.beginPath();
+                        ctx.arc(px, h / 2, 5, 0, Math.PI * 2);
+                        ctx.fillStyle = '#ff00ff';
+                        ctx.fill();
+                    }
+                }
+            }
+
+            requestAnimationFrame(render);
+        }
+
+        function drawBlochSphere(cx, cy, radius, qubit, time) {
+            const bloch = getBlochCoordinates(qubit);
+
+            // Draw sphere outline
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+
+            // Equator
+            ctx.beginPath();
+            ctx.ellipse(cx, cy, radius, radius * 0.3, 0, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Meridian
+            ctx.beginPath();
+            ctx.ellipse(cx, cy, radius * 0.3, radius, 0, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Outer circle
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.strokeStyle = qubit === selectedQubit ? '#00ffff' : '#444';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Axes
+            ctx.strokeStyle = '#555';
+            ctx.lineWidth = 1;
+
+            // Z axis
+            ctx.beginPath();
+            ctx.moveTo(cx, cy - radius);
+            ctx.lineTo(cx, cy + radius);
+            ctx.stroke();
+
+            // X axis (foreshortened)
+            ctx.beginPath();
+            ctx.moveTo(cx - radius, cy);
+            ctx.lineTo(cx + radius, cy);
+            ctx.stroke();
+
+            // Labels
+            ctx.fillStyle = '#888';
+            ctx.font = '12px Courier New';
+            ctx.textAlign = 'center';
+            ctx.fillText('|0⟩', cx, cy - radius - 10);
+            ctx.fillText('|1⟩', cx, cy + radius + 15);
+            ctx.fillText(`q${qubit}`, cx, cy + radius + 35);
+
+            // State vector
+            const stateX = cx + bloch.x * radius;
+            const stateY = cy - bloch.z * radius;
+
+            // Vector line
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(stateX, stateY);
+            ctx.strokeStyle = '#00ffff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // State point with glow
+            const gradient = ctx.createRadialGradient(stateX, stateY, 0, stateX, stateY, 20);
+            gradient.addColorStop(0, 'rgba(0, 255, 255, 0.8)');
+            gradient.addColorStop(0.5, 'rgba(255, 0, 255, 0.3)');
+            gradient.addColorStop(1, 'transparent');
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(stateX, stateY, 20, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(stateX, stateY, 6, 0, Math.PI * 2);
+            ctx.fillStyle = '#00ffff';
+            ctx.fill();
+
+            // Phase indicator
+            if (Math.abs(bloch.y) > 0.01) {
+                const phase = Math.atan2(bloch.y, bloch.x);
+                ctx.beginPath();
+                ctx.arc(cx, cy, radius * 0.2, -Math.PI / 2, -Math.PI / 2 + phase, phase < 0);
+                ctx.strokeStyle = '#ff00ff';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+            }
+        }
+
+        // Initialize
+        initializeState();
+        render();
+    </script>
+</body>
+</html>

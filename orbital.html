@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orbital Mechanics Simulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #000;
+            min-height: 100vh;
+            color: #e0e0e0;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .canvas-area {
+            flex: 1;
+            position: relative;
+        }
+
+        #orbitCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .header-overlay {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+        }
+
+        h1 {
+            font-size: 2em;
+            background: linear-gradient(135deg, #4fc3f7, #ab47bc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            color: #888;
+            font-size: 0.95em;
+        }
+
+        .controls-panel {
+            width: 300px;
+            background: rgba(10, 10, 20, 0.95);
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .control-group {
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        .control-group h3 {
+            color: #4fc3f7;
+            margin-bottom: 12px;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .control-row {
+            margin-bottom: 10px;
+        }
+
+        .control-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .control-row label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+            font-size: 0.85em;
+        }
+
+        .control-row label span {
+            color: #4fc3f7;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 5px;
+            border-radius: 3px;
+            background: #333;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4fc3f7, #ab47bc);
+            cursor: pointer;
+        }
+
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .checkbox-row input {
+            width: 16px;
+            height: 16px;
+            accent-color: #4fc3f7;
+        }
+
+        .btn {
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85em;
+        }
+
+        .btn.primary {
+            background: linear-gradient(135deg, #4fc3f7, #ab47bc);
+            color: white;
+            font-weight: bold;
+        }
+
+        .btn.secondary {
+            background: rgba(255,255,255,0.1);
+            color: #e0e0e0;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .button-row {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .stat-box {
+            background: rgba(0,0,0,0.3);
+            border-radius: 6px;
+            padding: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1em;
+            color: #4fc3f7;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            font-size: 0.7em;
+            color: #888;
+        }
+
+        .preset-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+        }
+
+        .preset-btn {
+            padding: 8px;
+            border: none;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.1);
+            color: #e0e0e0;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: all 0.2s;
+        }
+
+        .preset-btn:hover {
+            background: rgba(79, 195, 247, 0.3);
+        }
+
+        .info-box {
+            background: rgba(79, 195, 247, 0.1);
+            border-left: 3px solid #4fc3f7;
+            padding: 10px;
+            border-radius: 0 8px 8px 0;
+            font-size: 0.8em;
+            line-height: 1.5;
+        }
+
+        .mouse-info {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.7);
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 0.85em;
+        }
+
+        .mouse-info span {
+            color: #4fc3f7;
+        }
+
+        .time-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .time-btn {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.1);
+            color: #e0e0e0;
+            cursor: pointer;
+            font-size: 1em;
+        }
+
+        .time-btn.active {
+            background: #4fc3f7;
+            color: #000;
+        }
+
+        .body-list {
+            max-height: 150px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.3);
+            border-radius: 6px;
+            padding: 8px;
+        }
+
+        .body-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 8px;
+            margin-bottom: 4px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            background: rgba(255,255,255,0.05);
+        }
+
+        .body-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .body-info {
+            display: flex;
+            align-items: center;
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="canvas-area">
+            <canvas id="orbitCanvas"></canvas>
+            <div class="header-overlay">
+                <h1>Orbital Mechanics</h1>
+                <p class="subtitle">N-body gravitational simulation</p>
+            </div>
+            <div class="mouse-info">
+                <span>Click</span>: Add body | <span>Drag</span>: Set velocity | <span>Scroll</span>: Zoom
+            </div>
+        </div>
+
+        <div class="controls-panel">
+            <div class="control-group">
+                <h3>Statistics</h3>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-value" id="bodyCount">0</div>
+                        <div class="stat-label">Bodies</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="timeDisplay">0.0</div>
+                        <div class="stat-label">Time (years)</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="totalEnergy">0</div>
+                        <div class="stat-label">Total Energy</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="fpsDisplay">0</div>
+                        <div class="stat-label">FPS</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Time Control</h3>
+                <div class="time-controls">
+                    <button class="time-btn" id="pauseBtn">⏸</button>
+                    <button class="time-btn active" id="playBtn">▶</button>
+                    <button class="time-btn" id="fastBtn">⏩</button>
+                </div>
+                <div class="control-row" style="margin-top: 10px;">
+                    <label>Time Scale <span id="timeScaleVal">1.0x</span></label>
+                    <input type="range" id="timeScale" min="1" max="100" value="10">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>New Body</h3>
+                <div class="control-row">
+                    <label>Mass <span id="massVal">1.0</span> M☉</label>
+                    <input type="range" id="mass" min="1" max="1000" value="100">
+                </div>
+                <div class="control-row">
+                    <label>Radius <span id="radiusVal">5</span></label>
+                    <input type="range" id="radius" min="2" max="30" value="5">
+                </div>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="fixedBody">
+                    <label for="fixedBody">Fixed (Star)</label>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Bodies</h3>
+                <div class="body-list" id="bodyList">
+                    <em style="color: #666;">No bodies</em>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Display</h3>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="showTrails" checked>
+                    <label for="showTrails">Orbital Trails</label>
+                </div>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="showVelocity">
+                    <label for="showVelocity">Velocity Vectors</label>
+                </div>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="showGravity">
+                    <label for="showGravity">Gravity Vectors</label>
+                </div>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="showGrid">
+                    <label for="showGrid">Reference Grid</label>
+                </div>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="showCOM">
+                    <label for="showCOM">Center of Mass</label>
+                </div>
+                <div class="control-row">
+                    <label>Trail Length <span id="trailLengthVal">200</span></label>
+                    <input type="range" id="trailLength" min="50" max="1000" value="200">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Presets</h3>
+                <div class="preset-buttons">
+                    <button class="preset-btn" data-preset="solar">Solar System</button>
+                    <button class="preset-btn" data-preset="binary">Binary Stars</button>
+                    <button class="preset-btn" data-preset="threeBody">3-Body</button>
+                    <button class="preset-btn" data-preset="lagrange">Lagrange</button>
+                    <button class="preset-btn" data-preset="figure8">Figure-8</button>
+                    <button class="preset-btn" data-preset="rings">Saturn</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Actions</h3>
+                <div class="button-row">
+                    <button class="btn primary" id="clearBodies">Clear All Bodies</button>
+                    <button class="btn secondary" id="centerView">Center View</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>About</h3>
+                <div class="info-box">
+                    <strong>Newton's Law:</strong> F = Gm₁m₂/r²<br><br>
+                    <strong>Kepler's Laws:</strong><br>
+                    1. Orbits are ellipses<br>
+                    2. Equal areas in equal times<br>
+                    3. T² ∝ a³ (period vs semi-major axis)
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('orbitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Physics constants (scaled for visualization)
+        const G = 100; // Gravitational constant
+
+        // View state
+        let viewX = 0, viewY = 0;
+        let zoom = 1;
+        let targetZoom = 1;
+
+        // Settings
+        let timeScale = 1;
+        let paused = false;
+        let newMass = 1;
+        let newRadius = 5;
+        let newFixed = false;
+        let showTrails = true;
+        let showVelocity = false;
+        let showGravity = false;
+        let showGrid = false;
+        let showCOM = false;
+        let trailLength = 200;
+
+        // State
+        let bodies = [];
+        let time = 0;
+        let fps = 0;
+        let lastTime = performance.now();
+        let frameCount = 0;
+
+        // Mouse state
+        let mouseDown = false;
+        let mouseStart = null;
+        let newBodyPreview = null;
+        let panning = false;
+        let panStart = null;
+
+        const COLORS = [
+            '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7',
+            '#dfe6e9', '#fd79a8', '#a29bfe', '#6c5ce7', '#00b894'
+        ];
+
+        class Body {
+            constructor(x, y, vx, vy, mass, radius, color, fixed = false) {
+                this.x = x;
+                this.y = y;
+                this.vx = vx;
+                this.vy = vy;
+                this.mass = mass;
+                this.radius = radius;
+                this.color = color;
+                this.fixed = fixed;
+                this.trail = [];
+                this.ax = 0;
+                this.ay = 0;
+            }
+
+            get kineticEnergy() {
+                return 0.5 * this.mass * (this.vx * this.vx + this.vy * this.vy);
+            }
+
+            get speed() {
+                return Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+            }
+        }
+
+        function calculateForces() {
+            // Reset accelerations
+            for (const body of bodies) {
+                body.ax = 0;
+                body.ay = 0;
+            }
+
+            // Calculate gravitational forces between all pairs
+            for (let i = 0; i < bodies.length; i++) {
+                for (let j = i + 1; j < bodies.length; j++) {
+                    const b1 = bodies[i];
+                    const b2 = bodies[j];
+
+                    const dx = b2.x - b1.x;
+                    const dy = b2.y - b1.y;
+                    const r2 = dx * dx + dy * dy;
+                    const r = Math.sqrt(r2);
+
+                    // Softening to prevent singularity
+                    const softening = 5;
+                    const r2Soft = r2 + softening * softening;
+
+                    // Force magnitude: F = G * m1 * m2 / r^2
+                    const F = G * b1.mass * b2.mass / r2Soft;
+
+                    // Force components
+                    const Fx = F * dx / r;
+                    const Fy = F * dy / r;
+
+                    // Apply to both bodies (Newton's 3rd law)
+                    if (!b1.fixed) {
+                        b1.ax += Fx / b1.mass;
+                        b1.ay += Fy / b1.mass;
+                    }
+                    if (!b2.fixed) {
+                        b2.ax -= Fx / b2.mass;
+                        b2.ay -= Fy / b2.mass;
+                    }
+                }
+            }
+        }
+
+        function update(dt) {
+            if (paused) return;
+
+            const steps = 4;
+            const subDt = dt / steps;
+
+            for (let step = 0; step < steps; step++) {
+                calculateForces();
+
+                // Velocity Verlet integration
+                for (const body of bodies) {
+                    if (body.fixed) continue;
+
+                    // Half step velocity
+                    body.vx += body.ax * subDt * 0.5;
+                    body.vy += body.ay * subDt * 0.5;
+
+                    // Full step position
+                    body.x += body.vx * subDt;
+                    body.y += body.vy * subDt;
+                }
+
+                calculateForces();
+
+                for (const body of bodies) {
+                    if (body.fixed) continue;
+
+                    // Half step velocity
+                    body.vx += body.ax * subDt * 0.5;
+                    body.vy += body.ay * subDt * 0.5;
+                }
+            }
+
+            // Update trails
+            for (const body of bodies) {
+                body.trail.push({ x: body.x, y: body.y });
+                if (body.trail.length > trailLength) {
+                    body.trail.shift();
+                }
+            }
+
+            // Check for collisions (merge bodies)
+            for (let i = 0; i < bodies.length; i++) {
+                for (let j = i + 1; j < bodies.length; j++) {
+                    const b1 = bodies[i];
+                    const b2 = bodies[j];
+
+                    const dx = b2.x - b1.x;
+                    const dy = b2.y - b1.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < b1.radius + b2.radius) {
+                        // Merge into larger body
+                        const totalMass = b1.mass + b2.mass;
+                        b1.x = (b1.x * b1.mass + b2.x * b2.mass) / totalMass;
+                        b1.y = (b1.y * b1.mass + b2.y * b2.mass) / totalMass;
+                        b1.vx = (b1.vx * b1.mass + b2.vx * b2.mass) / totalMass;
+                        b1.vy = (b1.vy * b1.mass + b2.vy * b2.mass) / totalMass;
+                        b1.mass = totalMass;
+                        b1.radius = Math.pow(b1.radius ** 3 + b2.radius ** 3, 1/3);
+                        bodies.splice(j, 1);
+                        j--;
+                    }
+                }
+            }
+
+            time += dt * timeScale;
+        }
+
+        function worldToScreen(wx, wy) {
+            return {
+                x: (wx - viewX) * zoom + canvas.width / 2,
+                y: (wy - viewY) * zoom + canvas.height / 2
+            };
+        }
+
+        function screenToWorld(sx, sy) {
+            return {
+                x: (sx - canvas.width / 2) / zoom + viewX,
+                y: (sy - canvas.height / 2) / zoom + viewY
+            };
+        }
+
+        function drawGrid() {
+            const gridSize = 100;
+            const startWorld = screenToWorld(0, 0);
+            const endWorld = screenToWorld(canvas.width, canvas.height);
+
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.lineWidth = 1;
+
+            const startX = Math.floor(startWorld.x / gridSize) * gridSize;
+            const startY = Math.floor(startWorld.y / gridSize) * gridSize;
+
+            for (let wx = startX; wx < endWorld.x; wx += gridSize) {
+                const screen = worldToScreen(wx, 0);
+                ctx.beginPath();
+                ctx.moveTo(screen.x, 0);
+                ctx.lineTo(screen.x, canvas.height);
+                ctx.stroke();
+            }
+
+            for (let wy = startY; wy < endWorld.y; wy += gridSize) {
+                const screen = worldToScreen(0, wy);
+                ctx.beginPath();
+                ctx.moveTo(0, screen.y);
+                ctx.lineTo(canvas.width, screen.y);
+                ctx.stroke();
+            }
+        }
+
+        function drawTrails() {
+            for (const body of bodies) {
+                if (body.trail.length < 2) continue;
+
+                ctx.beginPath();
+                const start = worldToScreen(body.trail[0].x, body.trail[0].y);
+                ctx.moveTo(start.x, start.y);
+
+                for (let i = 1; i < body.trail.length; i++) {
+                    const pt = worldToScreen(body.trail[i].x, body.trail[i].y);
+                    ctx.lineTo(pt.x, pt.y);
+                }
+
+                const gradient = ctx.createLinearGradient(start.x, start.y,
+                    worldToScreen(body.x, body.y).x, worldToScreen(body.x, body.y).y);
+                gradient.addColorStop(0, 'rgba(255,255,255,0)');
+                gradient.addColorStop(1, body.color);
+
+                ctx.strokeStyle = gradient;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+        }
+
+        function drawBodies() {
+            for (const body of bodies) {
+                const screen = worldToScreen(body.x, body.y);
+                const screenRadius = Math.max(body.radius * zoom, 3);
+
+                // Glow effect
+                const gradient = ctx.createRadialGradient(
+                    screen.x, screen.y, 0,
+                    screen.x, screen.y, screenRadius * 2
+                );
+                gradient.addColorStop(0, body.color);
+                gradient.addColorStop(0.5, body.color + '80');
+                gradient.addColorStop(1, 'transparent');
+
+                ctx.beginPath();
+                ctx.arc(screen.x, screen.y, screenRadius * 2, 0, Math.PI * 2);
+                ctx.fillStyle = gradient;
+                ctx.fill();
+
+                // Body
+                ctx.beginPath();
+                ctx.arc(screen.x, screen.y, screenRadius, 0, Math.PI * 2);
+                ctx.fillStyle = body.color;
+                ctx.fill();
+
+                if (body.fixed) {
+                    ctx.strokeStyle = '#ffd700';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+
+                // Velocity vector
+                if (showVelocity && !body.fixed) {
+                    const vScale = 5;
+                    ctx.beginPath();
+                    ctx.moveTo(screen.x, screen.y);
+                    ctx.lineTo(screen.x + body.vx * vScale * zoom, screen.y + body.vy * vScale * zoom);
+                    ctx.strokeStyle = '#00ff00';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    // Arrowhead
+                    const angle = Math.atan2(body.vy, body.vx);
+                    const headLen = 8;
+                    ctx.beginPath();
+                    ctx.moveTo(screen.x + body.vx * vScale * zoom, screen.y + body.vy * vScale * zoom);
+                    ctx.lineTo(
+                        screen.x + body.vx * vScale * zoom - headLen * Math.cos(angle - Math.PI/6),
+                        screen.y + body.vy * vScale * zoom - headLen * Math.sin(angle - Math.PI/6)
+                    );
+                    ctx.lineTo(
+                        screen.x + body.vx * vScale * zoom - headLen * Math.cos(angle + Math.PI/6),
+                        screen.y + body.vy * vScale * zoom - headLen * Math.sin(angle + Math.PI/6)
+                    );
+                    ctx.closePath();
+                    ctx.fillStyle = '#00ff00';
+                    ctx.fill();
+                }
+
+                // Gravity vector
+                if (showGravity && !body.fixed) {
+                    const gScale = 50;
+                    ctx.beginPath();
+                    ctx.moveTo(screen.x, screen.y);
+                    ctx.lineTo(screen.x + body.ax * gScale * zoom, screen.y + body.ay * gScale * zoom);
+                    ctx.strokeStyle = '#ff6b6b';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+            }
+        }
+
+        function drawCenterOfMass() {
+            let totalMass = 0;
+            let comX = 0, comY = 0;
+
+            for (const body of bodies) {
+                totalMass += body.mass;
+                comX += body.x * body.mass;
+                comY += body.y * body.mass;
+            }
+
+            if (totalMass > 0) {
+                comX /= totalMass;
+                comY /= totalMass;
+
+                const screen = worldToScreen(comX, comY);
+
+                ctx.beginPath();
+                ctx.arc(screen.x, screen.y, 5, 0, Math.PI * 2);
+                ctx.fillStyle = '#fff';
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.moveTo(screen.x - 10, screen.y);
+                ctx.lineTo(screen.x + 10, screen.y);
+                ctx.moveTo(screen.x, screen.y - 10);
+                ctx.lineTo(screen.x, screen.y + 10);
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+        }
+
+        function drawNewBodyPreview() {
+            if (!newBodyPreview) return;
+
+            const screen = worldToScreen(newBodyPreview.x, newBodyPreview.y);
+            const screenRadius = Math.max(newRadius * zoom, 3);
+
+            // Preview body
+            ctx.beginPath();
+            ctx.arc(screen.x, screen.y, screenRadius, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.fill();
+
+            // Velocity vector
+            if (newBodyPreview.vx !== undefined) {
+                ctx.beginPath();
+                ctx.moveTo(screen.x, screen.y);
+                ctx.lineTo(
+                    screen.x + newBodyPreview.vx * 10 * zoom,
+                    screen.y + newBodyPreview.vy * 10 * zoom
+                );
+                ctx.strokeStyle = '#00ff00';
+                ctx.lineWidth = 3;
+                ctx.setLineDash([5, 5]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+        }
+
+        function draw() {
+            // Clear with stars background
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw background stars
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            for (let i = 0; i < 200; i++) {
+                const x = (i * 7919) % canvas.width;
+                const y = (i * 6271) % canvas.height;
+                const size = (i % 3) === 0 ? 2 : 1;
+                ctx.fillRect(x, y, size, size);
+            }
+
+            if (showGrid) drawGrid();
+            if (showTrails) drawTrails();
+            drawBodies();
+            if (showCOM && bodies.length > 1) drawCenterOfMass();
+            drawNewBodyPreview();
+        }
+
+        function calculateTotalEnergy() {
+            let KE = 0, PE = 0;
+
+            for (const body of bodies) {
+                KE += body.kineticEnergy;
+            }
+
+            for (let i = 0; i < bodies.length; i++) {
+                for (let j = i + 1; j < bodies.length; j++) {
+                    const dx = bodies[j].x - bodies[i].x;
+                    const dy = bodies[j].y - bodies[i].y;
+                    const r = Math.sqrt(dx * dx + dy * dy);
+                    PE -= G * bodies[i].mass * bodies[j].mass / r;
+                }
+            }
+
+            return KE + PE;
+        }
+
+        function updateBodyList() {
+            const list = document.getElementById('bodyList');
+
+            if (bodies.length === 0) {
+                list.innerHTML = '<em style="color: #666;">No bodies</em>';
+                return;
+            }
+
+            list.innerHTML = bodies.map((b, i) => `
+                <div class="body-item">
+                    <div class="body-info">
+                        <div class="body-color" style="background: ${b.color}"></div>
+                        <span>${b.fixed ? '★ ' : ''}M=${b.mass.toFixed(1)}</span>
+                    </div>
+                    <span style="color: #888">v=${b.speed.toFixed(1)}</span>
+                </div>
+            `).join('');
+        }
+
+        function updateStats() {
+            document.getElementById('bodyCount').textContent = bodies.length;
+            document.getElementById('timeDisplay').textContent = (time / 365).toFixed(1);
+            document.getElementById('totalEnergy').textContent = calculateTotalEnergy().toFixed(0);
+        }
+
+        function animate() {
+            const dt = timeScale * 0.016;
+            update(dt);
+            draw();
+
+            frameCount++;
+            const now = performance.now();
+            if (now - lastTime >= 1000) {
+                fps = frameCount;
+                frameCount = 0;
+                lastTime = now;
+                document.getElementById('fpsDisplay').textContent = fps;
+                updateStats();
+                updateBodyList();
+            }
+
+            // Smooth zoom
+            zoom += (targetZoom - zoom) * 0.1;
+
+            requestAnimationFrame(animate);
+        }
+
+        function resize() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+        }
+
+        // Presets
+        const presets = {
+            solar: () => {
+                bodies = [];
+                // Sun
+                bodies.push(new Body(0, 0, 0, 0, 100, 20, '#ffd700', true));
+                // Planets
+                const planets = [
+                    { d: 80, v: 11, m: 0.1, r: 3, c: '#a0a0a0' },   // Mercury
+                    { d: 120, v: 9, m: 0.2, r: 4, c: '#e6c35c' },   // Venus
+                    { d: 170, v: 7.5, m: 0.3, r: 5, c: '#4fc3f7' }, // Earth
+                    { d: 230, v: 6, m: 0.15, r: 4, c: '#ff6b6b' },  // Mars
+                    { d: 350, v: 4.5, m: 2, r: 10, c: '#e6a35c' },  // Jupiter
+                ];
+                for (const p of planets) {
+                    bodies.push(new Body(p.d, 0, 0, p.v, p.m, p.r, p.c));
+                }
+            },
+            binary: () => {
+                bodies = [];
+                const d = 100;
+                const v = 5;
+                bodies.push(new Body(-d/2, 0, 0, v, 50, 15, '#ffd700'));
+                bodies.push(new Body(d/2, 0, 0, -v, 50, 15, '#ff6b6b'));
+            },
+            threeBody: () => {
+                bodies = [];
+                const d = 150;
+                const v = 4;
+                bodies.push(new Body(0, -d * 0.577, v * 0.866, v * 0.5, 30, 10, '#ff6b6b'));
+                bodies.push(new Body(-d/2, d * 0.289, 0, -v, 30, 10, '#4fc3f7'));
+                bodies.push(new Body(d/2, d * 0.289, -v * 0.866, v * 0.5, 30, 10, '#96ceb4'));
+            },
+            lagrange: () => {
+                bodies = [];
+                // Large central body
+                bodies.push(new Body(0, 0, 0, 0, 100, 20, '#ffd700', true));
+                // Orbiting body
+                bodies.push(new Body(200, 0, 0, 7, 1, 5, '#4fc3f7'));
+                // L4 Trojan (60° ahead)
+                const angle = Math.PI / 3;
+                bodies.push(new Body(200 * Math.cos(angle), 200 * Math.sin(angle),
+                    -7 * Math.sin(angle), 7 * Math.cos(angle), 0.01, 3, '#ff6b6b'));
+            },
+            figure8: () => {
+                bodies = [];
+                // Famous figure-8 three-body solution
+                const scale = 100;
+                const vScale = 5;
+                bodies.push(new Body(0.97 * scale, -0.24 * scale,
+                    0.466 * vScale, 0.432 * vScale, 30, 8, '#ff6b6b'));
+                bodies.push(new Body(-0.97 * scale, 0.24 * scale,
+                    0.466 * vScale, 0.432 * vScale, 30, 8, '#4fc3f7'));
+                bodies.push(new Body(0, 0,
+                    -0.932 * vScale, -0.864 * vScale, 30, 8, '#96ceb4'));
+            },
+            rings: () => {
+                bodies = [];
+                // Saturn-like planet
+                bodies.push(new Body(0, 0, 0, 0, 80, 18, '#e6c35c', true));
+                // Ring particles
+                for (let i = 0; i < 50; i++) {
+                    const r = 50 + Math.random() * 80;
+                    const angle = Math.random() * Math.PI * 2;
+                    const v = Math.sqrt(G * 80 / r);
+                    bodies.push(new Body(
+                        Math.cos(angle) * r,
+                        Math.sin(angle) * r,
+                        -Math.sin(angle) * v,
+                        Math.cos(angle) * v,
+                        0.01, 2, '#a0a0a0'
+                    ));
+                }
+            }
+        };
+
+        // Event listeners
+        document.getElementById('timeScale').addEventListener('input', e => {
+            timeScale = parseInt(e.target.value) / 10;
+            document.getElementById('timeScaleVal').textContent = timeScale.toFixed(1) + 'x';
+        });
+
+        document.getElementById('pauseBtn').addEventListener('click', () => {
+            paused = true;
+            document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('pauseBtn').classList.add('active');
+        });
+
+        document.getElementById('playBtn').addEventListener('click', () => {
+            paused = false;
+            timeScale = 1;
+            document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('playBtn').classList.add('active');
+            document.getElementById('timeScale').value = 10;
+            document.getElementById('timeScaleVal').textContent = '1.0x';
+        });
+
+        document.getElementById('fastBtn').addEventListener('click', () => {
+            paused = false;
+            timeScale = 5;
+            document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('fastBtn').classList.add('active');
+            document.getElementById('timeScale').value = 50;
+            document.getElementById('timeScaleVal').textContent = '5.0x';
+        });
+
+        document.getElementById('mass').addEventListener('input', e => {
+            newMass = parseInt(e.target.value) / 100;
+            document.getElementById('massVal').textContent = newMass.toFixed(1);
+        });
+
+        document.getElementById('radius').addEventListener('input', e => {
+            newRadius = parseInt(e.target.value);
+            document.getElementById('radiusVal').textContent = newRadius;
+        });
+
+        document.getElementById('fixedBody').addEventListener('change', e => {
+            newFixed = e.target.checked;
+        });
+
+        document.getElementById('showTrails').addEventListener('change', e => {
+            showTrails = e.target.checked;
+        });
+
+        document.getElementById('showVelocity').addEventListener('change', e => {
+            showVelocity = e.target.checked;
+        });
+
+        document.getElementById('showGravity').addEventListener('change', e => {
+            showGravity = e.target.checked;
+        });
+
+        document.getElementById('showGrid').addEventListener('change', e => {
+            showGrid = e.target.checked;
+        });
+
+        document.getElementById('showCOM').addEventListener('change', e => {
+            showCOM = e.target.checked;
+        });
+
+        document.getElementById('trailLength').addEventListener('input', e => {
+            trailLength = parseInt(e.target.value);
+            document.getElementById('trailLengthVal').textContent = trailLength;
+        });
+
+        document.getElementById('clearBodies').addEventListener('click', () => {
+            bodies = [];
+            time = 0;
+        });
+
+        document.getElementById('centerView').addEventListener('click', () => {
+            // Center on center of mass
+            let totalMass = 0, comX = 0, comY = 0;
+            for (const body of bodies) {
+                totalMass += body.mass;
+                comX += body.x * body.mass;
+                comY += body.y * body.mass;
+            }
+            if (totalMass > 0) {
+                viewX = comX / totalMass;
+                viewY = comY / totalMass;
+            } else {
+                viewX = 0;
+                viewY = 0;
+            }
+        });
+
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                presets[btn.dataset.preset]();
+                viewX = 0;
+                viewY = 0;
+                targetZoom = 1;
+                time = 0;
+            });
+        });
+
+        // Mouse interactions
+        canvas.addEventListener('mousedown', e => {
+            const rect = canvas.getBoundingClientRect();
+            const sx = e.clientX - rect.left;
+            const sy = e.clientY - rect.top;
+            const world = screenToWorld(sx, sy);
+
+            if (e.button === 1 || e.ctrlKey) {
+                // Middle click or Ctrl+click - pan
+                panning = true;
+                panStart = { x: sx, y: sy, viewX, viewY };
+            } else if (e.button === 0) {
+                // Left click - start creating body
+                mouseDown = true;
+                mouseStart = { x: sx, y: sy };
+                newBodyPreview = { x: world.x, y: world.y };
+            }
+        });
+
+        canvas.addEventListener('mousemove', e => {
+            const rect = canvas.getBoundingClientRect();
+            const sx = e.clientX - rect.left;
+            const sy = e.clientY - rect.top;
+
+            if (panning && panStart) {
+                viewX = panStart.viewX - (sx - panStart.x) / zoom;
+                viewY = panStart.viewY - (sy - panStart.y) / zoom;
+            } else if (mouseDown && newBodyPreview) {
+                // Calculate velocity from drag
+                const world = screenToWorld(sx, sy);
+                newBodyPreview.vx = (world.x - newBodyPreview.x) * 0.1;
+                newBodyPreview.vy = (world.y - newBodyPreview.y) * 0.1;
+            }
+        });
+
+        canvas.addEventListener('mouseup', e => {
+            if (panning) {
+                panning = false;
+                panStart = null;
+            } else if (mouseDown && newBodyPreview) {
+                // Create new body
+                const vx = newBodyPreview.vx || 0;
+                const vy = newBodyPreview.vy || 0;
+                const color = COLORS[bodies.length % COLORS.length];
+                bodies.push(new Body(
+                    newBodyPreview.x, newBodyPreview.y,
+                    vx, vy, newMass, newRadius, color, newFixed
+                ));
+                mouseDown = false;
+                newBodyPreview = null;
+            }
+        });
+
+        canvas.addEventListener('wheel', e => {
+            e.preventDefault();
+            const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+            targetZoom = Math.max(0.1, Math.min(10, targetZoom * zoomFactor));
+        });
+
+        canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+        window.addEventListener('resize', resize);
+
+        // Initialize
+        resize();
+        presets.solar();
+        animate();
+    </script>
+</body>
+</html>

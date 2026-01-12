@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>L-System Visualizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a2f1a 50%, #0f172a 100%);
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            height: 100vh;
+        }
+
+        .controls {
+            background: rgba(20, 20, 35, 0.95);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        h1 {
+            font-size: 1.4em;
+            background: linear-gradient(135deg, #4ade80 0%, #a3e635 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 11px;
+            margin-bottom: 20px;
+        }
+
+        .control-section {
+            margin-bottom: 20px;
+        }
+
+        .control-section h3 {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #4ade80;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .slider-group {
+            margin-bottom: 12px;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .slider-value {
+            color: #a3e635;
+            font-weight: 600;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 5px;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            background: linear-gradient(135deg, #4ade80, #a3e635);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 6px;
+            color: #fff;
+            font-family: monospace;
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+
+        textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        input[type="text"]:focus, textarea:focus {
+            outline: none;
+            border-color: #4ade80;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background: linear-gradient(135deg, #4ade80, #a3e635);
+            border: none;
+            border-radius: 6px;
+            color: #000;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 6px;
+            font-size: 12px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(74, 222, 128, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: none;
+        }
+
+        .preset-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        .preset-btn {
+            padding: 8px;
+            font-size: 10px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+
+        input[type="checkbox"] {
+            width: 14px;
+            height: 14px;
+            accent-color: #4ade80;
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .info-panel {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 12px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            gap: 15px;
+        }
+
+        .info-label {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .info-value {
+            color: #4ade80;
+            font-weight: 600;
+        }
+
+        .string-preview {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.5);
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+            max-height: 60px;
+            overflow: auto;
+            word-break: break-all;
+            margin-top: 10px;
+        }
+
+        .color-inputs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .color-input {
+            flex: 1;
+        }
+
+        .color-input label {
+            display: block;
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 4px;
+        }
+
+        .color-input input[type="color"] {
+            width: 100%;
+            height: 30px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .help-text {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.4);
+            margin-top: 5px;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="controls">
+            <h1>L-System Visualizer</h1>
+            <p class="subtitle">Lindenmayer Systems - Generative Botany</p>
+
+            <div class="control-section">
+                <h3>Grammar Definition</h3>
+                <label style="font-size: 11px; color: rgba(255,255,255,0.6); display: block; margin-bottom: 4px;">Axiom (Start)</label>
+                <input type="text" id="axiom" value="F">
+
+                <label style="font-size: 11px; color: rgba(255,255,255,0.6); display: block; margin-bottom: 4px;">Production Rules</label>
+                <textarea id="rules" placeholder="F=FF+[+F-F-F]-[-F+F+F]">F=FF+[+F-F-F]-[-F+F+F]</textarea>
+
+                <div class="help-text">
+                    F: Move forward | +/-: Turn right/left<br>
+                    [: Save state | ]: Restore state<br>
+                    G: Move forward (no draw) | |: Turn 180°
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>Parameters</h3>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Iterations</span>
+                        <span class="slider-value" id="iterValue">4</span>
+                    </div>
+                    <input type="range" id="iterations" min="1" max="8" value="4">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Angle (°)</span>
+                        <span class="slider-value" id="angleValue">25</span>
+                    </div>
+                    <input type="range" id="angle" min="1" max="180" value="25">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Line Length</span>
+                        <span class="slider-value" id="lengthValue">10</span>
+                    </div>
+                    <input type="range" id="length" min="1" max="30" value="10">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Line Width</span>
+                        <span class="slider-value" id="widthValue">1.5</span>
+                    </div>
+                    <input type="range" id="lineWidth" min="0.5" max="5" step="0.5" value="1.5">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Length Decay</span>
+                        <span class="slider-value" id="decayValue">1.00</span>
+                    </div>
+                    <input type="range" id="decay" min="0.5" max="1" step="0.01" value="1">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Start Angle</span>
+                        <span class="slider-value" id="startAngleValue">-90</span>
+                    </div>
+                    <input type="range" id="startAngle" min="-180" max="180" value="-90">
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>Appearance</h3>
+                <div class="color-inputs">
+                    <div class="color-input">
+                        <label>Start Color</label>
+                        <input type="color" id="startColor" value="#2d5016">
+                    </div>
+                    <div class="color-input">
+                        <label>End Color</label>
+                        <input type="color" id="endColor" value="#4ade80">
+                    </div>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="gradientColor" checked>
+                    <label for="gradientColor">Color Gradient</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="taperWidth">
+                    <label for="taperWidth">Taper Width</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="animate">
+                    <label for="animate">Animate Drawing</label>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>Presets</h3>
+                <div class="preset-grid">
+                    <button onclick="loadPreset('tree1')" class="btn-secondary preset-btn">Tree 1</button>
+                    <button onclick="loadPreset('tree2')" class="btn-secondary preset-btn">Tree 2</button>
+                    <button onclick="loadPreset('bush')" class="btn-secondary preset-btn">Bush</button>
+                    <button onclick="loadPreset('fern')" class="btn-secondary preset-btn">Fern</button>
+                    <button onclick="loadPreset('sierpinski')" class="btn-secondary preset-btn">Sierpinski</button>
+                    <button onclick="loadPreset('dragon')" class="btn-secondary preset-btn">Dragon</button>
+                    <button onclick="loadPreset('koch')" class="btn-secondary preset-btn">Koch</button>
+                    <button onclick="loadPreset('hilbert')" class="btn-secondary preset-btn">Hilbert</button>
+                    <button onclick="loadPreset('plant')" class="btn-secondary preset-btn">Plant</button>
+                    <button onclick="loadPreset('seaweed')" class="btn-secondary preset-btn">Seaweed</button>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <button onclick="generate()">Generate</button>
+                <button onclick="randomize()" class="btn-secondary">Randomize</button>
+                <button onclick="exportSVG()" class="btn-secondary">Export SVG</button>
+            </div>
+
+            <div class="string-preview" id="stringPreview">
+                String will appear here...
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="canvas"></canvas>
+            <div class="info-panel">
+                <div class="info-row">
+                    <span class="info-label">Iterations:</span>
+                    <span class="info-value" id="infoIter">0</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">String Length:</span>
+                    <span class="info-value" id="infoLength">0</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Segments:</span>
+                    <span class="info-value" id="infoSegments">0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // State
+        let currentString = '';
+        let segments = [];
+        let animationFrame = 0;
+        let isAnimating = false;
+
+        // Initialize
+        function init() {
+            resizeCanvas();
+            generate();
+        }
+
+        function resizeCanvas() {
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+        }
+
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+            generate();
+        });
+
+        // Parse rules from textarea
+        function parseRules(rulesText) {
+            const rules = {};
+            const lines = rulesText.split('\n');
+
+            for (const line of lines) {
+                const trimmed = line.trim();
+                if (!trimmed || !trimmed.includes('=')) continue;
+
+                const [symbol, replacement] = trimmed.split('=');
+                rules[symbol.trim()] = replacement.trim();
+            }
+
+            return rules;
+        }
+
+        // Generate L-system string
+        function generateString(axiom, rules, iterations) {
+            let str = axiom;
+
+            for (let i = 0; i < iterations; i++) {
+                let newStr = '';
+
+                for (const char of str) {
+                    newStr += rules[char] || char;
+                }
+
+                str = newStr;
+
+                // Limit string length for performance
+                if (str.length > 1000000) {
+                    console.warn('String too long, stopping early');
+                    break;
+                }
+            }
+
+            return str;
+        }
+
+        // Interpret string into drawing commands
+        function interpretString(str) {
+            const angle = parseFloat(document.getElementById('angle').value) * Math.PI / 180;
+            const length = parseFloat(document.getElementById('length').value);
+            const decay = parseFloat(document.getElementById('decay').value);
+            const startAngle = parseFloat(document.getElementById('startAngle').value) * Math.PI / 180;
+
+            const stack = [];
+            segments = [];
+
+            let x = 0;
+            let y = 0;
+            let theta = startAngle;
+            let currentLength = length;
+            let depth = 0;
+
+            for (const char of str) {
+                switch (char) {
+                    case 'F':
+                    case 'G':
+                        const newX = x + currentLength * Math.cos(theta);
+                        const newY = y + currentLength * Math.sin(theta);
+
+                        if (char === 'F') {
+                            segments.push({
+                                x1: x, y1: y,
+                                x2: newX, y2: newY,
+                                depth: depth
+                            });
+                        }
+
+                        x = newX;
+                        y = newY;
+                        break;
+
+                    case '+':
+                        theta += angle;
+                        break;
+
+                    case '-':
+                        theta -= angle;
+                        break;
+
+                    case '[':
+                        stack.push({ x, y, theta, currentLength, depth });
+                        depth++;
+                        currentLength *= decay;
+                        break;
+
+                    case ']':
+                        if (stack.length > 0) {
+                            const state = stack.pop();
+                            x = state.x;
+                            y = state.y;
+                            theta = state.theta;
+                            currentLength = state.currentLength;
+                            depth = state.depth;
+                        }
+                        break;
+
+                    case '|':
+                        theta += Math.PI;
+                        break;
+                }
+            }
+
+            return segments;
+        }
+
+        // Draw the L-system
+        function draw() {
+            const width = canvas.offsetWidth;
+            const height = canvas.offsetHeight;
+
+            ctx.fillStyle = '#0a0a0a';
+            ctx.fillRect(0, 0, width, height);
+
+            if (segments.length === 0) return;
+
+            // Calculate bounds
+            let minX = Infinity, maxX = -Infinity;
+            let minY = Infinity, maxY = -Infinity;
+
+            for (const seg of segments) {
+                minX = Math.min(minX, seg.x1, seg.x2);
+                maxX = Math.max(maxX, seg.x1, seg.x2);
+                minY = Math.min(minY, seg.y1, seg.y2);
+                maxY = Math.max(maxY, seg.y1, seg.y2);
+            }
+
+            // Calculate scale and offset to fit
+            const padding = 50;
+            const drawWidth = maxX - minX;
+            const drawHeight = maxY - minY;
+            const scaleX = (width - padding * 2) / drawWidth;
+            const scaleY = (height - padding * 2) / drawHeight;
+            const scale = Math.min(scaleX, scaleY, 5); // Max scale of 5
+
+            const offsetX = width / 2 - (minX + maxX) / 2 * scale;
+            const offsetY = height / 2 - (minY + maxY) / 2 * scale;
+
+            // Get colors
+            const startColor = document.getElementById('startColor').value;
+            const endColor = document.getElementById('endColor').value;
+            const useGradient = document.getElementById('gradientColor').checked;
+            const taperWidth = document.getElementById('taperWidth').checked;
+            const baseWidth = parseFloat(document.getElementById('lineWidth').value);
+
+            // Find max depth
+            const maxDepth = Math.max(...segments.map(s => s.depth), 1);
+
+            // Determine how many segments to draw (for animation)
+            const numToDraw = isAnimating ? Math.min(animationFrame, segments.length) : segments.length;
+
+            // Draw segments
+            for (let i = 0; i < numToDraw; i++) {
+                const seg = segments[i];
+                const progress = i / segments.length;
+                const depthRatio = seg.depth / maxDepth;
+
+                // Calculate color
+                let color;
+                if (useGradient) {
+                    color = lerpColor(startColor, endColor, depthRatio);
+                } else {
+                    color = startColor;
+                }
+
+                // Calculate width
+                const width = taperWidth ? baseWidth * (1 - depthRatio * 0.7) : baseWidth;
+
+                // Draw line
+                ctx.strokeStyle = color;
+                ctx.lineWidth = width;
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.moveTo(seg.x1 * scale + offsetX, seg.y1 * scale + offsetY);
+                ctx.lineTo(seg.x2 * scale + offsetX, seg.y2 * scale + offsetY);
+                ctx.stroke();
+            }
+
+            // Update info
+            document.getElementById('infoIter').textContent = document.getElementById('iterations').value;
+            document.getElementById('infoLength').textContent = currentString.length.toLocaleString();
+            document.getElementById('infoSegments').textContent = segments.length.toLocaleString();
+
+            // Continue animation
+            if (isAnimating && animationFrame < segments.length) {
+                animationFrame += Math.max(1, Math.floor(segments.length / 200));
+                requestAnimationFrame(draw);
+            } else {
+                isAnimating = false;
+            }
+        }
+
+        // Color interpolation
+        function lerpColor(color1, color2, t) {
+            const c1 = hexToRgb(color1);
+            const c2 = hexToRgb(color2);
+
+            const r = Math.round(c1.r + (c2.r - c1.r) * t);
+            const g = Math.round(c1.g + (c2.g - c1.g) * t);
+            const b = Math.round(c1.b + (c2.b - c1.b) * t);
+
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : { r: 0, g: 0, b: 0 };
+        }
+
+        // Main generate function
+        function generate() {
+            const axiom = document.getElementById('axiom').value;
+            const rulesText = document.getElementById('rules').value;
+            const iterations = parseInt(document.getElementById('iterations').value);
+
+            const rules = parseRules(rulesText);
+            currentString = generateString(axiom, rules, iterations);
+
+            // Update preview
+            const preview = document.getElementById('stringPreview');
+            if (currentString.length > 200) {
+                preview.textContent = currentString.substring(0, 200) + '...';
+            } else {
+                preview.textContent = currentString;
+            }
+
+            interpretString(currentString);
+
+            // Handle animation
+            if (document.getElementById('animate').checked) {
+                isAnimating = true;
+                animationFrame = 0;
+            } else {
+                isAnimating = false;
+            }
+
+            draw();
+        }
+
+        // Presets
+        const presets = {
+            tree1: {
+                axiom: 'F',
+                rules: 'F=FF+[+F-F-F]-[-F+F+F]',
+                angle: 25,
+                iterations: 4,
+                startAngle: -90
+            },
+            tree2: {
+                axiom: 'X',
+                rules: 'X=F[+X][-X]FX\nF=FF',
+                angle: 25,
+                iterations: 6,
+                startAngle: -90
+            },
+            bush: {
+                axiom: 'F',
+                rules: 'F=FF-[-F+F+F]+[+F-F-F]',
+                angle: 22.5,
+                iterations: 4,
+                startAngle: -90
+            },
+            fern: {
+                axiom: 'X',
+                rules: 'X=F+[[X]-X]-F[-FX]+X\nF=FF',
+                angle: 25,
+                iterations: 5,
+                startAngle: -90
+            },
+            sierpinski: {
+                axiom: 'F-G-G',
+                rules: 'F=F-G+F+G-F\nG=GG',
+                angle: 120,
+                iterations: 6,
+                startAngle: 0
+            },
+            dragon: {
+                axiom: 'FX',
+                rules: 'X=X+YF+\nY=-FX-Y',
+                angle: 90,
+                iterations: 12,
+                startAngle: 0
+            },
+            koch: {
+                axiom: 'F',
+                rules: 'F=F+F-F-F+F',
+                angle: 90,
+                iterations: 4,
+                startAngle: 0
+            },
+            hilbert: {
+                axiom: 'X',
+                rules: 'X=-YF+XFX+FY-\nY=+XF-YFY-FX+',
+                angle: 90,
+                iterations: 6,
+                startAngle: 0
+            },
+            plant: {
+                axiom: 'X',
+                rules: 'X=F-[[X]+X]+F[+FX]-X\nF=FF',
+                angle: 22.5,
+                iterations: 5,
+                startAngle: -90
+            },
+            seaweed: {
+                axiom: 'F',
+                rules: 'F=FF[-F++F][+F--F]++F--F',
+                angle: 27,
+                iterations: 4,
+                startAngle: -90
+            }
+        };
+
+        function loadPreset(name) {
+            const preset = presets[name];
+            if (!preset) return;
+
+            document.getElementById('axiom').value = preset.axiom;
+            document.getElementById('rules').value = preset.rules;
+            document.getElementById('angle').value = preset.angle;
+            document.getElementById('angleValue').textContent = preset.angle;
+            document.getElementById('iterations').value = preset.iterations;
+            document.getElementById('iterValue').textContent = preset.iterations;
+            document.getElementById('startAngle').value = preset.startAngle;
+            document.getElementById('startAngleValue').textContent = preset.startAngle;
+
+            generate();
+        }
+
+        // Randomize
+        function randomize() {
+            const symbols = ['F', 'X', 'Y'];
+            const operations = ['+', '-', '[', ']', 'F'];
+
+            // Random axiom
+            document.getElementById('axiom').value = symbols[Math.floor(Math.random() * symbols.length)];
+
+            // Random rules
+            let rulesText = '';
+            for (const sym of symbols) {
+                if (Math.random() < 0.6) {
+                    let rule = '';
+                    const ruleLength = Math.floor(Math.random() * 15) + 5;
+
+                    for (let i = 0; i < ruleLength; i++) {
+                        if (Math.random() < 0.4) {
+                            rule += operations[Math.floor(Math.random() * operations.length)];
+                        } else {
+                            rule += symbols[Math.floor(Math.random() * symbols.length)];
+                        }
+                    }
+
+                    // Balance brackets
+                    let bracketCount = 0;
+                    for (const c of rule) {
+                        if (c === '[') bracketCount++;
+                        if (c === ']') bracketCount--;
+                    }
+                    while (bracketCount > 0) { rule += ']'; bracketCount--; }
+                    while (bracketCount < 0) { rule = '[' + rule; bracketCount++; }
+
+                    rulesText += `${sym}=${rule}\n`;
+                }
+            }
+
+            document.getElementById('rules').value = rulesText.trim();
+
+            // Random parameters
+            const angle = Math.floor(Math.random() * 50) + 15;
+            document.getElementById('angle').value = angle;
+            document.getElementById('angleValue').textContent = angle;
+
+            const iterations = Math.floor(Math.random() * 4) + 3;
+            document.getElementById('iterations').value = iterations;
+            document.getElementById('iterValue').textContent = iterations;
+
+            generate();
+        }
+
+        // Export SVG
+        function exportSVG() {
+            if (segments.length === 0) return;
+
+            // Calculate bounds
+            let minX = Infinity, maxX = -Infinity;
+            let minY = Infinity, maxY = -Infinity;
+
+            for (const seg of segments) {
+                minX = Math.min(minX, seg.x1, seg.x2);
+                maxX = Math.max(maxX, seg.x1, seg.x2);
+                minY = Math.min(minY, seg.y1, seg.y2);
+                maxY = Math.max(maxY, seg.y1, seg.y2);
+            }
+
+            const padding = 20;
+            const width = maxX - minX + padding * 2;
+            const height = maxY - minY + padding * 2;
+
+            let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">`;
+            svg += `<rect width="100%" height="100%" fill="#0a0a0a"/>`;
+
+            const startColor = document.getElementById('startColor').value;
+
+            for (const seg of segments) {
+                const x1 = seg.x1 - minX + padding;
+                const y1 = seg.y1 - minY + padding;
+                const x2 = seg.x2 - minX + padding;
+                const y2 = seg.y2 - minY + padding;
+
+                svg += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${startColor}" stroke-width="1.5" stroke-linecap="round"/>`;
+            }
+
+            svg += '</svg>';
+
+            // Download
+            const blob = new Blob([svg], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'lsystem.svg';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Slider updates
+        const sliders = ['iterations', 'angle', 'length', 'lineWidth', 'decay', 'startAngle'];
+        sliders.forEach(id => {
+            const slider = document.getElementById(id);
+            const valueId = id === 'lineWidth' ? 'widthValue' :
+                           id === 'iterations' ? 'iterValue' :
+                           id === 'startAngle' ? 'startAngleValue' :
+                           id + 'Value';
+
+            slider.addEventListener('input', () => {
+                const val = parseFloat(slider.value);
+                document.getElementById(valueId).textContent =
+                    (id === 'decay' || id === 'lineWidth') ? val.toFixed(2) : val;
+            });
+
+            slider.addEventListener('change', generate);
+        });
+
+        // Auto-generate on input changes
+        ['axiom', 'rules'].forEach(id => {
+            document.getElementById(id).addEventListener('input', () => {
+                clearTimeout(window.inputTimer);
+                window.inputTimer = setTimeout(generate, 500);
+            });
+        });
+
+        ['startColor', 'endColor', 'gradientColor', 'taperWidth'].forEach(id => {
+            document.getElementById(id).addEventListener('change', draw);
+        });
+
+        // Start
+        init();
+    </script>
+</body>
+</html>

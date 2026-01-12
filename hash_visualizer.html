@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hash Function Visualizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
+            color: #e0e0e0;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            font-weight: 300;
+            background: linear-gradient(135deg, #00d4ff 0%, #9d4edd 50%, #ff6b6b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 1.1em;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 30px;
+        }
+
+        .panel {
+            background: rgba(20, 20, 40, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .panel h2 {
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .input-section {
+            margin-bottom: 20px;
+        }
+
+        .input-section label {
+            display: block;
+            font-size: 0.85em;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 8px;
+        }
+
+        .input-section textarea {
+            width: 100%;
+            height: 80px;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            color: #fff;
+            font-family: monospace;
+            font-size: 14px;
+            resize: vertical;
+        }
+
+        .input-section textarea:focus {
+            outline: none;
+            border-color: #00d4ff;
+        }
+
+        .algorithm-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .algo-tab {
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.85em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .algo-tab:hover {
+            background: rgba(0, 212, 255, 0.1);
+            border-color: rgba(0, 212, 255, 0.3);
+        }
+
+        .algo-tab.active {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(157, 78, 221, 0.2));
+            border-color: rgba(0, 212, 255, 0.5);
+            color: #fff;
+        }
+
+        .hash-output {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .hash-label {
+            font-size: 0.8em;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 8px;
+        }
+
+        .hash-value {
+            font-family: monospace;
+            font-size: 1.1em;
+            color: #00d4ff;
+            word-break: break-all;
+            line-height: 1.5;
+        }
+
+        .hash-hex {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 10px;
+        }
+
+        .hex-byte {
+            padding: 4px 6px;
+            background: rgba(0, 212, 255, 0.1);
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.85em;
+            color: #00d4ff;
+        }
+
+        .visualization-area {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .viz-panel {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+        }
+
+        .viz-title {
+            font-size: 0.8em;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 10px;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            border-radius: 8px;
+        }
+
+        .binary-display {
+            font-family: monospace;
+            font-size: 0.7em;
+            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.6);
+            max-height: 150px;
+            overflow-y: auto;
+            word-break: break-all;
+        }
+
+        .bit-one {
+            color: #00d4ff;
+        }
+
+        .bit-zero {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .stat-item {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.3em;
+            font-weight: 300;
+            color: #9d4edd;
+            font-family: monospace;
+        }
+
+        .stat-label {
+            font-size: 0.7em;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 4px;
+        }
+
+        .collision-test {
+            margin-top: 20px;
+        }
+
+        .collision-results {
+            max-height: 200px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .collision-item {
+            padding: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-family: monospace;
+            font-size: 0.75em;
+        }
+
+        .collision-item:last-child {
+            border-bottom: none;
+        }
+
+        .collision-item.match {
+            background: rgba(255, 107, 107, 0.1);
+            color: #ff6b6b;
+        }
+
+        .info-box {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            font-size: 0.85em;
+            line-height: 1.6;
+        }
+
+        .info-box h4 {
+            color: #00d4ff;
+            margin-bottom: 8px;
+        }
+
+        .avalanche-grid {
+            display: grid;
+            grid-template-columns: repeat(16, 1fr);
+            gap: 2px;
+        }
+
+        .avalanche-cell {
+            aspect-ratio: 1;
+            border-radius: 2px;
+        }
+
+        .compare-section {
+            margin-top: 20px;
+        }
+
+        .compare-input {
+            width: 100%;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 6px;
+            color: #fff;
+            font-family: monospace;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+
+        .compare-result {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+        }
+
+        .diff-count {
+            color: #ff6b6b;
+            font-family: monospace;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(157, 78, 221, 0.2));
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.4), rgba(157, 78, 221, 0.4));
+        }
+
+        @media (max-width: 900px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .visualization-area {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Hash Function Visualizer</h1>
+            <p class="subtitle">Explore cryptographic hash functions and their properties</p>
+        </header>
+
+        <div class="main-layout">
+            <div class="main-content">
+                <div class="panel">
+                    <h2>Input</h2>
+                    <div class="input-section">
+                        <label>Enter text to hash:</label>
+                        <textarea id="inputText" placeholder="Type something to hash...">Hello, World!</textarea>
+                    </div>
+                    <div class="algorithm-tabs">
+                        <div class="algo-tab active" data-algo="sha256">SHA-256</div>
+                        <div class="algo-tab" data-algo="sha1">SHA-1</div>
+                        <div class="algo-tab" data-algo="md5">MD5</div>
+                        <div class="algo-tab" data-algo="djb2">DJB2</div>
+                        <div class="algo-tab" data-algo="fnv1a">FNV-1a</div>
+                        <div class="algo-tab" data-algo="murmur">MurmurHash</div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h2>Hash Output</h2>
+                    <div class="hash-output">
+                        <div class="hash-label">Hexadecimal</div>
+                        <div class="hash-value" id="hashHex">-</div>
+                        <div class="hash-hex" id="hashBytes"></div>
+                    </div>
+                    <div class="hash-output">
+                        <div class="hash-label">Binary</div>
+                        <div class="binary-display" id="hashBinary">-</div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h2>Visualization</h2>
+                    <div class="visualization-area">
+                        <div class="viz-panel">
+                            <div class="viz-title">Hash as Color Grid</div>
+                            <canvas id="colorGrid" height="150"></canvas>
+                        </div>
+                        <div class="viz-panel">
+                            <div class="viz-title">Bit Distribution</div>
+                            <canvas id="bitChart" height="150"></canvas>
+                        </div>
+                        <div class="viz-panel">
+                            <div class="viz-title">Avalanche Effect</div>
+                            <div class="avalanche-grid" id="avalancheGrid"></div>
+                        </div>
+                        <div class="viz-panel">
+                            <div class="viz-title">Hash Similarity Map</div>
+                            <canvas id="similarityMap" height="150"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel compare-section">
+                    <h2>Compare Hashes</h2>
+                    <input type="text" class="compare-input" id="compareInput" placeholder="Enter text to compare with original...">
+                    <div class="compare-result">
+                        <span>Hamming Distance:</span>
+                        <span class="diff-count" id="hammingDistance">0 bits</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar">
+                <div class="panel">
+                    <h2>Properties</h2>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-value" id="hashLength">256</div>
+                            <div class="stat-label">Bits</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="entropyVal">8.0</div>
+                            <div class="stat-label">Entropy</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="onesCount">128</div>
+                            <div class="stat-label">1-Bits</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="zerosCount">128</div>
+                            <div class="stat-label">0-Bits</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel collision-test">
+                    <h2>Collision Search</h2>
+                    <button id="collisionBtn" onclick="searchCollisions()">Search for Partial Collisions</button>
+                    <div class="collision-results" id="collisionResults">
+                        <div class="collision-item">Click to search...</div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h2>About</h2>
+                    <div class="info-box" id="algoInfo">
+                        <h4>SHA-256</h4>
+                        <p>A member of the SHA-2 family, producing a 256-bit hash. Used in Bitcoin, SSL certificates, and countless security applications. Designed by NSA, published in 2001.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentAlgo = 'sha256';
+        let currentHash = '';
+
+        // Simple hash implementations
+        const hashFunctions = {
+            // SHA-256 (simplified - uses SubtleCrypto when available)
+            sha256: async (str) => {
+                const encoder = new TextEncoder();
+                const data = encoder.encode(str);
+                try {
+                    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+                    return Array.from(new Uint8Array(hashBuffer))
+                        .map(b => b.toString(16).padStart(2, '0')).join('');
+                } catch {
+                    return djb2Extended(str, 64);
+                }
+            },
+
+            // SHA-1 (simplified)
+            sha1: async (str) => {
+                const encoder = new TextEncoder();
+                const data = encoder.encode(str);
+                try {
+                    const hashBuffer = await crypto.subtle.digest('SHA-1', data);
+                    return Array.from(new Uint8Array(hashBuffer))
+                        .map(b => b.toString(16).padStart(2, '0')).join('');
+                } catch {
+                    return djb2Extended(str, 40);
+                }
+            },
+
+            // MD5 (simplified implementation)
+            md5: (str) => {
+                return md5Hash(str);
+            },
+
+            // DJB2 (simple but effective)
+            djb2: (str) => {
+                let hash = 5381;
+                for (let i = 0; i < str.length; i++) {
+                    hash = ((hash << 5) + hash) + str.charCodeAt(i);
+                    hash = hash & 0xFFFFFFFF;
+                }
+                return (hash >>> 0).toString(16).padStart(8, '0');
+            },
+
+            // FNV-1a
+            fnv1a: (str) => {
+                let hash = 2166136261;
+                for (let i = 0; i < str.length; i++) {
+                    hash ^= str.charCodeAt(i);
+                    hash = Math.imul(hash, 16777619);
+                }
+                return (hash >>> 0).toString(16).padStart(8, '0');
+            },
+
+            // MurmurHash3 (simplified)
+            murmur: (str) => {
+                let h1 = 0xdeadbeef;
+                for (let i = 0; i < str.length; i++) {
+                    let k1 = str.charCodeAt(i);
+                    k1 = Math.imul(k1, 0xcc9e2d51);
+                    k1 = (k1 << 15) | (k1 >>> 17);
+                    k1 = Math.imul(k1, 0x1b873593);
+                    h1 ^= k1;
+                    h1 = (h1 << 13) | (h1 >>> 19);
+                    h1 = Math.imul(h1, 5) + 0xe6546b64;
+                }
+                h1 ^= str.length;
+                h1 ^= h1 >>> 16;
+                h1 = Math.imul(h1, 0x85ebca6b);
+                h1 ^= h1 >>> 13;
+                h1 = Math.imul(h1, 0xc2b2ae35);
+                h1 ^= h1 >>> 16;
+                return (h1 >>> 0).toString(16).padStart(8, '0');
+            }
+        };
+
+        // Extended DJB2 for longer hashes
+        function djb2Extended(str, length) {
+            let result = '';
+            let hash = 5381;
+            for (let j = 0; j < length / 8; j++) {
+                for (let i = 0; i < str.length; i++) {
+                    hash = ((hash << 5) + hash) + str.charCodeAt(i) + j;
+                    hash = hash & 0xFFFFFFFF;
+                }
+                result += (hash >>> 0).toString(16).padStart(8, '0');
+            }
+            return result.slice(0, length);
+        }
+
+        // MD5 implementation
+        function md5Hash(str) {
+            function rotateLeft(x, n) {
+                return (x << n) | (x >>> (32 - n));
+            }
+
+            function addUnsigned(x, y) {
+                const x8 = x & 0x80000000;
+                const y8 = y & 0x80000000;
+                const x4 = x & 0x40000000;
+                const y4 = y & 0x40000000;
+                const result = (x & 0x3FFFFFFF) + (y & 0x3FFFFFFF);
+                if (x4 & y4) return result ^ 0x80000000 ^ x8 ^ y8;
+                if (x4 | y4) {
+                    if (result & 0x40000000) return result ^ 0xC0000000 ^ x8 ^ y8;
+                    return result ^ 0x40000000 ^ x8 ^ y8;
+                }
+                return result ^ x8 ^ y8;
+            }
+
+            const F = (x, y, z) => (x & y) | (~x & z);
+            const G = (x, y, z) => (x & z) | (y & ~z);
+            const H = (x, y, z) => x ^ y ^ z;
+            const I = (x, y, z) => y ^ (x | ~z);
+
+            const FF = (a, b, c, d, x, s, ac) => {
+                a = addUnsigned(a, addUnsigned(addUnsigned(F(b, c, d), x), ac));
+                return addUnsigned(rotateLeft(a, s), b);
+            };
+            const GG = (a, b, c, d, x, s, ac) => {
+                a = addUnsigned(a, addUnsigned(addUnsigned(G(b, c, d), x), ac));
+                return addUnsigned(rotateLeft(a, s), b);
+            };
+            const HH = (a, b, c, d, x, s, ac) => {
+                a = addUnsigned(a, addUnsigned(addUnsigned(H(b, c, d), x), ac));
+                return addUnsigned(rotateLeft(a, s), b);
+            };
+            const II = (a, b, c, d, x, s, ac) => {
+                a = addUnsigned(a, addUnsigned(addUnsigned(I(b, c, d), x), ac));
+                return addUnsigned(rotateLeft(a, s), b);
+            };
+
+            const encoder = new TextEncoder();
+            const bytes = encoder.encode(str);
+            const bitLength = bytes.length * 8;
+
+            // Padding
+            const padding = [];
+            for (let i = 0; i < bytes.length; i++) padding.push(bytes[i]);
+            padding.push(0x80);
+            while ((padding.length % 64) !== 56) padding.push(0);
+
+            // Length
+            for (let i = 0; i < 8; i++) {
+                padding.push((bitLength >>> (i * 8)) & 0xFF);
+            }
+
+            // Process blocks
+            let a = 0x67452301, b = 0xEFCDAB89, c = 0x98BADCFE, d = 0x10325476;
+
+            for (let i = 0; i < padding.length; i += 64) {
+                const x = [];
+                for (let j = 0; j < 16; j++) {
+                    x[j] = padding[i + j * 4] |
+                           (padding[i + j * 4 + 1] << 8) |
+                           (padding[i + j * 4 + 2] << 16) |
+                           (padding[i + j * 4 + 3] << 24);
+                }
+
+                let aa = a, bb = b, cc = c, dd = d;
+
+                a = FF(a, b, c, d, x[0], 7, 0xD76AA478);
+                d = FF(d, a, b, c, x[1], 12, 0xE8C7B756);
+                c = FF(c, d, a, b, x[2], 17, 0x242070DB);
+                b = FF(b, c, d, a, x[3], 22, 0xC1BDCEEE);
+                a = FF(a, b, c, d, x[4], 7, 0xF57C0FAF);
+                d = FF(d, a, b, c, x[5], 12, 0x4787C62A);
+                c = FF(c, d, a, b, x[6], 17, 0xA8304613);
+                b = FF(b, c, d, a, x[7], 22, 0xFD469501);
+                a = FF(a, b, c, d, x[8], 7, 0x698098D8);
+                d = FF(d, a, b, c, x[9], 12, 0x8B44F7AF);
+                c = FF(c, d, a, b, x[10], 17, 0xFFFF5BB1);
+                b = FF(b, c, d, a, x[11], 22, 0x895CD7BE);
+                a = FF(a, b, c, d, x[12], 7, 0x6B901122);
+                d = FF(d, a, b, c, x[13], 12, 0xFD987193);
+                c = FF(c, d, a, b, x[14], 17, 0xA679438E);
+                b = FF(b, c, d, a, x[15], 22, 0x49B40821);
+
+                a = addUnsigned(a, aa);
+                b = addUnsigned(b, bb);
+                c = addUnsigned(c, cc);
+                d = addUnsigned(d, dd);
+            }
+
+            const toHex = (n) => {
+                let hex = '';
+                for (let i = 0; i < 4; i++) {
+                    hex += ((n >>> (i * 8)) & 0xFF).toString(16).padStart(2, '0');
+                }
+                return hex;
+            };
+
+            return toHex(a) + toHex(b) + toHex(c) + toHex(d);
+        }
+
+        // Algorithm info
+        const algoInfo = {
+            sha256: {
+                title: 'SHA-256',
+                desc: 'A member of the SHA-2 family, producing a 256-bit hash. Used in Bitcoin, SSL certificates, and countless security applications. Designed by NSA, published in 2001.',
+                bits: 256
+            },
+            sha1: {
+                title: 'SHA-1',
+                desc: 'Produces a 160-bit hash. Once widely used but now considered weak due to collision attacks. Deprecated for security use since 2017.',
+                bits: 160
+            },
+            md5: {
+                title: 'MD5',
+                desc: 'A 128-bit hash function designed by Ronald Rivest in 1991. Cryptographically broken but still used for checksums and non-security purposes.',
+                bits: 128
+            },
+            djb2: {
+                title: 'DJB2',
+                desc: 'A simple but effective hash function created by Daniel J. Bernstein. Often used in hash tables due to its speed and reasonable distribution.',
+                bits: 32
+            },
+            fnv1a: {
+                title: 'FNV-1a',
+                desc: 'Fowler-Noll-Vo hash function. Non-cryptographic but fast with good distribution. The "a" variant XORs before multiplying for better avalanche.',
+                bits: 32
+            },
+            murmur: {
+                title: 'MurmurHash3',
+                desc: 'A fast non-cryptographic hash function by Austin Appleby. Excellent distribution and speed, used in many hash tables and Bloom filters.',
+                bits: 32
+            }
+        };
+
+        // Get hash
+        async function computeHash(text, algo) {
+            const fn = hashFunctions[algo];
+            if (algo === 'sha256' || algo === 'sha1') {
+                return await fn(text);
+            }
+            return fn(text);
+        }
+
+        // Convert hex to binary
+        function hexToBinary(hex) {
+            return hex.split('').map(c =>
+                parseInt(c, 16).toString(2).padStart(4, '0')
+            ).join('');
+        }
+
+        // Calculate Hamming distance
+        function hammingDistance(hex1, hex2) {
+            const bin1 = hexToBinary(hex1);
+            const bin2 = hexToBinary(hex2);
+            let distance = 0;
+            const len = Math.min(bin1.length, bin2.length);
+            for (let i = 0; i < len; i++) {
+                if (bin1[i] !== bin2[i]) distance++;
+            }
+            return distance + Math.abs(bin1.length - bin2.length);
+        }
+
+        // Update display
+        async function updateDisplay() {
+            const text = document.getElementById('inputText').value;
+            currentHash = await computeHash(text, currentAlgo);
+
+            // Display hex
+            document.getElementById('hashHex').textContent = currentHash;
+
+            // Display bytes
+            const bytes = currentHash.match(/.{2}/g) || [];
+            document.getElementById('hashBytes').innerHTML = bytes.map(b =>
+                `<span class="hex-byte">${b}</span>`
+            ).join('');
+
+            // Display binary
+            const binary = hexToBinary(currentHash);
+            document.getElementById('hashBinary').innerHTML = binary.split('').map(b =>
+                `<span class="${b === '1' ? 'bit-one' : 'bit-zero'}">${b}</span>`
+            ).join('');
+
+            // Update stats
+            const ones = (binary.match(/1/g) || []).length;
+            const zeros = binary.length - ones;
+            document.getElementById('hashLength').textContent = binary.length;
+            document.getElementById('onesCount').textContent = ones;
+            document.getElementById('zerosCount').textContent = zeros;
+
+            // Calculate entropy
+            const p1 = ones / binary.length;
+            const p0 = zeros / binary.length;
+            let entropy = 0;
+            if (p1 > 0) entropy -= p1 * Math.log2(p1);
+            if (p0 > 0) entropy -= p0 * Math.log2(p0);
+            document.getElementById('entropyVal').textContent = entropy.toFixed(2);
+
+            // Draw visualizations
+            drawColorGrid();
+            drawBitChart(binary);
+            drawAvalanche(text);
+            drawSimilarityMap(text);
+
+            // Update compare
+            updateCompare();
+        }
+
+        // Draw color grid
+        function drawColorGrid() {
+            const canvas = document.getElementById('colorGrid');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.parentElement.clientWidth - 30;
+
+            ctx.fillStyle = '#0f0f1a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const bytes = currentHash.match(/.{2}/g) || [];
+            const cols = Math.ceil(Math.sqrt(bytes.length));
+            const size = Math.floor(canvas.width / cols);
+
+            bytes.forEach((byte, i) => {
+                const x = (i % cols) * size;
+                const y = Math.floor(i / cols) * size;
+                const val = parseInt(byte, 16);
+                const hue = (val / 255) * 360;
+                ctx.fillStyle = `hsl(${hue}, 70%, 50%)`;
+                ctx.fillRect(x + 1, y + 1, size - 2, size - 2);
+            });
+        }
+
+        // Draw bit distribution chart
+        function drawBitChart(binary) {
+            const canvas = document.getElementById('bitChart');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.parentElement.clientWidth - 30;
+
+            ctx.fillStyle = '#0f0f1a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Group bits into chunks and count 1s
+            const chunkSize = Math.max(1, Math.floor(binary.length / 32));
+            const chunks = [];
+            for (let i = 0; i < binary.length; i += chunkSize) {
+                const chunk = binary.slice(i, i + chunkSize);
+                const ones = (chunk.match(/1/g) || []).length;
+                chunks.push(ones / chunkSize);
+            }
+
+            const barWidth = canvas.width / chunks.length;
+            chunks.forEach((ratio, i) => {
+                const height = ratio * canvas.height;
+                const hue = 180 + (ratio - 0.5) * 120;
+                ctx.fillStyle = `hsl(${hue}, 70%, 50%)`;
+                ctx.fillRect(i * barWidth, canvas.height - height, barWidth - 1, height);
+            });
+
+            // Draw 50% line
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height / 2);
+            ctx.lineTo(canvas.width, canvas.height / 2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        // Draw avalanche effect
+        async function drawAvalanche(text) {
+            const grid = document.getElementById('avalancheGrid');
+            const originalBinary = hexToBinary(currentHash);
+
+            let html = '';
+            for (let i = 0; i < 16; i++) {
+                // Flip one bit of input
+                const modified = text.slice(0, i % text.length) +
+                    String.fromCharCode(text.charCodeAt(i % text.length) ^ (1 << (i % 8))) +
+                    text.slice((i % text.length) + 1);
+
+                const modifiedHash = await computeHash(modified, currentAlgo);
+                const modifiedBinary = hexToBinary(modifiedHash);
+
+                // Count bit differences
+                let diffs = 0;
+                for (let j = 0; j < Math.min(originalBinary.length, modifiedBinary.length); j++) {
+                    if (originalBinary[j] !== modifiedBinary[j]) diffs++;
+                }
+                const ratio = diffs / originalBinary.length;
+                const hue = (1 - Math.abs(ratio - 0.5) * 2) * 120;
+                const brightness = 30 + ratio * 40;
+
+                html += `<div class="avalanche-cell" style="background: hsl(${hue}, 70%, ${brightness}%);" title="${(ratio * 100).toFixed(1)}% changed"></div>`;
+            }
+            grid.innerHTML = html;
+        }
+
+        // Draw similarity map
+        async function drawSimilarityMap(text) {
+            const canvas = document.getElementById('similarityMap');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.parentElement.clientWidth - 30;
+
+            ctx.fillStyle = '#0f0f1a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Generate variations and compare
+            const variations = [];
+            for (let i = 0; i < 20; i++) {
+                let modified = text;
+                for (let j = 0; j < i; j++) {
+                    const pos = Math.floor(Math.random() * modified.length);
+                    modified = modified.slice(0, pos) +
+                        String.fromCharCode(modified.charCodeAt(pos) + 1) +
+                        modified.slice(pos + 1);
+                }
+                const hash = await computeHash(modified, currentAlgo);
+                const dist = hammingDistance(currentHash, hash);
+                variations.push({ changes: i, distance: dist });
+            }
+
+            // Draw
+            const maxDist = Math.max(...variations.map(v => v.distance));
+            const barWidth = canvas.width / variations.length;
+
+            variations.forEach((v, i) => {
+                const height = (v.distance / maxDist) * (canvas.height - 20);
+                ctx.fillStyle = `hsl(${180 - v.distance * 2}, 70%, 50%)`;
+                ctx.fillRect(i * barWidth + 2, canvas.height - height - 10, barWidth - 4, height);
+            });
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.font = '10px sans-serif';
+            ctx.fillText('Input changes →', 5, canvas.height - 2);
+        }
+
+        // Update comparison
+        async function updateCompare() {
+            const compareText = document.getElementById('compareInput').value;
+            if (!compareText) {
+                document.getElementById('hammingDistance').textContent = '0 bits';
+                return;
+            }
+
+            const compareHash = await computeHash(compareText, currentAlgo);
+            const distance = hammingDistance(currentHash, compareHash);
+            document.getElementById('hammingDistance').textContent = `${distance} bits (${(distance / (currentHash.length * 4) * 100).toFixed(1)}%)`;
+        }
+
+        // Search for partial collisions
+        async function searchCollisions() {
+            const results = document.getElementById('collisionResults');
+            results.innerHTML = '<div class="collision-item">Searching...</div>';
+
+            const originalPrefix = currentHash.slice(0, 4);
+            const found = [];
+            const originalText = document.getElementById('inputText').value;
+
+            for (let i = 0; i < 10000 && found.length < 10; i++) {
+                const testText = originalText + i.toString();
+                const hash = await computeHash(testText, currentAlgo);
+
+                // Check for prefix collision
+                if (hash.slice(0, 4) === originalPrefix && testText !== originalText) {
+                    found.push({ text: testText, hash: hash });
+                }
+            }
+
+            if (found.length === 0) {
+                results.innerHTML = '<div class="collision-item">No partial collisions found in 10,000 attempts</div>';
+            } else {
+                results.innerHTML = found.map(f =>
+                    `<div class="collision-item match">"${f.text.slice(0, 30)}" → ${f.hash.slice(0, 8)}...</div>`
+                ).join('');
+            }
+        }
+
+        // Event listeners
+        document.querySelectorAll('.algo-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.algo-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentAlgo = tab.dataset.algo;
+
+                const info = algoInfo[currentAlgo];
+                document.getElementById('algoInfo').innerHTML =
+                    `<h4>${info.title}</h4><p>${info.desc}</p>`;
+
+                updateDisplay();
+            });
+        });
+
+        document.getElementById('inputText').addEventListener('input', updateDisplay);
+        document.getElementById('compareInput').addEventListener('input', updateCompare);
+
+        // Initialize
+        updateDisplay();
+    </script>
+</body>
+</html>

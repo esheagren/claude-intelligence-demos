@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perlin Noise Explorer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            background: linear-gradient(135deg, #00d4aa, #7b68ee);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #888;
+            font-size: 1.1em;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 20px;
+        }
+
+        .canvas-section {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 20px;
+        }
+
+        #noiseCanvas {
+            width: 100%;
+            border-radius: 10px;
+            background: #000;
+            cursor: crosshair;
+        }
+
+        .controls-panel {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        .control-group {
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        .control-group h3 {
+            color: #00d4aa;
+            margin-bottom: 12px;
+            font-size: 0.95em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .control-row {
+            margin-bottom: 12px;
+        }
+
+        .control-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .control-row label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+
+        .control-row label span {
+            color: #00d4aa;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #333;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #00d4aa, #7b68ee);
+            cursor: pointer;
+        }
+
+        .mode-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .mode-btn {
+            padding: 10px 8px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.1);
+            color: #e0e0e0;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85em;
+        }
+
+        .mode-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .mode-btn.active {
+            background: linear-gradient(135deg, #00d4aa, #7b68ee);
+            color: white;
+        }
+
+        .color-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+        }
+
+        .color-btn {
+            padding: 8px 4px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.75em;
+            color: #fff;
+        }
+
+        .color-btn.active {
+            box-shadow: 0 0 0 2px #fff;
+        }
+
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .action-btn {
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #00d4aa, #7b68ee);
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0,212,170,0.3);
+        }
+
+        .action-btn.secondary {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .info-display {
+            font-size: 0.85em;
+            color: #888;
+            margin-top: 10px;
+        }
+
+        .info-display span {
+            color: #00d4aa;
+        }
+
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .checkbox-row input {
+            width: 16px;
+            height: 16px;
+            accent-color: #00d4aa;
+        }
+
+        .stats-panel {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .stat-box {
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.3em;
+            color: #00d4aa;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            font-size: 0.75em;
+            color: #888;
+            margin-top: 3px;
+        }
+
+        .algorithm-info {
+            background: rgba(0,212,170,0.1);
+            border-left: 3px solid #00d4aa;
+            padding: 10px;
+            border-radius: 0 8px 8px 0;
+            font-size: 0.85em;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 900px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Perlin Noise Explorer</h1>
+            <p class="subtitle">Procedural texture generation with gradient noise</p>
+        </header>
+
+        <div class="main-content">
+            <div class="canvas-section">
+                <canvas id="noiseCanvas"></canvas>
+                <div class="stats-panel">
+                    <div class="stat-box">
+                        <div class="stat-value" id="fpsDisplay">0</div>
+                        <div class="stat-label">FPS</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="seedDisplay">0</div>
+                        <div class="stat-label">Seed</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="minDisplay">0.00</div>
+                        <div class="stat-label">Min Value</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="maxDisplay">1.00</div>
+                        <div class="stat-label">Max Value</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls-panel">
+                <div class="control-group">
+                    <h3>Noise Type</h3>
+                    <div class="mode-buttons">
+                        <button class="mode-btn active" data-type="perlin">Perlin</button>
+                        <button class="mode-btn" data-type="simplex">Simplex</button>
+                        <button class="mode-btn" data-type="value">Value</button>
+                        <button class="mode-btn" data-type="worley">Worley</button>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>Parameters</h3>
+                    <div class="control-row">
+                        <label>Scale <span id="scaleVal">50</span></label>
+                        <input type="range" id="scale" min="5" max="200" value="50">
+                    </div>
+                    <div class="control-row">
+                        <label>Octaves <span id="octavesVal">4</span></label>
+                        <input type="range" id="octaves" min="1" max="8" value="4">
+                    </div>
+                    <div class="control-row">
+                        <label>Persistence <span id="persistenceVal">0.50</span></label>
+                        <input type="range" id="persistence" min="0" max="100" value="50">
+                    </div>
+                    <div class="control-row">
+                        <label>Lacunarity <span id="lacunarityVal">2.00</span></label>
+                        <input type="range" id="lacunarity" min="100" max="400" value="200">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>Animation</h3>
+                    <div class="control-row">
+                        <label>Z Speed <span id="zSpeedVal">0.00</span></label>
+                        <input type="range" id="zSpeed" min="0" max="100" value="0">
+                    </div>
+                    <div class="control-row">
+                        <label>Flow Speed <span id="flowSpeedVal">0.00</span></label>
+                        <input type="range" id="flowSpeed" min="0" max="100" value="0">
+                    </div>
+                    <div class="checkbox-row">
+                        <input type="checkbox" id="animateToggle">
+                        <label for="animateToggle">Enable Animation</label>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>Color Scheme</h3>
+                    <div class="color-buttons">
+                        <button class="color-btn active" data-scheme="grayscale" style="background: linear-gradient(90deg, #000, #fff)">Gray</button>
+                        <button class="color-btn" data-scheme="terrain" style="background: linear-gradient(90deg, #1a5f7a, #57c785, #f4d03f, #8b4513, #fff)">Terrain</button>
+                        <button class="color-btn" data-scheme="heat" style="background: linear-gradient(90deg, #000, #f00, #ff0, #fff)">Heat</button>
+                        <button class="color-btn" data-scheme="ocean" style="background: linear-gradient(90deg, #001433, #004080, #00a0c6, #87ceeb)">Ocean</button>
+                        <button class="color-btn" data-scheme="plasma" style="background: linear-gradient(90deg, #0d0887, #7e03a8, #cc4778, #f89540, #f0f921)">Plasma</button>
+                        <button class="color-btn" data-scheme="wood" style="background: linear-gradient(90deg, #3d2817, #8b5a2b, #3d2817)">Wood</button>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>Effects</h3>
+                    <div class="checkbox-row">
+                        <input type="checkbox" id="ridgedToggle">
+                        <label for="ridgedToggle">Ridged Noise</label>
+                    </div>
+                    <div class="checkbox-row">
+                        <input type="checkbox" id="turbulenceToggle">
+                        <label for="turbulenceToggle">Turbulence</label>
+                    </div>
+                    <div class="checkbox-row">
+                        <input type="checkbox" id="domainWarpToggle">
+                        <label for="domainWarpToggle">Domain Warping</label>
+                    </div>
+                    <div class="control-row">
+                        <label>Warp Strength <span id="warpStrengthVal">0.50</span></label>
+                        <input type="range" id="warpStrength" min="0" max="100" value="50">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>Actions</h3>
+                    <div class="action-buttons">
+                        <button class="action-btn" id="randomSeed">🎲 Random Seed</button>
+                        <button class="action-btn secondary" id="exportImage">📷 Export Image</button>
+                        <button class="action-btn secondary" id="exportTile">🔲 Export Tileable</button>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>About</h3>
+                    <div class="algorithm-info">
+                        <strong>Perlin Noise</strong> uses gradient vectors at grid points, interpolating smoothly between them.<br><br>
+                        <strong>Simplex Noise</strong> samples from a simplex grid (triangles in 2D), more efficient and artifact-free.<br><br>
+                        <strong>fBm (Fractal Brownian Motion)</strong> layers multiple octaves with decreasing amplitude for natural detail.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('noiseCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Settings
+        let noiseType = 'perlin';
+        let colorScheme = 'grayscale';
+        let scale = 50;
+        let octaves = 4;
+        let persistence = 0.5;
+        let lacunarity = 2.0;
+        let zOffset = 0;
+        let zSpeed = 0;
+        let flowSpeed = 0;
+        let flowOffset = { x: 0, y: 0 };
+        let animate = false;
+        let ridged = false;
+        let turbulence = false;
+        let domainWarp = false;
+        let warpStrength = 0.5;
+        let seed = Math.floor(Math.random() * 100000);
+
+        // Stats
+        let fps = 0;
+        let lastTime = performance.now();
+        let frameCount = 0;
+        let minVal = 0, maxVal = 1;
+
+        // Permutation table for Perlin noise
+        let perm = [];
+        let gradients2D = [];
+        let gradients3D = [];
+
+        function initPermutation() {
+            const p = [];
+            for (let i = 0; i < 256; i++) p[i] = i;
+
+            // Shuffle based on seed
+            let s = seed;
+            for (let i = 255; i > 0; i--) {
+                s = (s * 1103515245 + 12345) & 0x7fffffff;
+                const j = s % (i + 1);
+                [p[i], p[j]] = [p[j], p[i]];
+            }
+
+            perm = [...p, ...p];
+
+            // Generate gradient vectors
+            gradients2D = [];
+            gradients3D = [];
+            for (let i = 0; i < 256; i++) {
+                const angle = (perm[i] / 256) * Math.PI * 2;
+                gradients2D.push({ x: Math.cos(angle), y: Math.sin(angle) });
+
+                // 3D gradients (edges of cube)
+                const theta = (perm[i] / 256) * Math.PI * 2;
+                const phi = Math.acos(1 - 2 * (perm[(i + 1) % 256] / 256));
+                gradients3D.push({
+                    x: Math.sin(phi) * Math.cos(theta),
+                    y: Math.sin(phi) * Math.sin(theta),
+                    z: Math.cos(phi)
+                });
+            }
+        }
+
+        // Fade function for smooth interpolation
+        function fade(t) {
+            return t * t * t * (t * (t * 6 - 15) + 10);
+        }
+
+        function lerp(a, b, t) {
+            return a + t * (b - a);
+        }
+
+        function dot2(g, x, y) {
+            return g.x * x + g.y * y;
+        }
+
+        function dot3(g, x, y, z) {
+            return g.x * x + g.y * y + g.z * z;
+        }
+
+        // 2D Perlin Noise
+        function perlin2D(x, y) {
+            const X = Math.floor(x) & 255;
+            const Y = Math.floor(y) & 255;
+
+            x -= Math.floor(x);
+            y -= Math.floor(y);
+
+            const u = fade(x);
+            const v = fade(y);
+
+            const g00 = gradients2D[perm[X + perm[Y]]];
+            const g10 = gradients2D[perm[X + 1 + perm[Y]]];
+            const g01 = gradients2D[perm[X + perm[Y + 1]]];
+            const g11 = gradients2D[perm[X + 1 + perm[Y + 1]]];
+
+            const n00 = dot2(g00, x, y);
+            const n10 = dot2(g10, x - 1, y);
+            const n01 = dot2(g01, x, y - 1);
+            const n11 = dot2(g11, x - 1, y - 1);
+
+            const nx0 = lerp(n00, n10, u);
+            const nx1 = lerp(n01, n11, u);
+
+            return lerp(nx0, nx1, v);
+        }
+
+        // 3D Perlin Noise
+        function perlin3D(x, y, z) {
+            const X = Math.floor(x) & 255;
+            const Y = Math.floor(y) & 255;
+            const Z = Math.floor(z) & 255;
+
+            x -= Math.floor(x);
+            y -= Math.floor(y);
+            z -= Math.floor(z);
+
+            const u = fade(x);
+            const v = fade(y);
+            const w = fade(z);
+
+            const A = perm[X] + Y;
+            const AA = perm[A] + Z;
+            const AB = perm[A + 1] + Z;
+            const B = perm[X + 1] + Y;
+            const BA = perm[B] + Z;
+            const BB = perm[B + 1] + Z;
+
+            const g000 = gradients3D[perm[AA] & 255];
+            const g100 = gradients3D[perm[BA] & 255];
+            const g010 = gradients3D[perm[AB] & 255];
+            const g110 = gradients3D[perm[BB] & 255];
+            const g001 = gradients3D[perm[AA + 1] & 255];
+            const g101 = gradients3D[perm[BA + 1] & 255];
+            const g011 = gradients3D[perm[AB + 1] & 255];
+            const g111 = gradients3D[perm[BB + 1] & 255];
+
+            const n000 = dot3(g000, x, y, z);
+            const n100 = dot3(g100, x - 1, y, z);
+            const n010 = dot3(g010, x, y - 1, z);
+            const n110 = dot3(g110, x - 1, y - 1, z);
+            const n001 = dot3(g001, x, y, z - 1);
+            const n101 = dot3(g101, x - 1, y, z - 1);
+            const n011 = dot3(g011, x, y - 1, z - 1);
+            const n111 = dot3(g111, x - 1, y - 1, z - 1);
+
+            const nx00 = lerp(n000, n100, u);
+            const nx10 = lerp(n010, n110, u);
+            const nx01 = lerp(n001, n101, u);
+            const nx11 = lerp(n011, n111, u);
+
+            const nxy0 = lerp(nx00, nx10, v);
+            const nxy1 = lerp(nx01, nx11, v);
+
+            return lerp(nxy0, nxy1, w);
+        }
+
+        // Simplex noise constants
+        const F2 = 0.5 * (Math.sqrt(3) - 1);
+        const G2 = (3 - Math.sqrt(3)) / 6;
+        const F3 = 1/3;
+        const G3 = 1/6;
+
+        function simplex2D(x, y) {
+            const s = (x + y) * F2;
+            const i = Math.floor(x + s);
+            const j = Math.floor(y + s);
+
+            const t = (i + j) * G2;
+            const X0 = i - t;
+            const Y0 = j - t;
+            const x0 = x - X0;
+            const y0 = y - Y0;
+
+            let i1, j1;
+            if (x0 > y0) { i1 = 1; j1 = 0; }
+            else { i1 = 0; j1 = 1; }
+
+            const x1 = x0 - i1 + G2;
+            const y1 = y0 - j1 + G2;
+            const x2 = x0 - 1 + 2 * G2;
+            const y2 = y0 - 1 + 2 * G2;
+
+            const ii = i & 255;
+            const jj = j & 255;
+
+            let n0 = 0, n1 = 0, n2 = 0;
+
+            let t0 = 0.5 - x0*x0 - y0*y0;
+            if (t0 > 0) {
+                t0 *= t0;
+                const gi0 = gradients2D[perm[ii + perm[jj]]];
+                n0 = t0 * t0 * dot2(gi0, x0, y0);
+            }
+
+            let t1 = 0.5 - x1*x1 - y1*y1;
+            if (t1 > 0) {
+                t1 *= t1;
+                const gi1 = gradients2D[perm[ii + i1 + perm[jj + j1]]];
+                n1 = t1 * t1 * dot2(gi1, x1, y1);
+            }
+
+            let t2 = 0.5 - x2*x2 - y2*y2;
+            if (t2 > 0) {
+                t2 *= t2;
+                const gi2 = gradients2D[perm[ii + 1 + perm[jj + 1]]];
+                n2 = t2 * t2 * dot2(gi2, x2, y2);
+            }
+
+            return 70 * (n0 + n1 + n2);
+        }
+
+        function simplex3D(x, y, z) {
+            const s = (x + y + z) * F3;
+            const i = Math.floor(x + s);
+            const j = Math.floor(y + s);
+            const k = Math.floor(z + s);
+
+            const t = (i + j + k) * G3;
+            const X0 = i - t, Y0 = j - t, Z0 = k - t;
+            const x0 = x - X0, y0 = y - Y0, z0 = z - Z0;
+
+            let i1, j1, k1, i2, j2, k2;
+            if (x0 >= y0) {
+                if (y0 >= z0) { i1=1; j1=0; k1=0; i2=1; j2=1; k2=0; }
+                else if (x0 >= z0) { i1=1; j1=0; k1=0; i2=1; j2=0; k2=1; }
+                else { i1=0; j1=0; k1=1; i2=1; j2=0; k2=1; }
+            } else {
+                if (y0 < z0) { i1=0; j1=0; k1=1; i2=0; j2=1; k2=1; }
+                else if (x0 < z0) { i1=0; j1=1; k1=0; i2=0; j2=1; k2=1; }
+                else { i1=0; j1=1; k1=0; i2=1; j2=1; k2=0; }
+            }
+
+            const x1 = x0 - i1 + G3, y1 = y0 - j1 + G3, z1 = z0 - k1 + G3;
+            const x2 = x0 - i2 + 2*G3, y2 = y0 - j2 + 2*G3, z2 = z0 - k2 + 2*G3;
+            const x3 = x0 - 1 + 3*G3, y3 = y0 - 1 + 3*G3, z3 = z0 - 1 + 3*G3;
+
+            const ii = i & 255, jj = j & 255, kk = k & 255;
+
+            let n0 = 0, n1 = 0, n2 = 0, n3 = 0;
+
+            let t0 = 0.6 - x0*x0 - y0*y0 - z0*z0;
+            if (t0 > 0) {
+                t0 *= t0;
+                const gi0 = gradients3D[perm[ii + perm[jj + perm[kk]]] & 255];
+                n0 = t0 * t0 * dot3(gi0, x0, y0, z0);
+            }
+
+            let t1 = 0.6 - x1*x1 - y1*y1 - z1*z1;
+            if (t1 > 0) {
+                t1 *= t1;
+                const gi1 = gradients3D[perm[ii + i1 + perm[jj + j1 + perm[kk + k1]]] & 255];
+                n1 = t1 * t1 * dot3(gi1, x1, y1, z1);
+            }
+
+            let t2 = 0.6 - x2*x2 - y2*y2 - z2*z2;
+            if (t2 > 0) {
+                t2 *= t2;
+                const gi2 = gradients3D[perm[ii + i2 + perm[jj + j2 + perm[kk + k2]]] & 255];
+                n2 = t2 * t2 * dot3(gi2, x2, y2, z2);
+            }
+
+            let t3 = 0.6 - x3*x3 - y3*y3 - z3*z3;
+            if (t3 > 0) {
+                t3 *= t3;
+                const gi3 = gradients3D[perm[ii + 1 + perm[jj + 1 + perm[kk + 1]]] & 255];
+                n3 = t3 * t3 * dot3(gi3, x3, y3, z3);
+            }
+
+            return 32 * (n0 + n1 + n2 + n3);
+        }
+
+        // Value noise
+        function valueNoise2D(x, y) {
+            const X = Math.floor(x) & 255;
+            const Y = Math.floor(y) & 255;
+
+            x -= Math.floor(x);
+            y -= Math.floor(y);
+
+            const u = fade(x);
+            const v = fade(y);
+
+            const n00 = perm[X + perm[Y]] / 255;
+            const n10 = perm[X + 1 + perm[Y]] / 255;
+            const n01 = perm[X + perm[Y + 1]] / 255;
+            const n11 = perm[X + 1 + perm[Y + 1]] / 255;
+
+            return lerp(lerp(n00, n10, u), lerp(n01, n11, u), v) * 2 - 1;
+        }
+
+        function valueNoise3D(x, y, z) {
+            const X = Math.floor(x) & 255;
+            const Y = Math.floor(y) & 255;
+            const Z = Math.floor(z) & 255;
+
+            x -= Math.floor(x);
+            y -= Math.floor(y);
+            z -= Math.floor(z);
+
+            const u = fade(x);
+            const v = fade(y);
+            const w = fade(z);
+
+            const n000 = perm[X + perm[Y + perm[Z]]] / 255;
+            const n100 = perm[X + 1 + perm[Y + perm[Z]]] / 255;
+            const n010 = perm[X + perm[Y + 1 + perm[Z]]] / 255;
+            const n110 = perm[X + 1 + perm[Y + 1 + perm[Z]]] / 255;
+            const n001 = perm[X + perm[Y + perm[Z + 1]]] / 255;
+            const n101 = perm[X + 1 + perm[Y + perm[Z + 1]]] / 255;
+            const n011 = perm[X + perm[Y + 1 + perm[Z + 1]]] / 255;
+            const n111 = perm[X + 1 + perm[Y + 1 + perm[Z + 1]]] / 255;
+
+            return lerp(
+                lerp(lerp(n000, n100, u), lerp(n010, n110, u), v),
+                lerp(lerp(n001, n101, u), lerp(n011, n111, u), v),
+                w
+            ) * 2 - 1;
+        }
+
+        // Worley (cellular) noise
+        function worley2D(x, y) {
+            const xi = Math.floor(x);
+            const yi = Math.floor(y);
+
+            let minDist = Infinity;
+            let secondMin = Infinity;
+
+            for (let dx = -1; dx <= 1; dx++) {
+                for (let dy = -1; dy <= 1; dy++) {
+                    const cx = xi + dx;
+                    const cy = yi + dy;
+
+                    // Generate point in this cell
+                    const hash = perm[(cx & 255) + perm[(cy & 255)]];
+                    const px = cx + (hash / 255);
+                    const py = cy + (perm[hash] / 255);
+
+                    const dist = Math.sqrt((x - px) ** 2 + (y - py) ** 2);
+                    if (dist < minDist) {
+                        secondMin = minDist;
+                        minDist = dist;
+                    } else if (dist < secondMin) {
+                        secondMin = dist;
+                    }
+                }
+            }
+
+            return minDist;
+        }
+
+        function worley3D(x, y, z) {
+            const xi = Math.floor(x);
+            const yi = Math.floor(y);
+            const zi = Math.floor(z);
+
+            let minDist = Infinity;
+
+            for (let dx = -1; dx <= 1; dx++) {
+                for (let dy = -1; dy <= 1; dy++) {
+                    for (let dz = -1; dz <= 1; dz++) {
+                        const cx = xi + dx;
+                        const cy = yi + dy;
+                        const cz = zi + dz;
+
+                        const hash = perm[(cx & 255) + perm[(cy & 255) + perm[(cz & 255)]]];
+                        const px = cx + (hash / 255);
+                        const py = cy + (perm[hash] / 255);
+                        const pz = cz + (perm[(hash + 1) & 255] / 255);
+
+                        const dist = Math.sqrt((x - px) ** 2 + (y - py) ** 2 + (z - pz) ** 2);
+                        minDist = Math.min(minDist, dist);
+                    }
+                }
+            }
+
+            return minDist;
+        }
+
+        // Get base noise function
+        function baseNoise2D(x, y) {
+            switch (noiseType) {
+                case 'perlin': return perlin2D(x, y);
+                case 'simplex': return simplex2D(x, y);
+                case 'value': return valueNoise2D(x, y);
+                case 'worley': return worley2D(x, y) * 2 - 1;
+                default: return perlin2D(x, y);
+            }
+        }
+
+        function baseNoise3D(x, y, z) {
+            switch (noiseType) {
+                case 'perlin': return perlin3D(x, y, z);
+                case 'simplex': return simplex3D(x, y, z);
+                case 'value': return valueNoise3D(x, y, z);
+                case 'worley': return worley3D(x, y, z) * 2 - 1;
+                default: return perlin3D(x, y, z);
+            }
+        }
+
+        // Fractal Brownian Motion (fBm)
+        function fbm(x, y, z = 0) {
+            let value = 0;
+            let amplitude = 1;
+            let frequency = 1;
+            let maxValue = 0;
+
+            for (let i = 0; i < octaves; i++) {
+                let n;
+                if (z !== 0) {
+                    n = baseNoise3D(x * frequency, y * frequency, z * frequency);
+                } else {
+                    n = baseNoise2D(x * frequency, y * frequency);
+                }
+
+                if (ridged) {
+                    n = 1 - Math.abs(n);
+                    n = n * n;
+                }
+
+                if (turbulence) {
+                    n = Math.abs(n);
+                }
+
+                value += n * amplitude;
+                maxValue += amplitude;
+                amplitude *= persistence;
+                frequency *= lacunarity;
+            }
+
+            return value / maxValue;
+        }
+
+        // Domain warping
+        function warpedNoise(x, y, z = 0) {
+            if (!domainWarp) return fbm(x, y, z);
+
+            const warp = warpStrength * 2;
+            const qx = fbm(x, y, z);
+            const qy = fbm(x + 5.2, y + 1.3, z);
+
+            const rx = fbm(x + warp * qx + 1.7, y + warp * qy + 9.2, z);
+            const ry = fbm(x + warp * qx + 8.3, y + warp * qy + 2.8, z);
+
+            return fbm(x + warp * rx, y + warp * ry, z);
+        }
+
+        // Color mapping
+        function getColor(value) {
+            // Normalize to 0-1
+            value = (value + 1) / 2;
+            value = Math.max(0, Math.min(1, value));
+
+            switch (colorScheme) {
+                case 'grayscale': {
+                    const v = Math.floor(value * 255);
+                    return [v, v, v];
+                }
+                case 'terrain': {
+                    if (value < 0.3) {
+                        const t = value / 0.3;
+                        return lerpColor([26, 95, 122], [87, 199, 133], t);
+                    } else if (value < 0.5) {
+                        const t = (value - 0.3) / 0.2;
+                        return lerpColor([87, 199, 133], [244, 208, 63], t);
+                    } else if (value < 0.7) {
+                        const t = (value - 0.5) / 0.2;
+                        return lerpColor([244, 208, 63], [139, 69, 19], t);
+                    } else {
+                        const t = (value - 0.7) / 0.3;
+                        return lerpColor([139, 69, 19], [255, 255, 255], t);
+                    }
+                }
+                case 'heat': {
+                    if (value < 0.33) {
+                        const t = value / 0.33;
+                        return lerpColor([0, 0, 0], [255, 0, 0], t);
+                    } else if (value < 0.67) {
+                        const t = (value - 0.33) / 0.34;
+                        return lerpColor([255, 0, 0], [255, 255, 0], t);
+                    } else {
+                        const t = (value - 0.67) / 0.33;
+                        return lerpColor([255, 255, 0], [255, 255, 255], t);
+                    }
+                }
+                case 'ocean': {
+                    if (value < 0.33) {
+                        const t = value / 0.33;
+                        return lerpColor([0, 20, 51], [0, 64, 128], t);
+                    } else if (value < 0.67) {
+                        const t = (value - 0.33) / 0.34;
+                        return lerpColor([0, 64, 128], [0, 160, 198], t);
+                    } else {
+                        const t = (value - 0.67) / 0.33;
+                        return lerpColor([0, 160, 198], [135, 206, 235], t);
+                    }
+                }
+                case 'plasma': {
+                    if (value < 0.25) {
+                        const t = value / 0.25;
+                        return lerpColor([13, 8, 135], [126, 3, 168], t);
+                    } else if (value < 0.5) {
+                        const t = (value - 0.25) / 0.25;
+                        return lerpColor([126, 3, 168], [204, 71, 120], t);
+                    } else if (value < 0.75) {
+                        const t = (value - 0.5) / 0.25;
+                        return lerpColor([204, 71, 120], [248, 149, 64], t);
+                    } else {
+                        const t = (value - 0.75) / 0.25;
+                        return lerpColor([248, 149, 64], [240, 249, 33], t);
+                    }
+                }
+                case 'wood': {
+                    const woodValue = (Math.sin(value * 30) + 1) / 2;
+                    return lerpColor([61, 40, 23], [139, 90, 43], woodValue);
+                }
+                default:
+                    const v = Math.floor(value * 255);
+                    return [v, v, v];
+            }
+        }
+
+        function lerpColor(c1, c2, t) {
+            return [
+                Math.floor(c1[0] + (c2[0] - c1[0]) * t),
+                Math.floor(c1[1] + (c2[1] - c1[1]) * t),
+                Math.floor(c1[2] + (c2[2] - c1[2]) * t)
+            ];
+        }
+
+        // Render
+        function render() {
+            const width = canvas.width;
+            const height = canvas.height;
+            const imageData = ctx.createImageData(width, height);
+            const data = imageData.data;
+
+            minVal = Infinity;
+            maxVal = -Infinity;
+
+            const scaleDiv = scale;
+            const z = zOffset;
+
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const nx = (x + flowOffset.x) / scaleDiv;
+                    const ny = (y + flowOffset.y) / scaleDiv;
+
+                    let value;
+                    if (z !== 0 || zSpeed > 0) {
+                        value = warpedNoise(nx, ny, z);
+                    } else {
+                        value = warpedNoise(nx, ny);
+                    }
+
+                    minVal = Math.min(minVal, value);
+                    maxVal = Math.max(maxVal, value);
+
+                    const [r, g, b] = getColor(value);
+                    const idx = (y * width + x) * 4;
+                    data[idx] = r;
+                    data[idx + 1] = g;
+                    data[idx + 2] = b;
+                    data[idx + 3] = 255;
+                }
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+
+            document.getElementById('minDisplay').textContent = minVal.toFixed(2);
+            document.getElementById('maxDisplay').textContent = maxVal.toFixed(2);
+        }
+
+        function resize() {
+            const container = canvas.parentElement;
+            const size = Math.min(container.clientWidth - 40, 800);
+            canvas.width = size;
+            canvas.height = size;
+            render();
+        }
+
+        function updateLoop() {
+            if (animate) {
+                zOffset += zSpeed * 0.01;
+                flowOffset.x += flowSpeed * 0.5;
+                flowOffset.y += flowSpeed * 0.3;
+                render();
+            }
+
+            frameCount++;
+            const now = performance.now();
+            if (now - lastTime >= 1000) {
+                fps = frameCount;
+                frameCount = 0;
+                lastTime = now;
+                document.getElementById('fpsDisplay').textContent = fps;
+            }
+
+            requestAnimationFrame(updateLoop);
+        }
+
+        // Event listeners
+        document.querySelectorAll('.mode-btn[data-type]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.mode-btn[data-type]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                noiseType = btn.dataset.type;
+                render();
+            });
+        });
+
+        document.querySelectorAll('.color-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                colorScheme = btn.dataset.scheme;
+                render();
+            });
+        });
+
+        document.getElementById('scale').addEventListener('input', e => {
+            scale = parseInt(e.target.value);
+            document.getElementById('scaleVal').textContent = scale;
+            render();
+        });
+
+        document.getElementById('octaves').addEventListener('input', e => {
+            octaves = parseInt(e.target.value);
+            document.getElementById('octavesVal').textContent = octaves;
+            render();
+        });
+
+        document.getElementById('persistence').addEventListener('input', e => {
+            persistence = parseInt(e.target.value) / 100;
+            document.getElementById('persistenceVal').textContent = persistence.toFixed(2);
+            render();
+        });
+
+        document.getElementById('lacunarity').addEventListener('input', e => {
+            lacunarity = parseInt(e.target.value) / 100;
+            document.getElementById('lacunarityVal').textContent = lacunarity.toFixed(2);
+            render();
+        });
+
+        document.getElementById('zSpeed').addEventListener('input', e => {
+            zSpeed = parseInt(e.target.value) / 100;
+            document.getElementById('zSpeedVal').textContent = zSpeed.toFixed(2);
+        });
+
+        document.getElementById('flowSpeed').addEventListener('input', e => {
+            flowSpeed = parseInt(e.target.value) / 100;
+            document.getElementById('flowSpeedVal').textContent = flowSpeed.toFixed(2);
+        });
+
+        document.getElementById('animateToggle').addEventListener('change', e => {
+            animate = e.target.checked;
+        });
+
+        document.getElementById('ridgedToggle').addEventListener('change', e => {
+            ridged = e.target.checked;
+            render();
+        });
+
+        document.getElementById('turbulenceToggle').addEventListener('change', e => {
+            turbulence = e.target.checked;
+            render();
+        });
+
+        document.getElementById('domainWarpToggle').addEventListener('change', e => {
+            domainWarp = e.target.checked;
+            render();
+        });
+
+        document.getElementById('warpStrength').addEventListener('input', e => {
+            warpStrength = parseInt(e.target.value) / 100;
+            document.getElementById('warpStrengthVal').textContent = warpStrength.toFixed(2);
+            if (domainWarp) render();
+        });
+
+        document.getElementById('randomSeed').addEventListener('click', () => {
+            seed = Math.floor(Math.random() * 100000);
+            document.getElementById('seedDisplay').textContent = seed;
+            initPermutation();
+            render();
+        });
+
+        document.getElementById('exportImage').addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.download = `noise_${noiseType}_${seed}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+        });
+
+        document.getElementById('exportTile').addEventListener('click', () => {
+            // Create tileable version
+            const size = canvas.width;
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = size;
+            tempCanvas.height = size;
+            const tempCtx = tempCanvas.getContext('2d');
+            const imageData = tempCtx.createImageData(size, size);
+            const data = imageData.data;
+
+            for (let y = 0; y < size; y++) {
+                for (let x = 0; x < size; x++) {
+                    const nx = x / scale;
+                    const ny = y / scale;
+                    const period = size / scale;
+
+                    // Use periodic coordinates for tileability
+                    const angle1 = (nx / period) * Math.PI * 2;
+                    const angle2 = (ny / period) * Math.PI * 2;
+
+                    const tx = Math.cos(angle1) * period / (Math.PI * 2);
+                    const ty = Math.sin(angle1) * period / (Math.PI * 2);
+                    const tz = Math.cos(angle2) * period / (Math.PI * 2);
+                    const tw = Math.sin(angle2) * period / (Math.PI * 2);
+
+                    // Sample 4D noise for seamless tiling
+                    let value = 0;
+                    let amplitude = 1;
+                    let frequency = 1;
+                    let maxValue = 0;
+
+                    for (let i = 0; i < octaves; i++) {
+                        const n = baseNoise2D(tx * frequency + tz * frequency, ty * frequency + tw * frequency);
+                        value += n * amplitude;
+                        maxValue += amplitude;
+                        amplitude *= persistence;
+                        frequency *= lacunarity;
+                    }
+
+                    value /= maxValue;
+                    const [r, g, b] = getColor(value);
+                    const idx = (y * size + x) * 4;
+                    data[idx] = r;
+                    data[idx + 1] = g;
+                    data[idx + 2] = b;
+                    data[idx + 3] = 255;
+                }
+            }
+
+            tempCtx.putImageData(imageData, 0, 0);
+
+            const link = document.createElement('a');
+            link.download = `noise_tile_${noiseType}_${seed}.png`;
+            link.href = tempCanvas.toDataURL();
+            link.click();
+        });
+
+        // Canvas mouse interaction for exploring values
+        canvas.addEventListener('mousemove', e => {
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+            const nx = (x + flowOffset.x) / scale;
+            const ny = (y + flowOffset.y) / scale;
+            const value = warpedNoise(nx, ny, zOffset);
+
+            canvas.title = `Position: (${nx.toFixed(2)}, ${ny.toFixed(2)})\nValue: ${value.toFixed(4)}`;
+        });
+
+        // Initialize
+        window.addEventListener('resize', resize);
+        initPermutation();
+        document.getElementById('seedDisplay').textContent = seed;
+        resize();
+        updateLoop();
+    </script>
+</body>
+</html>

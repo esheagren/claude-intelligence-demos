@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finite State Machine Builder</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0a1628 0%, #1a2744 50%, #0a1628 100%);
+            min-height: 100vh;
+            font-family: 'Courier New', monospace;
+            color: #e0e0e0;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #00d4ff, #7c3aed, #f472b6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 20px;
+        }
+
+        .canvas-area {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(0, 212, 255, 0.2);
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .tool-btn {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            color: #00d4ff;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .tool-btn:hover, .tool-btn.active {
+            background: rgba(0, 212, 255, 0.3);
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+        }
+
+        .canvas-container {
+            position: relative;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            cursor: crosshair;
+        }
+
+        .simulation-bar {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .simulation-bar input {
+            flex: 1;
+            min-width: 200px;
+            padding: 10px 15px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 8px;
+            color: #fff;
+            font-family: inherit;
+            font-size: 16px;
+        }
+
+        .simulation-bar input:focus {
+            outline: none;
+            border-color: #00d4ff;
+        }
+
+        .sim-btn {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.3), rgba(124, 58, 237, 0.3));
+            border: 1px solid rgba(0, 212, 255, 0.5);
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+
+        .sim-btn:hover {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.5), rgba(124, 58, 237, 0.5));
+        }
+
+        .result-display {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        .result-display.accept {
+            background: rgba(0, 255, 136, 0.2);
+            border: 1px solid #00ff88;
+            color: #00ff88;
+        }
+
+        .result-display.reject {
+            background: rgba(255, 107, 107, 0.2);
+            border: 1px solid #ff6b6b;
+            color: #ff6b6b;
+        }
+
+        .result-display.running {
+            background: rgba(255, 215, 0, 0.2);
+            border: 1px solid #ffd700;
+            color: #ffd700;
+        }
+
+        .controls {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(0, 212, 255, 0.2);
+        }
+
+        .control-section {
+            margin-bottom: 25px;
+        }
+
+        .control-section h3 {
+            color: #00d4ff;
+            margin-bottom: 15px;
+            font-size: 1em;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.3);
+            padding-bottom: 8px;
+        }
+
+        .state-list {
+            max-height: 150px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .state-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            margin-bottom: 5px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 5px;
+        }
+
+        .state-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .state-name {
+            flex: 1;
+        }
+
+        .state-badges {
+            display: flex;
+            gap: 5px;
+        }
+
+        .badge {
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+        }
+
+        .badge.start {
+            background: rgba(0, 255, 136, 0.3);
+            color: #00ff88;
+        }
+
+        .badge.accept {
+            background: rgba(124, 58, 237, 0.3);
+            color: #a78bfa;
+        }
+
+        .transition-list {
+            max-height: 150px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 0.85em;
+        }
+
+        .transition-item {
+            padding: 5px;
+            margin-bottom: 3px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+        }
+
+        .preset-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .preset-btn {
+            background: rgba(124, 58, 237, 0.2);
+            border: 1px solid rgba(124, 58, 237, 0.4);
+            color: #a78bfa;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: inherit;
+            text-align: left;
+            transition: all 0.3s;
+        }
+
+        .preset-btn:hover {
+            background: rgba(124, 58, 237, 0.4);
+        }
+
+        .info-panel {
+            background: rgba(244, 114, 182, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            font-size: 0.85em;
+            line-height: 1.6;
+            color: #aaa;
+        }
+
+        .info-panel h4 {
+            color: #f472b6;
+            margin-bottom: 10px;
+        }
+
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        button {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.3), rgba(124, 58, 237, 0.3));
+            border: 1px solid rgba(0, 212, 255, 0.5);
+            color: #fff;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.5), rgba(124, 58, 237, 0.5));
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #00d4ff;
+            text-decoration: none;
+            font-size: 0.9em;
+            opacity: 0.8;
+            transition: opacity 0.3s;
+        }
+
+        .back-link:hover {
+            opacity: 1;
+        }
+
+        /* Modal for editing */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #1a2744;
+            padding: 25px;
+            border-radius: 15px;
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            min-width: 300px;
+        }
+
+        .modal-content h3 {
+            color: #00d4ff;
+            margin-bottom: 20px;
+        }
+
+        .modal-content input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 8px;
+            color: #fff;
+            font-family: inherit;
+        }
+
+        .modal-content label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-buttons button {
+            flex: 1;
+        }
+
+        .delete-btn {
+            background: rgba(255, 107, 107, 0.3) !important;
+            border-color: rgba(255, 107, 107, 0.5) !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-link">← Back to Index</a>
+
+        <h1>Finite State Machine Builder</h1>
+        <p class="subtitle">Design, visualize, and simulate deterministic finite automata</p>
+
+        <div class="main-content">
+            <div class="canvas-area">
+                <div class="toolbar">
+                    <button class="tool-btn active" data-tool="select">↖ Select</button>
+                    <button class="tool-btn" data-tool="state">◯ Add State</button>
+                    <button class="tool-btn" data-tool="transition">→ Add Transition</button>
+                    <button class="tool-btn" data-tool="delete">✕ Delete</button>
+                </div>
+
+                <div class="canvas-container">
+                    <canvas id="fsmCanvas" width="900" height="500"></canvas>
+                </div>
+
+                <div class="simulation-bar">
+                    <input type="text" id="inputString" placeholder="Enter input string to test (e.g., 'aabb')">
+                    <button class="sim-btn" id="runBtn">▶ Run</button>
+                    <button class="sim-btn" id="stepBtn">⏭ Step</button>
+                    <button class="sim-btn" id="resetBtn">↺ Reset</button>
+                    <div class="result-display" id="resultDisplay" style="display: none;"></div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <div class="control-section">
+                    <h3>States</h3>
+                    <div class="state-list" id="stateList"></div>
+                </div>
+
+                <div class="control-section">
+                    <h3>Transitions</h3>
+                    <div class="transition-list" id="transitionList"></div>
+                </div>
+
+                <div class="control-section">
+                    <h3>Preset Machines</h3>
+                    <div class="preset-buttons">
+                        <button class="preset-btn" data-preset="binary-even">Binary Even 0s</button>
+                        <button class="preset-btn" data-preset="ends-ab">Ends with "ab"</button>
+                        <button class="preset-btn" data-preset="divisible-3">Binary ÷ 3</button>
+                        <button class="preset-btn" data-preset="contains-01">Contains "01"</button>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h3>Actions</h3>
+                    <div class="action-buttons">
+                        <button id="clearBtn">Clear All</button>
+                        <button id="exportBtn">Export JSON</button>
+                    </div>
+                </div>
+
+                <div class="info-panel">
+                    <h4>Instructions</h4>
+                    <p>
+                        <strong>Add State:</strong> Click on canvas<br>
+                        <strong>Add Transition:</strong> Click source, then target<br>
+                        <strong>Edit:</strong> Double-click state/transition<br>
+                        <strong>Move:</strong> Drag states with select tool
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="modal" id="stateModal">
+        <div class="modal-content">
+            <h3>Edit State</h3>
+            <input type="text" id="stateName" placeholder="State name">
+            <label>
+                <input type="checkbox" id="isStart"> Start State
+            </label>
+            <label>
+                <input type="checkbox" id="isAccept"> Accept State
+            </label>
+            <div class="modal-buttons">
+                <button id="saveState">Save</button>
+                <button id="deleteState" class="delete-btn">Delete</button>
+                <button id="cancelState">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="transitionModal">
+        <div class="modal-content">
+            <h3>Edit Transition</h3>
+            <input type="text" id="transitionSymbol" placeholder="Symbol (e.g., 'a' or '0,1')">
+            <div class="modal-buttons">
+                <button id="saveTransition">Save</button>
+                <button id="deleteTransition" class="delete-btn">Delete</button>
+                <button id="cancelTransition">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('fsmCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // State management
+        let states = [];
+        let transitions = [];
+        let currentTool = 'select';
+        let selectedState = null;
+        let transitionStart = null;
+        let draggingState = null;
+        let dragOffset = { x: 0, y: 0 };
+        let editingState = null;
+        let editingTransition = null;
+        let stateIdCounter = 0;
+
+        // Simulation state
+        let simulating = false;
+        let currentStates = [];
+        let inputString = '';
+        let inputIndex = 0;
+
+        // State class
+        class State {
+            constructor(x, y, name) {
+                this.id = stateIdCounter++;
+                this.x = x;
+                this.y = y;
+                this.name = name || `q${this.id}`;
+                this.isStart = false;
+                this.isAccept = false;
+                this.radius = 30;
+            }
+
+            contains(x, y) {
+                const dx = x - this.x;
+                const dy = y - this.y;
+                return dx * dx + dy * dy <= this.radius * this.radius;
+            }
+
+            draw(isActive = false, isHighlight = false) {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+
+                if (isActive) {
+                    ctx.fillStyle = 'rgba(255, 215, 0, 0.4)';
+                    ctx.strokeStyle = '#ffd700';
+                    ctx.lineWidth = 3;
+                } else if (isHighlight) {
+                    ctx.fillStyle = 'rgba(0, 212, 255, 0.3)';
+                    ctx.strokeStyle = '#00d4ff';
+                    ctx.lineWidth = 3;
+                } else {
+                    ctx.fillStyle = 'rgba(124, 58, 237, 0.2)';
+                    ctx.strokeStyle = '#7c3aed';
+                    ctx.lineWidth = 2;
+                }
+
+                ctx.fill();
+                ctx.stroke();
+
+                // Accept state (double circle)
+                if (this.isAccept) {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.radius - 6, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+
+                // Start state arrow
+                if (this.isStart) {
+                    ctx.beginPath();
+                    ctx.moveTo(this.x - this.radius - 30, this.y);
+                    ctx.lineTo(this.x - this.radius - 5, this.y);
+                    ctx.strokeStyle = '#00ff88';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    // Arrow head
+                    ctx.beginPath();
+                    ctx.moveTo(this.x - this.radius - 5, this.y);
+                    ctx.lineTo(this.x - this.radius - 15, this.y - 7);
+                    ctx.lineTo(this.x - this.radius - 15, this.y + 7);
+                    ctx.closePath();
+                    ctx.fillStyle = '#00ff88';
+                    ctx.fill();
+                }
+
+                // Name
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 14px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(this.name, this.x, this.y);
+            }
+        }
+
+        // Transition class
+        class Transition {
+            constructor(from, to, symbol) {
+                this.from = from;
+                this.to = to;
+                this.symbol = symbol || 'a';
+            }
+
+            draw(isHighlight = false) {
+                const fromState = states.find(s => s.id === this.from);
+                const toState = states.find(s => s.id === this.to);
+
+                if (!fromState || !toState) return;
+
+                ctx.strokeStyle = isHighlight ? '#ffd700' : '#00d4ff';
+                ctx.fillStyle = isHighlight ? '#ffd700' : '#00d4ff';
+                ctx.lineWidth = isHighlight ? 3 : 2;
+
+                if (this.from === this.to) {
+                    // Self-loop
+                    const loopRadius = 25;
+                    const angle = -Math.PI / 2;
+                    const cx = fromState.x + Math.cos(angle) * (fromState.radius + loopRadius);
+                    const cy = fromState.y + Math.sin(angle) * (fromState.radius + loopRadius);
+
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, loopRadius, Math.PI * 0.3, Math.PI * 0.7, true);
+                    ctx.stroke();
+
+                    // Arrow head
+                    const arrowAngle = Math.PI * 0.7;
+                    const ax = cx + Math.cos(arrowAngle) * loopRadius;
+                    const ay = cy + Math.sin(arrowAngle) * loopRadius;
+                    this.drawArrowHead(ax, ay, arrowAngle + Math.PI / 2);
+
+                    // Label
+                    ctx.font = 'bold 14px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(this.symbol, cx, cy - loopRadius - 10);
+                } else {
+                    // Check for reverse transition
+                    const hasReverse = transitions.some(t =>
+                        t.from === this.to && t.to === this.from && t !== this
+                    );
+
+                    const dx = toState.x - fromState.x;
+                    const dy = toState.y - fromState.y;
+                    const angle = Math.atan2(dy, dx);
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    let startX, startY, endX, endY, midX, midY;
+
+                    if (hasReverse) {
+                        // Curved line
+                        const offset = 20;
+                        const perpAngle = angle + Math.PI / 2;
+
+                        startX = fromState.x + Math.cos(angle) * fromState.radius + Math.cos(perpAngle) * offset * 0.5;
+                        startY = fromState.y + Math.sin(angle) * fromState.radius + Math.sin(perpAngle) * offset * 0.5;
+                        endX = toState.x - Math.cos(angle) * toState.radius + Math.cos(perpAngle) * offset * 0.5;
+                        endY = toState.y - Math.sin(angle) * toState.radius + Math.sin(perpAngle) * offset * 0.5;
+
+                        midX = (startX + endX) / 2 + Math.cos(perpAngle) * offset;
+                        midY = (startY + endY) / 2 + Math.sin(perpAngle) * offset;
+
+                        ctx.beginPath();
+                        ctx.moveTo(startX, startY);
+                        ctx.quadraticCurveTo(midX, midY, endX, endY);
+                        ctx.stroke();
+
+                        // Arrow head
+                        const t = 0.95;
+                        const tx = (1-t)*(1-t)*startX + 2*(1-t)*t*midX + t*t*endX;
+                        const ty = (1-t)*(1-t)*startY + 2*(1-t)*t*midY + t*t*endY;
+                        const arrowAngle = Math.atan2(endY - ty, endX - tx);
+                        this.drawArrowHead(endX, endY, arrowAngle);
+
+                        // Label
+                        ctx.font = 'bold 14px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.fillText(this.symbol, midX, midY - 10);
+                    } else {
+                        // Straight line
+                        startX = fromState.x + Math.cos(angle) * fromState.radius;
+                        startY = fromState.y + Math.sin(angle) * fromState.radius;
+                        endX = toState.x - Math.cos(angle) * toState.radius;
+                        endY = toState.y - Math.sin(angle) * toState.radius;
+
+                        ctx.beginPath();
+                        ctx.moveTo(startX, startY);
+                        ctx.lineTo(endX, endY);
+                        ctx.stroke();
+
+                        this.drawArrowHead(endX, endY, angle);
+
+                        // Label
+                        midX = (startX + endX) / 2;
+                        midY = (startY + endY) / 2;
+                        const labelOffset = 15;
+                        ctx.font = 'bold 14px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.fillText(this.symbol, midX - Math.sin(angle) * labelOffset, midY + Math.cos(angle) * labelOffset);
+                    }
+                }
+            }
+
+            drawArrowHead(x, y, angle) {
+                const size = 12;
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(x - Math.cos(angle - 0.4) * size, y - Math.sin(angle - 0.4) * size);
+                ctx.lineTo(x - Math.cos(angle + 0.4) * size, y - Math.sin(angle + 0.4) * size);
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+
+        // Draw everything
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw grid
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+            ctx.lineWidth = 1;
+            for (let x = 0; x < canvas.width; x += 50) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y < canvas.height; y += 50) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+
+            // Draw transitions
+            transitions.forEach((t, i) => {
+                const isHighlight = simulating && currentStates.includes(t.from) &&
+                    inputIndex > 0 && inputString[inputIndex - 1] === t.symbol.split(',').find(s => s.trim() === inputString[inputIndex - 1]);
+                t.draw(isHighlight);
+            });
+
+            // Draw states
+            states.forEach(state => {
+                const isActive = simulating && currentStates.includes(state.id);
+                const isHighlight = state === selectedState;
+                state.draw(isActive, isHighlight);
+            });
+
+            // Draw transition being created
+            if (transitionStart && currentTool === 'transition') {
+                const fromState = states.find(s => s.id === transitionStart);
+                if (fromState) {
+                    ctx.setLineDash([5, 5]);
+                    ctx.strokeStyle = 'rgba(0, 212, 255, 0.5)';
+                    ctx.beginPath();
+                    ctx.moveTo(fromState.x, fromState.y);
+                    ctx.lineTo(mouseX, mouseY);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+            }
+
+            updateStateLists();
+        }
+
+        let mouseX = 0, mouseY = 0;
+
+        // Update side panels
+        function updateStateLists() {
+            const stateList = document.getElementById('stateList');
+            stateList.innerHTML = states.map(s => `
+                <div class="state-item">
+                    <div class="state-color" style="background: ${s.isAccept ? '#7c3aed' : '#00d4ff'}"></div>
+                    <span class="state-name">${s.name}</span>
+                    <div class="state-badges">
+                        ${s.isStart ? '<span class="badge start">START</span>' : ''}
+                        ${s.isAccept ? '<span class="badge accept">ACCEPT</span>' : ''}
+                    </div>
+                </div>
+            `).join('');
+
+            const transitionList = document.getElementById('transitionList');
+            transitionList.innerHTML = transitions.map(t => {
+                const from = states.find(s => s.id === t.from);
+                const to = states.find(s => s.id === t.to);
+                return `<div class="transition-item">δ(${from?.name || '?'}, ${t.symbol}) → ${to?.name || '?'}</div>`;
+            }).join('');
+        }
+
+        // Canvas event handlers
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            const clickedState = states.find(s => s.contains(x, y));
+
+            switch (currentTool) {
+                case 'select':
+                    if (clickedState) {
+                        selectedState = clickedState;
+                        draggingState = clickedState;
+                        dragOffset = { x: x - clickedState.x, y: y - clickedState.y };
+                    } else {
+                        selectedState = null;
+                    }
+                    break;
+
+                case 'state':
+                    if (!clickedState) {
+                        const newState = new State(x, y);
+                        if (states.length === 0) newState.isStart = true;
+                        states.push(newState);
+                    }
+                    break;
+
+                case 'transition':
+                    if (clickedState) {
+                        if (transitionStart === null) {
+                            transitionStart = clickedState.id;
+                        } else {
+                            const newTransition = new Transition(transitionStart, clickedState.id, 'a');
+                            transitions.push(newTransition);
+                            transitionStart = null;
+                            editingTransition = newTransition;
+                            document.getElementById('transitionModal').classList.add('active');
+                            document.getElementById('transitionSymbol').value = newTransition.symbol;
+                        }
+                    }
+                    break;
+
+                case 'delete':
+                    if (clickedState) {
+                        transitions = transitions.filter(t => t.from !== clickedState.id && t.to !== clickedState.id);
+                        states = states.filter(s => s !== clickedState);
+                    }
+                    break;
+            }
+
+            draw();
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+            mouseY = e.clientY - rect.top;
+
+            if (draggingState) {
+                draggingState.x = mouseX - dragOffset.x;
+                draggingState.y = mouseY - dragOffset.y;
+                draw();
+            } else if (transitionStart !== null) {
+                draw();
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            draggingState = null;
+        });
+
+        canvas.addEventListener('dblclick', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            const clickedState = states.find(s => s.contains(x, y));
+            if (clickedState) {
+                editingState = clickedState;
+                document.getElementById('stateModal').classList.add('active');
+                document.getElementById('stateName').value = clickedState.name;
+                document.getElementById('isStart').checked = clickedState.isStart;
+                document.getElementById('isAccept').checked = clickedState.isAccept;
+            }
+        });
+
+        // Tool buttons
+        document.querySelectorAll('.tool-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentTool = btn.dataset.tool;
+                transitionStart = null;
+                draw();
+            });
+        });
+
+        // Modal handlers
+        document.getElementById('saveState').addEventListener('click', () => {
+            if (editingState) {
+                editingState.name = document.getElementById('stateName').value || editingState.name;
+                const wasStart = editingState.isStart;
+                editingState.isStart = document.getElementById('isStart').checked;
+                editingState.isAccept = document.getElementById('isAccept').checked;
+
+                if (editingState.isStart && !wasStart) {
+                    states.forEach(s => { if (s !== editingState) s.isStart = false; });
+                }
+            }
+            document.getElementById('stateModal').classList.remove('active');
+            draw();
+        });
+
+        document.getElementById('deleteState').addEventListener('click', () => {
+            if (editingState) {
+                transitions = transitions.filter(t => t.from !== editingState.id && t.to !== editingState.id);
+                states = states.filter(s => s !== editingState);
+            }
+            document.getElementById('stateModal').classList.remove('active');
+            draw();
+        });
+
+        document.getElementById('cancelState').addEventListener('click', () => {
+            document.getElementById('stateModal').classList.remove('active');
+        });
+
+        document.getElementById('saveTransition').addEventListener('click', () => {
+            if (editingTransition) {
+                editingTransition.symbol = document.getElementById('transitionSymbol').value || 'a';
+            }
+            document.getElementById('transitionModal').classList.remove('active');
+            draw();
+        });
+
+        document.getElementById('deleteTransition').addEventListener('click', () => {
+            if (editingTransition) {
+                transitions = transitions.filter(t => t !== editingTransition);
+            }
+            document.getElementById('transitionModal').classList.remove('active');
+            draw();
+        });
+
+        document.getElementById('cancelTransition').addEventListener('click', () => {
+            if (editingTransition && !editingTransition.symbol) {
+                transitions = transitions.filter(t => t !== editingTransition);
+            }
+            document.getElementById('transitionModal').classList.remove('active');
+            draw();
+        });
+
+        // Simulation
+        function resetSimulation() {
+            simulating = false;
+            currentStates = [];
+            inputIndex = 0;
+            document.getElementById('resultDisplay').style.display = 'none';
+            draw();
+        }
+
+        function startSimulation() {
+            inputString = document.getElementById('inputString').value;
+            inputIndex = 0;
+            const startState = states.find(s => s.isStart);
+            if (!startState) {
+                alert('No start state defined!');
+                return;
+            }
+            currentStates = [startState.id];
+            simulating = true;
+            document.getElementById('resultDisplay').style.display = 'block';
+            document.getElementById('resultDisplay').className = 'result-display running';
+            document.getElementById('resultDisplay').textContent = 'Running...';
+            draw();
+        }
+
+        function step() {
+            if (!simulating || inputIndex >= inputString.length) {
+                finishSimulation();
+                return;
+            }
+
+            const symbol = inputString[inputIndex];
+            const newStates = [];
+
+            currentStates.forEach(stateId => {
+                transitions.forEach(t => {
+                    if (t.from === stateId) {
+                        const symbols = t.symbol.split(',').map(s => s.trim());
+                        if (symbols.includes(symbol)) {
+                            if (!newStates.includes(t.to)) {
+                                newStates.push(t.to);
+                            }
+                        }
+                    }
+                });
+            });
+
+            currentStates = newStates;
+            inputIndex++;
+            draw();
+
+            if (inputIndex >= inputString.length) {
+                finishSimulation();
+            }
+        }
+
+        function finishSimulation() {
+            const accepted = currentStates.some(id => {
+                const state = states.find(s => s.id === id);
+                return state && state.isAccept;
+            });
+
+            const display = document.getElementById('resultDisplay');
+            display.style.display = 'block';
+            display.className = 'result-display ' + (accepted ? 'accept' : 'reject');
+            display.textContent = accepted ? 'ACCEPTED' : 'REJECTED';
+        }
+
+        function runFullSimulation() {
+            startSimulation();
+            while (inputIndex < inputString.length && currentStates.length > 0) {
+                step();
+            }
+            finishSimulation();
+        }
+
+        document.getElementById('runBtn').addEventListener('click', runFullSimulation);
+        document.getElementById('stepBtn').addEventListener('click', () => {
+            if (!simulating) startSimulation();
+            else step();
+        });
+        document.getElementById('resetBtn').addEventListener('click', resetSimulation);
+
+        // Presets
+        const presets = {
+            'binary-even': {
+                states: [
+                    { x: 150, y: 250, name: 'Even', isStart: true, isAccept: true },
+                    { x: 350, y: 250, name: 'Odd', isStart: false, isAccept: false }
+                ],
+                transitions: [
+                    { from: 0, to: 0, symbol: '1' },
+                    { from: 0, to: 1, symbol: '0' },
+                    { from: 1, to: 1, symbol: '1' },
+                    { from: 1, to: 0, symbol: '0' }
+                ]
+            },
+            'ends-ab': {
+                states: [
+                    { x: 100, y: 250, name: 'q0', isStart: true, isAccept: false },
+                    { x: 300, y: 250, name: 'q1', isStart: false, isAccept: false },
+                    { x: 500, y: 250, name: 'q2', isStart: false, isAccept: true }
+                ],
+                transitions: [
+                    { from: 0, to: 0, symbol: 'b' },
+                    { from: 0, to: 1, symbol: 'a' },
+                    { from: 1, to: 1, symbol: 'a' },
+                    { from: 1, to: 2, symbol: 'b' },
+                    { from: 2, to: 1, symbol: 'a' },
+                    { from: 2, to: 0, symbol: 'b' }
+                ]
+            },
+            'divisible-3': {
+                states: [
+                    { x: 150, y: 250, name: 'r0', isStart: true, isAccept: true },
+                    { x: 350, y: 150, name: 'r1', isStart: false, isAccept: false },
+                    { x: 350, y: 350, name: 'r2', isStart: false, isAccept: false }
+                ],
+                transitions: [
+                    { from: 0, to: 0, symbol: '0' },
+                    { from: 0, to: 1, symbol: '1' },
+                    { from: 1, to: 2, symbol: '0' },
+                    { from: 1, to: 0, symbol: '1' },
+                    { from: 2, to: 1, symbol: '0' },
+                    { from: 2, to: 2, symbol: '1' }
+                ]
+            },
+            'contains-01': {
+                states: [
+                    { x: 100, y: 250, name: 'q0', isStart: true, isAccept: false },
+                    { x: 300, y: 250, name: 'q1', isStart: false, isAccept: false },
+                    { x: 500, y: 250, name: 'q2', isStart: false, isAccept: true }
+                ],
+                transitions: [
+                    { from: 0, to: 0, symbol: '1' },
+                    { from: 0, to: 1, symbol: '0' },
+                    { from: 1, to: 1, symbol: '0' },
+                    { from: 1, to: 2, symbol: '1' },
+                    { from: 2, to: 2, symbol: '0, 1' }
+                ]
+            }
+        };
+
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const preset = presets[btn.dataset.preset];
+                if (!preset) return;
+
+                states = [];
+                transitions = [];
+                stateIdCounter = 0;
+
+                preset.states.forEach(s => {
+                    const state = new State(s.x, s.y, s.name);
+                    state.isStart = s.isStart;
+                    state.isAccept = s.isAccept;
+                    states.push(state);
+                });
+
+                preset.transitions.forEach(t => {
+                    transitions.push(new Transition(t.from, t.to, t.symbol));
+                });
+
+                resetSimulation();
+                draw();
+            });
+        });
+
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            states = [];
+            transitions = [];
+            stateIdCounter = 0;
+            resetSimulation();
+            draw();
+        });
+
+        document.getElementById('exportBtn').addEventListener('click', () => {
+            const data = {
+                states: states.map(s => ({
+                    id: s.id, x: s.x, y: s.y, name: s.name,
+                    isStart: s.isStart, isAccept: s.isAccept
+                })),
+                transitions: transitions.map(t => ({
+                    from: t.from, to: t.to, symbol: t.symbol
+                }))
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'fsm.json';
+            a.click();
+        });
+
+        // Initial draw
+        draw();
+    </script>
+</body>
+</html>

@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mandala Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #1a1a2e;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+        }
+
+        #canvas {
+            display: block;
+            cursor: crosshair;
+        }
+
+        .controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 20px;
+            border-radius: 12px;
+            width: 280px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+            z-index: 100;
+            transition: transform 0.3s ease;
+        }
+
+        .controls.hidden {
+            transform: translateX(-300px);
+        }
+
+        .controls h2 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #ffd700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group label {
+            display: block;
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 5px;
+        }
+
+        .control-group input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #333;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .control-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #ffd700;
+            cursor: pointer;
+        }
+
+        .control-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .control-row .control-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        .value-display {
+            font-size: 11px;
+            color: #ffd700;
+            float: right;
+        }
+
+        select {
+            width: 100%;
+            padding: 8px;
+            background: #333;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .btn-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        button {
+            padding: 10px 15px;
+            background: #333;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: #444;
+        }
+
+        button.primary {
+            background: linear-gradient(135deg, #ffd700, #ff8c00);
+            color: #000;
+            font-weight: bold;
+        }
+
+        button.danger {
+            background: #c0392b;
+        }
+
+        .color-palette {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+
+        .color-swatch {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .color-swatch.active {
+            border-color: #fff;
+            transform: scale(1.1);
+        }
+
+        .color-swatch:hover {
+            transform: scale(1.15);
+        }
+
+        .custom-color {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .custom-color input[type="color"] {
+            width: 40px;
+            height: 28px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .mode-buttons {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 8px;
+            font-size: 11px;
+        }
+
+        .mode-btn.active {
+            background: #ffd700;
+            color: #000;
+        }
+
+        .divider {
+            height: 1px;
+            background: #333;
+            margin: 15px 0;
+        }
+
+        .toggle-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.85);
+            color: #ffd700;
+            font-size: 20px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 101;
+            border: 2px solid #ffd700;
+        }
+
+        .controls.hidden + .toggle-btn {
+            display: flex;
+        }
+
+        .info {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 12px;
+            color: #888;
+            pointer-events: none;
+        }
+
+        .preset-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+
+        .preset-btn {
+            padding: 6px;
+            font-size: 10px;
+            text-transform: uppercase;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .checkbox-group label {
+            font-size: 13px;
+            color: #ccc;
+            cursor: pointer;
+            margin-bottom: 0;
+        }
+
+        .layer-controls {
+            display: flex;
+            gap: 5px;
+        }
+
+        .layer-btn {
+            flex: 1;
+            padding: 6px;
+            font-size: 10px;
+        }
+
+        .layer-btn.active {
+            background: #ffd700;
+            color: #000;
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                width: 260px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+
+    <div class="controls" id="controls">
+        <h2>Mandala Generator</h2>
+
+        <div class="mode-buttons">
+            <button class="mode-btn active" data-mode="draw">Draw</button>
+            <button class="mode-btn" data-mode="generate">Generate</button>
+            <button class="mode-btn" data-mode="animate">Animate</button>
+        </div>
+
+        <div class="control-group">
+            <label>Symmetry <span class="value-display" id="symmetryVal">12</span></label>
+            <input type="range" id="symmetry" min="2" max="32" value="12">
+        </div>
+
+        <div class="control-row">
+            <div class="control-group">
+                <label>Brush Size <span class="value-display" id="brushVal">3</span></label>
+                <input type="range" id="brushSize" min="1" max="30" value="3">
+            </div>
+            <div class="control-group">
+                <label>Opacity <span class="value-display" id="opacityVal">100%</span></label>
+                <input type="range" id="opacity" min="10" max="100" value="100">
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label>Brush Shape</label>
+            <select id="brushShape">
+                <option value="round">Round</option>
+                <option value="square">Square</option>
+                <option value="diamond">Diamond</option>
+                <option value="star">Star</option>
+                <option value="triangle">Triangle</option>
+            </select>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="control-group">
+            <label>Color Palette</label>
+            <div class="color-palette" id="colorPalette"></div>
+            <div class="custom-color">
+                <input type="color" id="customColor" value="#ffd700">
+                <span style="font-size: 12px; color: #888;">Custom color</span>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label>Color Mode</label>
+            <select id="colorMode">
+                <option value="solid">Solid</option>
+                <option value="rainbow">Rainbow</option>
+                <option value="gradient">Gradient</option>
+                <option value="random">Random from Palette</option>
+            </select>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="control-group">
+            <label>Background</label>
+            <select id="background">
+                <option value="#1a1a2e">Dark Navy</option>
+                <option value="#000000">Black</option>
+                <option value="#0d0d0d">Near Black</option>
+                <option value="#16213e">Deep Blue</option>
+                <option value="#1e1e1e">Charcoal</option>
+                <option value="#2c1810">Dark Brown</option>
+                <option value="#ffffff">White</option>
+                <option value="#f5f5dc">Beige</option>
+            </select>
+        </div>
+
+        <div class="checkbox-group">
+            <input type="checkbox" id="mirrorY">
+            <label for="mirrorY">Mirror Y-axis</label>
+        </div>
+
+        <div class="checkbox-group">
+            <input type="checkbox" id="showGuides">
+            <label for="showGuides">Show Guides</label>
+        </div>
+
+        <div class="divider"></div>
+
+        <div id="generateControls" style="display: none;">
+            <div class="control-group">
+                <label>Complexity <span class="value-display" id="complexityVal">5</span></label>
+                <input type="range" id="complexity" min="1" max="10" value="5">
+            </div>
+
+            <div class="control-group">
+                <label>Layer Count <span class="value-display" id="layerVal">5</span></label>
+                <input type="range" id="layerCount" min="1" max="12" value="5">
+            </div>
+
+            <div class="control-group">
+                <label>Pattern Style</label>
+                <select id="patternStyle">
+                    <option value="mixed">Mixed</option>
+                    <option value="geometric">Geometric</option>
+                    <option value="floral">Floral</option>
+                    <option value="dots">Dots</option>
+                    <option value="lines">Lines</option>
+                    <option value="curves">Curves</option>
+                </select>
+            </div>
+
+            <button class="primary" id="generateBtn" style="width: 100%; margin-bottom: 10px;">
+                Generate Mandala
+            </button>
+        </div>
+
+        <div id="animateControls" style="display: none;">
+            <div class="control-group">
+                <label>Rotation Speed <span class="value-display" id="rotSpeedVal">1.0</span></label>
+                <input type="range" id="rotSpeed" min="0" max="30" value="10">
+            </div>
+
+            <div class="control-group">
+                <label>Pulse Speed <span class="value-display" id="pulseSpeedVal">0</span></label>
+                <input type="range" id="pulseSpeed" min="0" max="20" value="0">
+            </div>
+
+            <div class="checkbox-group">
+                <input type="checkbox" id="colorShift">
+                <label for="colorShift">Color Shift</label>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="control-group">
+            <label>Presets</label>
+        </div>
+        <div class="preset-grid">
+            <button class="preset-btn" data-preset="lotus">Lotus</button>
+            <button class="preset-btn" data-preset="star">Star</button>
+            <button class="preset-btn" data-preset="spiral">Spiral</button>
+            <button class="preset-btn" data-preset="celtic">Celtic</button>
+            <button class="preset-btn" data-preset="zen">Zen</button>
+            <button class="preset-btn" data-preset="cosmic">Cosmic</button>
+        </div>
+
+        <div class="btn-grid">
+            <button id="undoBtn">Undo</button>
+            <button id="redoBtn">Redo</button>
+            <button class="danger" id="clearBtn">Clear</button>
+            <button id="saveBtn">Save PNG</button>
+        </div>
+
+        <div style="font-size: 10px; color: #666; text-align: center;">
+            H: Hide/Show | Space: Generate | S: Save | C: Clear
+        </div>
+    </div>
+
+    <div class="toggle-btn" id="toggleBtn">☸</div>
+
+    <div class="info">
+        Click and drag to draw with radial symmetry
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height, centerX, centerY;
+        let isDrawing = false;
+        let lastX, lastY;
+        let symmetry = 12;
+        let brushSize = 3;
+        let opacity = 1;
+        let brushShape = 'round';
+        let currentColor = '#ffd700';
+        let colorMode = 'solid';
+        let backgroundColor = '#1a1a2e';
+        let mirrorY = false;
+        let showGuides = false;
+        let mode = 'draw';
+        let hue = 0;
+
+        // Animation state
+        let rotation = 0;
+        let rotSpeed = 0.01;
+        let pulseSpeed = 0;
+        let pulse = 0;
+        let colorShift = false;
+        let animationFrame = null;
+        let mandalaImage = null;
+
+        // History for undo/redo
+        let history = [];
+        let historyIndex = -1;
+        const maxHistory = 30;
+
+        // Color palettes
+        const palettes = {
+            warm: ['#ffd700', '#ff8c00', '#ff4500', '#ff69b4', '#da70d6', '#9370db'],
+            cool: ['#00ffff', '#00bfff', '#1e90ff', '#00fa9a', '#7fff00', '#adff2f'],
+            earth: ['#daa520', '#cd853f', '#8b4513', '#d2691e', '#a0522d', '#8b0000'],
+            pastel: ['#ffb3ba', '#ffdfba', '#ffffba', '#baffc9', '#bae1ff', '#e0bbff'],
+            neon: ['#ff00ff', '#00ffff', '#ffff00', '#ff0080', '#80ff00', '#0080ff'],
+            sunset: ['#ff6b6b', '#feca57', '#ff9ff3', '#54a0ff', '#5f27cd', '#00d2d3']
+        };
+
+        let currentPalette = 'warm';
+        let paletteColors = palettes.warm;
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            centerX = width / 2;
+            centerY = height / 2;
+            redraw();
+        }
+
+        function saveState() {
+            if (historyIndex < history.length - 1) {
+                history = history.slice(0, historyIndex + 1);
+            }
+            history.push(canvas.toDataURL());
+            if (history.length > maxHistory) {
+                history.shift();
+            }
+            historyIndex = history.length - 1;
+        }
+
+        function undo() {
+            if (historyIndex > 0) {
+                historyIndex--;
+                loadState(history[historyIndex]);
+            }
+        }
+
+        function redo() {
+            if (historyIndex < history.length - 1) {
+                historyIndex++;
+                loadState(history[historyIndex]);
+            }
+        }
+
+        function loadState(dataUrl) {
+            const img = new Image();
+            img.onload = () => {
+                ctx.clearRect(0, 0, width, height);
+                ctx.drawImage(img, 0, 0);
+            };
+            img.src = dataUrl;
+        }
+
+        function clear() {
+            ctx.fillStyle = backgroundColor;
+            ctx.fillRect(0, 0, width, height);
+            saveState();
+        }
+
+        function redraw() {
+            if (history.length > 0 && historyIndex >= 0) {
+                loadState(history[historyIndex]);
+            } else {
+                clear();
+            }
+            if (showGuides) {
+                drawGuides();
+            }
+        }
+
+        function drawGuides() {
+            ctx.save();
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.lineWidth = 1;
+
+            const maxRadius = Math.min(width, height) / 2;
+
+            // Radial lines
+            for (let i = 0; i < symmetry; i++) {
+                const angle = (i * 2 * Math.PI) / symmetry;
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.lineTo(
+                    centerX + Math.cos(angle) * maxRadius,
+                    centerY + Math.sin(angle) * maxRadius
+                );
+                ctx.stroke();
+            }
+
+            // Concentric circles
+            for (let r = 50; r < maxRadius; r += 50) {
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, r, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        function getColor(x, y) {
+            switch (colorMode) {
+                case 'rainbow':
+                    hue = (hue + 0.5) % 360;
+                    return `hsl(${hue}, 70%, 60%)`;
+                case 'gradient':
+                    const dist = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
+                    const maxDist = Math.min(width, height) / 2;
+                    const t = Math.min(dist / maxDist, 1);
+                    const idx = Math.floor(t * (paletteColors.length - 1));
+                    return paletteColors[Math.min(idx, paletteColors.length - 1)];
+                case 'random':
+                    if (Math.random() < 0.05) {
+                        return paletteColors[Math.floor(Math.random() * paletteColors.length)];
+                    }
+                    return currentColor;
+                default:
+                    return currentColor;
+            }
+        }
+
+        function drawBrush(x, y, color) {
+            ctx.fillStyle = color;
+            ctx.globalAlpha = opacity;
+
+            switch (brushShape) {
+                case 'round':
+                    ctx.beginPath();
+                    ctx.arc(x, y, brushSize / 2, 0, Math.PI * 2);
+                    ctx.fill();
+                    break;
+                case 'square':
+                    ctx.fillRect(x - brushSize / 2, y - brushSize / 2, brushSize, brushSize);
+                    break;
+                case 'diamond':
+                    ctx.save();
+                    ctx.translate(x, y);
+                    ctx.rotate(Math.PI / 4);
+                    ctx.fillRect(-brushSize / 2, -brushSize / 2, brushSize, brushSize);
+                    ctx.restore();
+                    break;
+                case 'star':
+                    drawStar(x, y, 5, brushSize, brushSize / 2);
+                    break;
+                case 'triangle':
+                    ctx.beginPath();
+                    for (let i = 0; i < 3; i++) {
+                        const angle = (i * Math.PI * 2) / 3 - Math.PI / 2;
+                        const px = x + Math.cos(angle) * brushSize / 2;
+                        const py = y + Math.sin(angle) * brushSize / 2;
+                        if (i === 0) ctx.moveTo(px, py);
+                        else ctx.lineTo(px, py);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                    break;
+            }
+
+            ctx.globalAlpha = 1;
+        }
+
+        function drawStar(cx, cy, spikes, outerRadius, innerRadius) {
+            ctx.beginPath();
+            for (let i = 0; i < spikes * 2; i++) {
+                const radius = i % 2 === 0 ? outerRadius : innerRadius;
+                const angle = (i * Math.PI) / spikes - Math.PI / 2;
+                const x = cx + Math.cos(angle) * radius;
+                const y = cy + Math.sin(angle) * radius;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        function drawSymmetric(x, y, prevX, prevY) {
+            const dx = x - centerX;
+            const dy = y - centerY;
+            const pdx = prevX - centerX;
+            const pdy = prevY - centerY;
+
+            const angle = (2 * Math.PI) / symmetry;
+
+            for (let i = 0; i < symmetry; i++) {
+                const rot = angle * i;
+                const cos = Math.cos(rot);
+                const sin = Math.sin(rot);
+
+                const rx = centerX + dx * cos - dy * sin;
+                const ry = centerY + dx * sin + dy * cos;
+                const prx = centerX + pdx * cos - pdy * sin;
+                const pry = centerY + pdx * sin + pdy * cos;
+
+                const color = getColor(rx, ry);
+
+                // Interpolate between previous and current position
+                const steps = Math.ceil(Math.sqrt((rx - prx) ** 2 + (ry - pry) ** 2) / (brushSize / 4));
+                for (let s = 0; s <= steps; s++) {
+                    const t = s / Math.max(steps, 1);
+                    const ix = prx + (rx - prx) * t;
+                    const iy = pry + (ry - pry) * t;
+                    drawBrush(ix, iy, color);
+                }
+
+                if (mirrorY) {
+                    const mx = centerX + dx * cos + dy * sin;
+                    const my = centerY - dx * sin + dy * cos;
+                    const pmx = centerX + pdx * cos + pdy * sin;
+                    const pmy = centerY - pdx * sin + pdy * cos;
+
+                    for (let s = 0; s <= steps; s++) {
+                        const t = s / Math.max(steps, 1);
+                        const ix = pmx + (mx - pmx) * t;
+                        const iy = pmy + (my - pmy) * t;
+                        drawBrush(ix, iy, color);
+                    }
+                }
+            }
+        }
+
+        function generateMandala() {
+            clear();
+
+            const complexity = parseInt(document.getElementById('complexity').value);
+            const layerCount = parseInt(document.getElementById('layerCount').value);
+            const patternStyle = document.getElementById('patternStyle').value;
+
+            const maxRadius = Math.min(width, height) * 0.45;
+            const layerWidth = maxRadius / layerCount;
+
+            for (let layer = 0; layer < layerCount; layer++) {
+                const innerR = layer * layerWidth + 10;
+                const outerR = (layer + 1) * layerWidth;
+                const midR = (innerR + outerR) / 2;
+
+                const color = paletteColors[layer % paletteColors.length];
+                ctx.strokeStyle = color;
+                ctx.fillStyle = color;
+
+                const patterns = [];
+                if (patternStyle === 'mixed' || patternStyle === 'geometric') {
+                    patterns.push('geometric');
+                }
+                if (patternStyle === 'mixed' || patternStyle === 'floral') {
+                    patterns.push('floral');
+                }
+                if (patternStyle === 'mixed' || patternStyle === 'dots') {
+                    patterns.push('dots');
+                }
+                if (patternStyle === 'mixed' || patternStyle === 'lines') {
+                    patterns.push('lines');
+                }
+                if (patternStyle === 'mixed' || patternStyle === 'curves') {
+                    patterns.push('curves');
+                }
+
+                const pattern = patterns[Math.floor(Math.random() * patterns.length)];
+                const elements = Math.floor(symmetry * (1 + Math.random() * complexity * 0.5));
+
+                switch (pattern) {
+                    case 'geometric':
+                        drawGeometricLayer(midR, outerR - innerR, elements, color);
+                        break;
+                    case 'floral':
+                        drawFloralLayer(midR, (outerR - innerR) * 0.8, elements, color);
+                        break;
+                    case 'dots':
+                        drawDotsLayer(innerR, outerR, elements * 2, color);
+                        break;
+                    case 'lines':
+                        drawLinesLayer(innerR, outerR, symmetry, color);
+                        break;
+                    case 'curves':
+                        drawCurvesLayer(midR, (outerR - innerR) * 0.6, elements, color);
+                        break;
+                }
+
+                // Add decorative ring
+                if (Math.random() > 0.5) {
+                    ctx.lineWidth = 1 + Math.random() * 2;
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, outerR - 2, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            }
+
+            // Center decoration
+            drawCenterPiece();
+            saveState();
+        }
+
+        function drawGeometricLayer(radius, size, count, color) {
+            ctx.fillStyle = color;
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+
+            for (let i = 0; i < count; i++) {
+                const angle = (i * 2 * Math.PI) / count;
+                const x = centerX + Math.cos(angle) * radius;
+                const y = centerY + Math.sin(angle) * radius;
+
+                const shapeType = Math.floor(Math.random() * 3);
+
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(angle + Math.PI / 2);
+
+                switch (shapeType) {
+                    case 0: // Triangle
+                        ctx.beginPath();
+                        ctx.moveTo(0, -size / 3);
+                        ctx.lineTo(-size / 3, size / 3);
+                        ctx.lineTo(size / 3, size / 3);
+                        ctx.closePath();
+                        if (Math.random() > 0.5) ctx.fill();
+                        else ctx.stroke();
+                        break;
+                    case 1: // Diamond
+                        ctx.beginPath();
+                        ctx.moveTo(0, -size / 3);
+                        ctx.lineTo(-size / 4, 0);
+                        ctx.lineTo(0, size / 3);
+                        ctx.lineTo(size / 4, 0);
+                        ctx.closePath();
+                        if (Math.random() > 0.5) ctx.fill();
+                        else ctx.stroke();
+                        break;
+                    case 2: // Small star
+                        drawStar(0, 0, 5, size / 4, size / 8);
+                        break;
+                }
+
+                ctx.restore();
+            }
+        }
+
+        function drawFloralLayer(radius, size, count, color) {
+            ctx.fillStyle = color;
+            ctx.globalAlpha = 0.7;
+
+            for (let i = 0; i < count; i++) {
+                const angle = (i * 2 * Math.PI) / count;
+                const x = centerX + Math.cos(angle) * radius;
+                const y = centerY + Math.sin(angle) * radius;
+
+                // Petal shape
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(angle);
+
+                ctx.beginPath();
+                ctx.ellipse(size / 4, 0, size / 2, size / 6, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.restore();
+            }
+
+            ctx.globalAlpha = 1;
+        }
+
+        function drawDotsLayer(innerR, outerR, count, color) {
+            ctx.fillStyle = color;
+
+            for (let i = 0; i < count; i++) {
+                const angle = (i * 2 * Math.PI) / count;
+                const r = innerR + Math.random() * (outerR - innerR);
+                const x = centerX + Math.cos(angle) * r;
+                const y = centerY + Math.sin(angle) * r;
+                const dotSize = 2 + Math.random() * 4;
+
+                ctx.beginPath();
+                ctx.arc(x, y, dotSize, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function drawLinesLayer(innerR, outerR, count, color) {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 1 + Math.random() * 2;
+
+            for (let i = 0; i < count; i++) {
+                const angle = (i * 2 * Math.PI) / count;
+
+                ctx.beginPath();
+                ctx.moveTo(
+                    centerX + Math.cos(angle) * innerR,
+                    centerY + Math.sin(angle) * innerR
+                );
+                ctx.lineTo(
+                    centerX + Math.cos(angle) * outerR,
+                    centerY + Math.sin(angle) * outerR
+                );
+                ctx.stroke();
+            }
+        }
+
+        function drawCurvesLayer(radius, size, count, color) {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.globalAlpha = 0.8;
+
+            for (let i = 0; i < count; i++) {
+                const angle1 = (i * 2 * Math.PI) / count;
+                const angle2 = ((i + 0.5) * 2 * Math.PI) / count;
+
+                const x1 = centerX + Math.cos(angle1) * radius;
+                const y1 = centerY + Math.sin(angle1) * radius;
+                const x2 = centerX + Math.cos(angle2) * (radius + size);
+                const y2 = centerY + Math.sin(angle2) * (radius + size);
+
+                const cpX = centerX + Math.cos((angle1 + angle2) / 2) * (radius + size / 2);
+                const cpY = centerY + Math.sin((angle1 + angle2) / 2) * (radius + size / 2);
+
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.quadraticCurveTo(cpX, cpY, x2, y2);
+                ctx.stroke();
+            }
+
+            ctx.globalAlpha = 1;
+        }
+
+        function drawCenterPiece() {
+            const centerSize = Math.min(width, height) * 0.08;
+
+            // Outer ring
+            ctx.strokeStyle = paletteColors[0];
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, centerSize, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Inner design
+            ctx.fillStyle = paletteColors[1] || paletteColors[0];
+
+            for (let i = 0; i < 8; i++) {
+                const angle = (i * Math.PI) / 4;
+                const x = centerX + Math.cos(angle) * centerSize * 0.5;
+                const y = centerY + Math.sin(angle) * centerSize * 0.5;
+
+                ctx.beginPath();
+                ctx.arc(x, y, centerSize * 0.15, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Center dot
+            ctx.fillStyle = paletteColors[2] || paletteColors[0];
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, centerSize * 0.2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function loadPreset(preset) {
+            switch (preset) {
+                case 'lotus':
+                    document.getElementById('symmetry').value = 12;
+                    document.getElementById('complexity').value = 6;
+                    document.getElementById('layerCount').value = 6;
+                    document.getElementById('patternStyle').value = 'floral';
+                    setPalette('warm');
+                    break;
+                case 'star':
+                    document.getElementById('symmetry').value = 8;
+                    document.getElementById('complexity').value = 4;
+                    document.getElementById('layerCount').value = 5;
+                    document.getElementById('patternStyle').value = 'geometric';
+                    setPalette('neon');
+                    break;
+                case 'spiral':
+                    document.getElementById('symmetry').value = 6;
+                    document.getElementById('complexity').value = 8;
+                    document.getElementById('layerCount').value = 8;
+                    document.getElementById('patternStyle').value = 'curves';
+                    setPalette('cool');
+                    break;
+                case 'celtic':
+                    document.getElementById('symmetry').value = 4;
+                    document.getElementById('complexity').value = 7;
+                    document.getElementById('layerCount').value = 7;
+                    document.getElementById('patternStyle').value = 'lines';
+                    setPalette('earth');
+                    break;
+                case 'zen':
+                    document.getElementById('symmetry').value = 16;
+                    document.getElementById('complexity').value = 3;
+                    document.getElementById('layerCount').value = 4;
+                    document.getElementById('patternStyle').value = 'dots';
+                    setPalette('pastel');
+                    break;
+                case 'cosmic':
+                    document.getElementById('symmetry').value = 24;
+                    document.getElementById('complexity').value = 10;
+                    document.getElementById('layerCount').value = 10;
+                    document.getElementById('patternStyle').value = 'mixed';
+                    setPalette('sunset');
+                    break;
+            }
+
+            updateValues();
+            if (mode === 'generate') {
+                generateMandala();
+            }
+        }
+
+        function setPalette(name) {
+            currentPalette = name;
+            paletteColors = palettes[name];
+            currentColor = paletteColors[0];
+            renderPalette();
+        }
+
+        function renderPalette() {
+            const container = document.getElementById('colorPalette');
+            container.innerHTML = '';
+
+            paletteColors.forEach((color, i) => {
+                const swatch = document.createElement('div');
+                swatch.className = 'color-swatch' + (color === currentColor ? ' active' : '');
+                swatch.style.background = color;
+                swatch.onclick = () => {
+                    currentColor = color;
+                    document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+                    swatch.classList.add('active');
+                };
+                container.appendChild(swatch);
+            });
+
+            // Palette selector
+            const paletteNames = Object.keys(palettes);
+            const nextPalette = document.createElement('div');
+            nextPalette.className = 'color-swatch';
+            nextPalette.style.background = 'linear-gradient(135deg, #ff0080, #00ffff)';
+            nextPalette.title = 'Cycle palettes';
+            nextPalette.onclick = () => {
+                const idx = (paletteNames.indexOf(currentPalette) + 1) % paletteNames.length;
+                setPalette(paletteNames[idx]);
+            };
+            container.appendChild(nextPalette);
+        }
+
+        function updateValues() {
+            symmetry = parseInt(document.getElementById('symmetry').value);
+            brushSize = parseInt(document.getElementById('brushSize').value);
+            opacity = parseInt(document.getElementById('opacity').value) / 100;
+            brushShape = document.getElementById('brushShape').value;
+            colorMode = document.getElementById('colorMode').value;
+            backgroundColor = document.getElementById('background').value;
+            mirrorY = document.getElementById('mirrorY').checked;
+            showGuides = document.getElementById('showGuides').checked;
+
+            document.getElementById('symmetryVal').textContent = symmetry;
+            document.getElementById('brushVal').textContent = brushSize;
+            document.getElementById('opacityVal').textContent = Math.round(opacity * 100) + '%';
+            document.getElementById('complexityVal').textContent = document.getElementById('complexity').value;
+            document.getElementById('layerVal').textContent = document.getElementById('layerCount').value;
+            document.getElementById('rotSpeedVal').textContent = (document.getElementById('rotSpeed').value / 10).toFixed(1);
+            document.getElementById('pulseSpeedVal').textContent = document.getElementById('pulseSpeed').value;
+
+            rotSpeed = document.getElementById('rotSpeed').value / 1000;
+            pulseSpeed = document.getElementById('pulseSpeed').value / 100;
+            colorShift = document.getElementById('colorShift').checked;
+
+            if (showGuides && mode === 'draw') {
+                redraw();
+            }
+        }
+
+        function setMode(newMode) {
+            mode = newMode;
+
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.mode === mode);
+            });
+
+            document.getElementById('generateControls').style.display = mode === 'generate' ? 'block' : 'none';
+            document.getElementById('animateControls').style.display = mode === 'animate' ? 'block' : 'none';
+
+            if (mode === 'animate') {
+                startAnimation();
+            } else {
+                stopAnimation();
+            }
+        }
+
+        function startAnimation() {
+            mandalaImage = new Image();
+            mandalaImage.src = canvas.toDataURL();
+
+            function animate() {
+                if (mode !== 'animate') return;
+
+                rotation += rotSpeed;
+                pulse += pulseSpeed;
+
+                ctx.fillStyle = backgroundColor;
+                ctx.fillRect(0, 0, width, height);
+
+                ctx.save();
+                ctx.translate(centerX, centerY);
+                ctx.rotate(rotation);
+
+                const scale = 1 + Math.sin(pulse) * 0.05;
+                ctx.scale(scale, scale);
+
+                if (colorShift) {
+                    ctx.filter = `hue-rotate(${(rotation * 50) % 360}deg)`;
+                }
+
+                ctx.drawImage(mandalaImage, -centerX, -centerY);
+                ctx.restore();
+
+                animationFrame = requestAnimationFrame(animate);
+            }
+
+            mandalaImage.onload = () => {
+                animate();
+            };
+        }
+
+        function stopAnimation() {
+            if (animationFrame) {
+                cancelAnimationFrame(animationFrame);
+                animationFrame = null;
+            }
+            if (historyIndex >= 0) {
+                loadState(history[historyIndex]);
+            }
+        }
+
+        function saveMandala() {
+            const link = document.createElement('a');
+            link.download = `mandala-${Date.now()}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        // Event listeners
+        canvas.addEventListener('mousedown', (e) => {
+            if (mode !== 'draw') return;
+            isDrawing = true;
+            lastX = e.clientX;
+            lastY = e.clientY;
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isDrawing || mode !== 'draw') return;
+            drawSymmetric(e.clientX, e.clientY, lastX, lastY);
+            lastX = e.clientX;
+            lastY = e.clientY;
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            if (isDrawing) {
+                isDrawing = false;
+                saveState();
+            }
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            if (isDrawing) {
+                isDrawing = false;
+                saveState();
+            }
+        });
+
+        // Touch support
+        canvas.addEventListener('touchstart', (e) => {
+            if (mode !== 'draw') return;
+            e.preventDefault();
+            const touch = e.touches[0];
+            isDrawing = true;
+            lastX = touch.clientX;
+            lastY = touch.clientY;
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            if (!isDrawing || mode !== 'draw') return;
+            e.preventDefault();
+            const touch = e.touches[0];
+            drawSymmetric(touch.clientX, touch.clientY, lastX, lastY);
+            lastX = touch.clientX;
+            lastY = touch.clientY;
+        });
+
+        canvas.addEventListener('touchend', () => {
+            if (isDrawing) {
+                isDrawing = false;
+                saveState();
+            }
+        });
+
+        // Controls
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => setMode(btn.dataset.mode));
+        });
+
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => loadPreset(btn.dataset.preset));
+        });
+
+        document.getElementById('symmetry').addEventListener('input', updateValues);
+        document.getElementById('brushSize').addEventListener('input', updateValues);
+        document.getElementById('opacity').addEventListener('input', updateValues);
+        document.getElementById('brushShape').addEventListener('change', updateValues);
+        document.getElementById('colorMode').addEventListener('change', updateValues);
+        document.getElementById('background').addEventListener('change', () => {
+            updateValues();
+            if (history.length === 0) {
+                clear();
+            }
+        });
+        document.getElementById('mirrorY').addEventListener('change', updateValues);
+        document.getElementById('showGuides').addEventListener('change', updateValues);
+        document.getElementById('complexity').addEventListener('input', updateValues);
+        document.getElementById('layerCount').addEventListener('input', updateValues);
+        document.getElementById('rotSpeed').addEventListener('input', updateValues);
+        document.getElementById('pulseSpeed').addEventListener('input', updateValues);
+        document.getElementById('colorShift').addEventListener('change', updateValues);
+
+        document.getElementById('customColor').addEventListener('input', (e) => {
+            currentColor = e.target.value;
+            document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+        });
+
+        document.getElementById('generateBtn').addEventListener('click', generateMandala);
+        document.getElementById('undoBtn').addEventListener('click', undo);
+        document.getElementById('redoBtn').addEventListener('click', redo);
+        document.getElementById('clearBtn').addEventListener('click', clear);
+        document.getElementById('saveBtn').addEventListener('click', saveMandala);
+
+        document.getElementById('toggleBtn').addEventListener('click', () => {
+            document.getElementById('controls').classList.remove('hidden');
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+
+            switch (e.key.toLowerCase()) {
+                case 'h':
+                    document.getElementById('controls').classList.toggle('hidden');
+                    break;
+                case ' ':
+                    e.preventDefault();
+                    if (mode === 'generate') {
+                        generateMandala();
+                    }
+                    break;
+                case 's':
+                    if (!e.ctrlKey && !e.metaKey) {
+                        saveMandala();
+                    }
+                    break;
+                case 'c':
+                    clear();
+                    break;
+                case 'z':
+                    if (e.ctrlKey || e.metaKey) {
+                        e.preventDefault();
+                        if (e.shiftKey) redo();
+                        else undo();
+                    }
+                    break;
+                case 'g':
+                    setMode('generate');
+                    break;
+                case 'd':
+                    setMode('draw');
+                    break;
+                case 'a':
+                    setMode('animate');
+                    break;
+            }
+        });
+
+        // Initialize
+        window.addEventListener('resize', resize);
+        renderPalette();
+        updateValues();
+        resize();
+        clear();
+    </script>
+</body>
+</html>

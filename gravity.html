@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gravity Sandbox</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #000;
+            min-height: 100vh;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        #canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+        }
+
+        .controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 20px;
+            border-radius: 12px;
+            z-index: 100;
+            width: 280px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+        }
+
+        h1 {
+            font-size: 1.3em;
+            margin-bottom: 5px;
+            background: linear-gradient(135deg, #ffd700, #ff8c00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            font-size: 0.75em;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .section {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .section h3 {
+            font-size: 0.8em;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: all 0.2s;
+            flex: 1;
+        }
+
+        .btn:hover {
+            background: rgba(255, 215, 0, 0.2);
+            border-color: #ffd700;
+        }
+
+        .btn.active {
+            background: rgba(255, 215, 0, 0.3);
+            border-color: #ffd700;
+        }
+
+        .preset-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .preset-btn {
+            padding: 10px 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.75em;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .preset-btn:hover {
+            background: rgba(255, 140, 0, 0.2);
+            border-color: #ff8c00;
+        }
+
+        .control-group {
+            margin-bottom: 12px;
+        }
+
+        .control-group label {
+            display: block;
+            font-size: 0.75em;
+            color: #aaa;
+            margin-bottom: 5px;
+        }
+
+        .control-group input[type="range"] {
+            width: 100%;
+            height: 5px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.1);
+            -webkit-appearance: none;
+        }
+
+        .control-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ffd700;
+            cursor: pointer;
+        }
+
+        .value-display {
+            font-size: 0.7em;
+            color: #ffd700;
+            float: right;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8em;
+            margin-bottom: 8px;
+        }
+
+        .checkbox-item input {
+            width: 16px;
+            height: 16px;
+            accent-color: #ffd700;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .stat-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .stat-label {
+            font-size: 0.65em;
+            color: #888;
+            text-transform: uppercase;
+        }
+
+        .help-text {
+            font-size: 0.7em;
+            color: #555;
+            line-height: 1.4;
+            margin-top: 10px;
+        }
+
+        .body-info {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 0.8em;
+            display: none;
+        }
+
+        .body-info.visible {
+            display: block;
+        }
+
+        .body-info h4 {
+            color: #ffd700;
+            margin-bottom: 8px;
+        }
+
+        .body-info p {
+            color: #aaa;
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+
+    <div class="controls">
+        <h1>Gravity Sandbox</h1>
+        <p class="subtitle">N-Body Gravitational Simulation</p>
+
+        <div class="section">
+            <h3>Simulation</h3>
+            <div class="btn-group">
+                <button class="btn active" id="playBtn">▶ Play</button>
+                <button class="btn" id="resetBtn">↺ Reset</button>
+                <button class="btn" id="clearBtn">✕ Clear</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>Presets</h3>
+            <div class="preset-grid">
+                <button class="preset-btn" data-preset="solar">Solar System</button>
+                <button class="preset-btn" data-preset="binary">Binary Stars</button>
+                <button class="preset-btn" data-preset="figure8">Figure-8</button>
+                <button class="preset-btn" data-preset="collision">Collision</button>
+                <button class="preset-btn" data-preset="cluster">Star Cluster</button>
+                <button class="preset-btn" data-preset="chaos">3-Body Chaos</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>Create Body</h3>
+            <div class="control-group">
+                <label>Mass <span class="value-display" id="massVal">10</span></label>
+                <input type="range" id="massSlider" min="1" max="100" value="10">
+            </div>
+            <div class="preset-grid">
+                <button class="btn" data-mass="1">Star</button>
+                <button class="btn" data-mass="0.1">Planet</button>
+                <button class="btn" data-mass="0.01">Moon</button>
+                <button class="btn" data-mass="0.001">Asteroid</button>
+            </div>
+            <div class="help-text">Click and drag on canvas to create bodies with initial velocity</div>
+        </div>
+
+        <div class="section">
+            <h3>Settings</h3>
+            <div class="control-group">
+                <label>Time Scale <span class="value-display" id="timeVal">1.0x</span></label>
+                <input type="range" id="timeSlider" min="1" max="50" value="10">
+            </div>
+            <div class="control-group">
+                <label>G Constant <span class="value-display" id="gVal">1.0</span></label>
+                <input type="range" id="gSlider" min="1" max="50" value="10">
+            </div>
+            <div class="control-group">
+                <label>Trail Length <span class="value-display" id="trailVal">100</span></label>
+                <input type="range" id="trailSlider" min="0" max="500" value="100">
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>Options</h3>
+            <label class="checkbox-item">
+                <input type="checkbox" id="showTrails" checked>
+                Show Trails
+            </label>
+            <label class="checkbox-item">
+                <input type="checkbox" id="showVectors">
+                Show Velocity Vectors
+            </label>
+            <label class="checkbox-item">
+                <input type="checkbox" id="showForces">
+                Show Force Vectors
+            </label>
+            <label class="checkbox-item">
+                <input type="checkbox" id="collisions" checked>
+                Enable Collisions
+            </label>
+            <label class="checkbox-item">
+                <input type="checkbox" id="centerMass">
+                Follow Center of Mass
+            </label>
+        </div>
+
+        <div class="section">
+            <h3>Statistics</h3>
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="bodyCount">0</div>
+                    <div class="stat-label">Bodies</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="totalMass">0</div>
+                    <div class="stat-label">Total Mass</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="kineticE">0</div>
+                    <div class="stat-label">Kinetic E</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="potentialE">0</div>
+                    <div class="stat-label">Potential E</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="body-info" id="bodyInfo">
+        <h4>Selected Body</h4>
+        <p>Mass: <span id="infoMass">0</span></p>
+        <p>Velocity: <span id="infoVel">0</span></p>
+        <p>Position: <span id="infoPos">0, 0</span></p>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let bodies = [];
+        let isPlaying = true;
+        let selectedBody = null;
+        let hoveredBody = null;
+        let isDragging = false;
+        let dragStart = null;
+        let dragEnd = null;
+
+        let G = 1.0;
+        let timeScale = 1.0;
+        let trailLength = 100;
+        let showTrails = true;
+        let showVectors = false;
+        let showForces = false;
+        let enableCollisions = true;
+        let followCenterMass = false;
+        let createMass = 10;
+
+        let cameraX = 0;
+        let cameraY = 0;
+
+        const bodyColors = [
+            '#ffd700', '#ff8c00', '#ff6b6b', '#4ecdc4', '#a29bfe',
+            '#fd79a8', '#00cec9', '#6c5ce7', '#74b9ff', '#00b894'
+        ];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        class Body {
+            constructor(x, y, mass, vx = 0, vy = 0) {
+                this.x = x;
+                this.y = y;
+                this.mass = mass;
+                this.vx = vx;
+                this.vy = vy;
+                this.ax = 0;
+                this.ay = 0;
+                this.radius = Math.pow(mass, 1/3) * 5 + 2;
+                this.trail = [];
+                this.color = bodyColors[Math.floor(Math.random() * bodyColors.length)];
+                this.id = Date.now() + Math.random();
+            }
+
+            update(dt) {
+                this.vx += this.ax * dt;
+                this.vy += this.ay * dt;
+                this.x += this.vx * dt;
+                this.y += this.vy * dt;
+
+                if (showTrails) {
+                    this.trail.push({ x: this.x, y: this.y });
+                    if (this.trail.length > trailLength) {
+                        this.trail.shift();
+                    }
+                }
+            }
+
+            draw() {
+                const screenX = this.x - cameraX + canvas.width / 2;
+                const screenY = this.y - cameraY + canvas.height / 2;
+
+                // Draw trail
+                if (showTrails && this.trail.length > 1) {
+                    ctx.beginPath();
+                    for (let i = 0; i < this.trail.length; i++) {
+                        const t = this.trail[i];
+                        const tx = t.x - cameraX + canvas.width / 2;
+                        const ty = t.y - cameraY + canvas.height / 2;
+                        if (i === 0) {
+                            ctx.moveTo(tx, ty);
+                        } else {
+                            ctx.lineTo(tx, ty);
+                        }
+                    }
+                    ctx.strokeStyle = this.color;
+                    ctx.lineWidth = 1;
+                    ctx.globalAlpha = 0.4;
+                    ctx.stroke();
+                    ctx.globalAlpha = 1;
+                }
+
+                // Draw body
+                const gradient = ctx.createRadialGradient(
+                    screenX - this.radius * 0.3, screenY - this.radius * 0.3,
+                    0, screenX, screenY, this.radius
+                );
+                gradient.addColorStop(0, '#fff');
+                gradient.addColorStop(0.3, this.color);
+                gradient.addColorStop(1, this.color.replace(')', ', 0.5)').replace('rgb', 'rgba'));
+
+                ctx.beginPath();
+                ctx.arc(screenX, screenY, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = gradient;
+                ctx.fill();
+
+                // Glow for massive bodies
+                if (this.mass > 50) {
+                    ctx.beginPath();
+                    ctx.arc(screenX, screenY, this.radius * 2, 0, Math.PI * 2);
+                    const glow = ctx.createRadialGradient(screenX, screenY, this.radius, screenX, screenY, this.radius * 2);
+                    glow.addColorStop(0, this.color.replace(')', ', 0.3)').replace('rgb', 'rgba'));
+                    glow.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = glow;
+                    ctx.fill();
+                }
+
+                // Hover/select indicator
+                if (this === hoveredBody || this === selectedBody) {
+                    ctx.beginPath();
+                    ctx.arc(screenX, screenY, this.radius + 5, 0, Math.PI * 2);
+                    ctx.strokeStyle = '#fff';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([5, 5]);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+
+                // Velocity vector
+                if (showVectors) {
+                    const velScale = 5;
+                    ctx.beginPath();
+                    ctx.moveTo(screenX, screenY);
+                    ctx.lineTo(screenX + this.vx * velScale, screenY + this.vy * velScale);
+                    ctx.strokeStyle = '#00ff00';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    // Arrow head
+                    const angle = Math.atan2(this.vy, this.vx);
+                    ctx.beginPath();
+                    ctx.moveTo(screenX + this.vx * velScale, screenY + this.vy * velScale);
+                    ctx.lineTo(
+                        screenX + this.vx * velScale - 10 * Math.cos(angle - 0.3),
+                        screenY + this.vy * velScale - 10 * Math.sin(angle - 0.3)
+                    );
+                    ctx.moveTo(screenX + this.vx * velScale, screenY + this.vy * velScale);
+                    ctx.lineTo(
+                        screenX + this.vx * velScale - 10 * Math.cos(angle + 0.3),
+                        screenY + this.vy * velScale - 10 * Math.sin(angle + 0.3)
+                    );
+                    ctx.stroke();
+                }
+
+                // Force vector
+                if (showForces) {
+                    const forceScale = 100;
+                    ctx.beginPath();
+                    ctx.moveTo(screenX, screenY);
+                    ctx.lineTo(screenX + this.ax * forceScale, screenY + this.ay * forceScale);
+                    ctx.strokeStyle = '#ff0000';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+            }
+        }
+
+        function calculateForces() {
+            // Reset accelerations
+            bodies.forEach(body => {
+                body.ax = 0;
+                body.ay = 0;
+            });
+
+            // Calculate gravitational forces
+            for (let i = 0; i < bodies.length; i++) {
+                for (let j = i + 1; j < bodies.length; j++) {
+                    const b1 = bodies[i];
+                    const b2 = bodies[j];
+
+                    const dx = b2.x - b1.x;
+                    const dy = b2.y - b1.y;
+                    const distSq = dx * dx + dy * dy;
+                    const dist = Math.sqrt(distSq);
+
+                    if (dist < b1.radius + b2.radius && enableCollisions) {
+                        // Collision - merge bodies
+                        const totalMass = b1.mass + b2.mass;
+                        const newVx = (b1.mass * b1.vx + b2.mass * b2.vx) / totalMass;
+                        const newVy = (b1.mass * b1.vy + b2.mass * b2.vy) / totalMass;
+                        const newX = (b1.mass * b1.x + b2.mass * b2.x) / totalMass;
+                        const newY = (b1.mass * b1.y + b2.mass * b2.y) / totalMass;
+
+                        b1.x = newX;
+                        b1.y = newY;
+                        b1.vx = newVx;
+                        b1.vy = newVy;
+                        b1.mass = totalMass;
+                        b1.radius = Math.pow(totalMass, 1/3) * 5 + 2;
+                        b1.trail = [];
+
+                        bodies.splice(j, 1);
+                        j--;
+                        continue;
+                    }
+
+                    // Gravitational force
+                    const softening = 10; // Prevent infinite forces
+                    const force = G * b1.mass * b2.mass / (distSq + softening);
+                    const fx = force * dx / dist;
+                    const fy = force * dy / dist;
+
+                    b1.ax += fx / b1.mass;
+                    b1.ay += fy / b1.mass;
+                    b2.ax -= fx / b2.mass;
+                    b2.ay -= fy / b2.mass;
+                }
+            }
+        }
+
+        function getCenterOfMass() {
+            let totalMass = 0;
+            let cmX = 0;
+            let cmY = 0;
+
+            bodies.forEach(body => {
+                totalMass += body.mass;
+                cmX += body.x * body.mass;
+                cmY += body.y * body.mass;
+            });
+
+            if (totalMass === 0) return { x: 0, y: 0 };
+            return { x: cmX / totalMass, y: cmY / totalMass };
+        }
+
+        function updateStats() {
+            let totalMass = 0;
+            let kineticE = 0;
+            let potentialE = 0;
+
+            bodies.forEach(body => {
+                totalMass += body.mass;
+                kineticE += 0.5 * body.mass * (body.vx * body.vx + body.vy * body.vy);
+            });
+
+            for (let i = 0; i < bodies.length; i++) {
+                for (let j = i + 1; j < bodies.length; j++) {
+                    const dx = bodies[j].x - bodies[i].x;
+                    const dy = bodies[j].y - bodies[i].y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    potentialE -= G * bodies[i].mass * bodies[j].mass / dist;
+                }
+            }
+
+            document.getElementById('bodyCount').textContent = bodies.length;
+            document.getElementById('totalMass').textContent = totalMass.toFixed(1);
+            document.getElementById('kineticE').textContent = kineticE.toFixed(0);
+            document.getElementById('potentialE').textContent = potentialE.toFixed(0);
+        }
+
+        function update() {
+            if (!isPlaying) return;
+
+            const dt = timeScale * 0.1;
+
+            calculateForces();
+            bodies.forEach(body => body.update(dt));
+
+            if (followCenterMass) {
+                const cm = getCenterOfMass();
+                cameraX = cm.x;
+                cameraY = cm.y;
+            }
+
+            updateStats();
+        }
+
+        function draw() {
+            // Background with subtle gradient
+            const gradient = ctx.createRadialGradient(
+                canvas.width / 2, canvas.height / 2, 0,
+                canvas.width / 2, canvas.height / 2, canvas.width
+            );
+            gradient.addColorStop(0, '#0a0a1a');
+            gradient.addColorStop(1, '#000');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw stars background
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            for (let i = 0; i < 100; i++) {
+                const x = (i * 137.5) % canvas.width;
+                const y = (i * 97.3) % canvas.height;
+                ctx.fillRect(x, y, 1, 1);
+            }
+
+            // Draw bodies
+            bodies.forEach(body => body.draw());
+
+            // Draw drag preview
+            if (isDragging && dragStart && dragEnd) {
+                const screenX = dragStart.x;
+                const screenY = dragStart.y;
+
+                // Preview circle
+                const previewRadius = Math.pow(createMass, 1/3) * 5 + 2;
+                ctx.beginPath();
+                ctx.arc(screenX, screenY, previewRadius, 0, Math.PI * 2);
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Velocity vector preview
+                ctx.beginPath();
+                ctx.moveTo(screenX, screenY);
+                ctx.lineTo(dragEnd.x, dragEnd.y);
+                ctx.strokeStyle = '#00ff00';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Arrow head
+                const dx = dragEnd.x - screenX;
+                const dy = dragEnd.y - screenY;
+                const angle = Math.atan2(dy, dx);
+                ctx.beginPath();
+                ctx.moveTo(dragEnd.x, dragEnd.y);
+                ctx.lineTo(dragEnd.x - 15 * Math.cos(angle - 0.3), dragEnd.y - 15 * Math.sin(angle - 0.3));
+                ctx.moveTo(dragEnd.x, dragEnd.y);
+                ctx.lineTo(dragEnd.x - 15 * Math.cos(angle + 0.3), dragEnd.y - 15 * Math.sin(angle + 0.3));
+                ctx.stroke();
+            }
+
+            // Update body info panel
+            if (hoveredBody) {
+                document.getElementById('bodyInfo').classList.add('visible');
+                document.getElementById('infoMass').textContent = hoveredBody.mass.toFixed(2);
+                const vel = Math.sqrt(hoveredBody.vx ** 2 + hoveredBody.vy ** 2);
+                document.getElementById('infoVel').textContent = vel.toFixed(2);
+                document.getElementById('infoPos').textContent = `${hoveredBody.x.toFixed(0)}, ${hoveredBody.y.toFixed(0)}`;
+            } else {
+                document.getElementById('bodyInfo').classList.remove('visible');
+            }
+        }
+
+        function animate() {
+            update();
+            draw();
+            requestAnimationFrame(animate);
+        }
+
+        // Presets
+        const presets = {
+            solar: () => {
+                bodies = [];
+                cameraX = 0;
+                cameraY = 0;
+
+                // Sun
+                bodies.push(new Body(0, 0, 100, 0, 0));
+                bodies[0].color = '#ffd700';
+
+                // Planets
+                const planets = [
+                    { dist: 100, mass: 1, speed: 3.2 },
+                    { dist: 150, mass: 2, speed: 2.6 },
+                    { dist: 220, mass: 3, speed: 2.1 },
+                    { dist: 300, mass: 0.5, speed: 1.8 },
+                    { dist: 400, mass: 8, speed: 1.6 }
+                ];
+
+                planets.forEach((p, i) => {
+                    const angle = Math.random() * Math.PI * 2;
+                    const x = Math.cos(angle) * p.dist;
+                    const y = Math.sin(angle) * p.dist;
+                    const vx = -Math.sin(angle) * p.speed;
+                    const vy = Math.cos(angle) * p.speed;
+                    bodies.push(new Body(x, y, p.mass, vx, vy));
+                });
+            },
+
+            binary: () => {
+                bodies = [];
+                cameraX = 0;
+                cameraY = 0;
+
+                const dist = 80;
+                const speed = 2;
+
+                bodies.push(new Body(-dist, 0, 50, 0, speed));
+                bodies[0].color = '#ff6b6b';
+                bodies.push(new Body(dist, 0, 50, 0, -speed));
+                bodies[1].color = '#4ecdc4';
+
+                // Add a planet
+                bodies.push(new Body(0, 200, 1, 3, 0));
+            },
+
+            figure8: () => {
+                bodies = [];
+                cameraX = 0;
+                cameraY = 0;
+
+                // Famous figure-8 solution to the three-body problem
+                const v = 0.93240737;
+                const x = 0.97000436;
+
+                bodies.push(new Body(x * 100, 0, 10, 0, v));
+                bodies.push(new Body(-x * 100, 0, 10, 0, v));
+                bodies.push(new Body(0, 0, 10, -2 * 0, -2 * v));
+            },
+
+            collision: () => {
+                bodies = [];
+                cameraX = 0;
+                cameraY = 0;
+
+                // Two galaxies colliding
+                for (let i = 0; i < 15; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const dist = 20 + Math.random() * 50;
+                    bodies.push(new Body(
+                        -200 + Math.cos(angle) * dist,
+                        Math.sin(angle) * dist,
+                        1 + Math.random() * 3,
+                        1.5,
+                        Math.random() - 0.5
+                    ));
+                }
+
+                for (let i = 0; i < 15; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const dist = 20 + Math.random() * 50;
+                    bodies.push(new Body(
+                        200 + Math.cos(angle) * dist,
+                        Math.sin(angle) * dist,
+                        1 + Math.random() * 3,
+                        -1.5,
+                        Math.random() - 0.5
+                    ));
+                }
+            },
+
+            cluster: () => {
+                bodies = [];
+                cameraX = 0;
+                cameraY = 0;
+
+                for (let i = 0; i < 30; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const dist = 50 + Math.random() * 150;
+                    const speed = 0.5 + Math.random() * 0.5;
+                    bodies.push(new Body(
+                        Math.cos(angle) * dist,
+                        Math.sin(angle) * dist,
+                        2 + Math.random() * 8,
+                        -Math.sin(angle) * speed,
+                        Math.cos(angle) * speed
+                    ));
+                }
+            },
+
+            chaos: () => {
+                bodies = [];
+                cameraX = 0;
+                cameraY = 0;
+
+                bodies.push(new Body(-50, 0, 30, 0, 1));
+                bodies.push(new Body(50, 0, 30, 0, -1));
+                bodies.push(new Body(0, 86.6, 30, -0.866, -0.5));
+            }
+        };
+
+        // Event listeners
+        canvas.addEventListener('mousedown', (e) => {
+            const x = e.clientX;
+            const y = e.clientY;
+            const worldX = x - canvas.width / 2 + cameraX;
+            const worldY = y - canvas.height / 2 + cameraY;
+
+            // Check if clicking on a body
+            for (const body of bodies) {
+                const dx = worldX - body.x;
+                const dy = worldY - body.y;
+                if (dx * dx + dy * dy < body.radius * body.radius) {
+                    selectedBody = body;
+                    return;
+                }
+            }
+
+            // Start creating a new body
+            isDragging = true;
+            dragStart = { x, y };
+            dragEnd = { x, y };
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            const x = e.clientX;
+            const y = e.clientY;
+            const worldX = x - canvas.width / 2 + cameraX;
+            const worldY = y - canvas.height / 2 + cameraY;
+
+            if (isDragging) {
+                dragEnd = { x, y };
+            } else {
+                // Check for hover
+                hoveredBody = null;
+                for (const body of bodies) {
+                    const dx = worldX - body.x;
+                    const dy = worldY - body.y;
+                    if (dx * dx + dy * dy < (body.radius + 10) ** 2) {
+                        hoveredBody = body;
+                        break;
+                    }
+                }
+            }
+        });
+
+        canvas.addEventListener('mouseup', (e) => {
+            if (isDragging && dragStart && dragEnd) {
+                const worldX = dragStart.x - canvas.width / 2 + cameraX;
+                const worldY = dragStart.y - canvas.height / 2 + cameraY;
+                const vx = (dragEnd.x - dragStart.x) * 0.05;
+                const vy = (dragEnd.y - dragStart.y) * 0.05;
+
+                bodies.push(new Body(worldX, worldY, createMass, vx, vy));
+            }
+
+            isDragging = false;
+            dragStart = null;
+            dragEnd = null;
+        });
+
+        document.getElementById('playBtn').addEventListener('click', () => {
+            isPlaying = !isPlaying;
+            document.getElementById('playBtn').textContent = isPlaying ? '⏸ Pause' : '▶ Play';
+            document.getElementById('playBtn').classList.toggle('active', isPlaying);
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            bodies.forEach(body => body.trail = []);
+        });
+
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            bodies = [];
+            cameraX = 0;
+            cameraY = 0;
+        });
+
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const preset = btn.dataset.preset;
+                if (presets[preset]) {
+                    presets[preset]();
+                }
+            });
+        });
+
+        document.querySelectorAll('[data-mass]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const multiplier = parseFloat(btn.dataset.mass);
+                createMass = 100 * multiplier;
+                document.getElementById('massSlider').value = createMass;
+                document.getElementById('massVal').textContent = createMass.toFixed(1);
+            });
+        });
+
+        document.getElementById('massSlider').addEventListener('input', (e) => {
+            createMass = parseFloat(e.target.value);
+            document.getElementById('massVal').textContent = createMass;
+        });
+
+        document.getElementById('timeSlider').addEventListener('input', (e) => {
+            timeScale = e.target.value / 10;
+            document.getElementById('timeVal').textContent = timeScale.toFixed(1) + 'x';
+        });
+
+        document.getElementById('gSlider').addEventListener('input', (e) => {
+            G = e.target.value / 10;
+            document.getElementById('gVal').textContent = G.toFixed(1);
+        });
+
+        document.getElementById('trailSlider').addEventListener('input', (e) => {
+            trailLength = parseInt(e.target.value);
+            document.getElementById('trailVal').textContent = trailLength;
+        });
+
+        document.getElementById('showTrails').addEventListener('change', (e) => {
+            showTrails = e.target.checked;
+            if (!showTrails) {
+                bodies.forEach(body => body.trail = []);
+            }
+        });
+
+        document.getElementById('showVectors').addEventListener('change', (e) => {
+            showVectors = e.target.checked;
+        });
+
+        document.getElementById('showForces').addEventListener('change', (e) => {
+            showForces = e.target.checked;
+        });
+
+        document.getElementById('collisions').addEventListener('change', (e) => {
+            enableCollisions = e.target.checked;
+        });
+
+        document.getElementById('centerMass').addEventListener('change', (e) => {
+            followCenterMass = e.target.checked;
+            if (!followCenterMass) {
+                cameraX = 0;
+                cameraY = 0;
+            }
+        });
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // Initialize
+        resizeCanvas();
+        presets.solar();
+        animate();
+    </script>
+</body>
+</html>

@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fluid Dynamics Simulation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a0a2a 50%, #0a1a2a 100%);
+            min-height: 100vh;
+            font-family: 'Courier New', monospace;
+            color: #e0e0e0;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #00d4ff, #0099ff, #0066ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px rgba(0, 150, 255, 0.3);
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 20px;
+        }
+
+        .canvas-container {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(0, 150, 255, 0.2);
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            border-radius: 10px;
+            cursor: crosshair;
+        }
+
+        .controls {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(0, 150, 255, 0.2);
+        }
+
+        .control-section {
+            margin-bottom: 25px;
+        }
+
+        .control-section h3 {
+            color: #00d4ff;
+            margin-bottom: 15px;
+            font-size: 1em;
+            border-bottom: 1px solid rgba(0, 150, 255, 0.3);
+            padding-bottom: 8px;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #aaa;
+            font-size: 0.85em;
+        }
+
+        .control-group input[type="range"] {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            background: rgba(0, 150, 255, 0.2);
+            border-radius: 3px;
+            outline: none;
+        }
+
+        .control-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #00d4ff;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .control-value {
+            text-align: right;
+            color: #00d4ff;
+            font-size: 0.8em;
+            margin-top: 3px;
+        }
+
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        button {
+            background: linear-gradient(135deg, rgba(0, 150, 255, 0.3), rgba(0, 100, 200, 0.3));
+            border: 1px solid rgba(0, 150, 255, 0.5);
+            color: #fff;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background: linear-gradient(135deg, rgba(0, 150, 255, 0.5), rgba(0, 100, 200, 0.5));
+            box-shadow: 0 0 15px rgba(0, 150, 255, 0.3);
+        }
+
+        button.active {
+            background: linear-gradient(135deg, rgba(0, 200, 255, 0.6), rgba(0, 150, 255, 0.6));
+            box-shadow: 0 0 20px rgba(0, 200, 255, 0.4);
+        }
+
+        .color-modes {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .color-modes button {
+            padding: 8px;
+            font-size: 0.85em;
+        }
+
+        .stats {
+            background: rgba(0, 50, 100, 0.2);
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 0.85em;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .stat-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .stat-value {
+            color: #00d4ff;
+        }
+
+        .equations {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            border: 1px solid rgba(0, 150, 255, 0.2);
+        }
+
+        .equations h3 {
+            color: #00d4ff;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+        }
+
+        .equation {
+            font-family: 'Times New Roman', serif;
+            font-style: italic;
+            color: #ccc;
+            margin: 8px 0;
+            font-size: 0.9em;
+        }
+
+        .instructions {
+            background: rgba(0, 100, 150, 0.1);
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 15px;
+            font-size: 0.8em;
+            color: #888;
+        }
+
+        .instructions strong {
+            color: #00d4ff;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #00d4ff;
+            text-decoration: none;
+            font-size: 0.9em;
+            opacity: 0.8;
+            transition: opacity 0.3s;
+        }
+
+        .back-link:hover {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-link">← Back to Index</a>
+
+        <h1>Fluid Dynamics Simulation</h1>
+        <p class="subtitle">Real-time Navier-Stokes fluid solver with interactive forcing</p>
+
+        <div class="main-content">
+            <div class="canvas-container">
+                <canvas id="fluidCanvas"></canvas>
+            </div>
+
+            <div class="controls">
+                <div class="control-section">
+                    <h3>Fluid Properties</h3>
+
+                    <div class="control-group">
+                        <label>Viscosity (ν)</label>
+                        <input type="range" id="viscosity" min="0" max="0.001" step="0.00001" value="0.0001">
+                        <div class="control-value" id="viscosityValue">0.0001</div>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Diffusion Rate</label>
+                        <input type="range" id="diffusion" min="0" max="0.001" step="0.00001" value="0.0001">
+                        <div class="control-value" id="diffusionValue">0.0001</div>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Force Strength</label>
+                        <input type="range" id="forceStrength" min="100" max="2000" step="50" value="800">
+                        <div class="control-value" id="forceStrengthValue">800</div>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Dye Amount</label>
+                        <input type="range" id="dyeAmount" min="50" max="500" step="10" value="200">
+                        <div class="control-value" id="dyeAmountValue">200</div>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h3>Visualization</h3>
+                    <div class="color-modes">
+                        <button class="color-mode active" data-mode="rainbow">Rainbow</button>
+                        <button class="color-mode" data-mode="thermal">Thermal</button>
+                        <button class="color-mode" data-mode="ocean">Ocean</button>
+                        <button class="color-mode" data-mode="velocity">Velocity</button>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h3>Actions</h3>
+                    <div class="button-group">
+                        <button id="clearBtn">Clear Fluid</button>
+                        <button id="resetBtn">Reset All</button>
+                        <button id="obstacleBtn">Toggle Obstacles</button>
+                        <button id="vortexBtn">Add Vortex</button>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h3>Statistics</h3>
+                    <div class="stats">
+                        <div class="stat-row">
+                            <span>Grid Size:</span>
+                            <span class="stat-value" id="gridSize">128 × 128</span>
+                        </div>
+                        <div class="stat-row">
+                            <span>Max Velocity:</span>
+                            <span class="stat-value" id="maxVelocity">0.00</span>
+                        </div>
+                        <div class="stat-row">
+                            <span>Avg Density:</span>
+                            <span class="stat-value" id="avgDensity">0.00</span>
+                        </div>
+                        <div class="stat-row">
+                            <span>FPS:</span>
+                            <span class="stat-value" id="fps">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="instructions">
+                    <strong>Click & drag</strong> to add dye and force<br>
+                    <strong>Right-click & drag</strong> for force only<br>
+                    <strong>Scroll</strong> to adjust brush size
+                </div>
+            </div>
+        </div>
+
+        <div class="equations">
+            <h3>Navier-Stokes Equations (Incompressible Flow)</h3>
+            <div class="equation">∂u/∂t + (u·∇)u = -∇p/ρ + ν∇²u + f</div>
+            <div class="equation">∇·u = 0 (incompressibility)</div>
+            <div class="equation">∂ρ/∂t + ∇·(ρu) = κ∇²ρ (density advection-diffusion)</div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('fluidCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Grid parameters
+        const N = 128; // Grid resolution
+        const size = (N + 2) * (N + 2);
+        const iter = 20; // Gauss-Seidel iterations
+
+        // Fluid fields
+        let u = new Float32Array(size);      // x-velocity
+        let v = new Float32Array(size);      // y-velocity
+        let u_prev = new Float32Array(size);
+        let v_prev = new Float32Array(size);
+        let dens = new Float32Array(size);   // density
+        let dens_prev = new Float32Array(size);
+
+        // Hue field for rainbow effect
+        let hue = new Float32Array(size);
+
+        // Obstacles
+        let obstacles = new Uint8Array(size);
+        let showObstacles = false;
+
+        // Simulation parameters
+        let viscosity = 0.0001;
+        let diffusion = 0.0001;
+        let forceStrength = 800;
+        let dyeAmount = 200;
+        let dt = 0.016;
+
+        // Visualization
+        let colorMode = 'rainbow';
+        let brushSize = 3;
+
+        // Mouse state
+        let mouseX = 0, mouseY = 0;
+        let lastMouseX = 0, lastMouseY = 0;
+        let isMouseDown = false;
+        let isRightClick = false;
+
+        // FPS tracking
+        let lastTime = performance.now();
+        let frameCount = 0;
+        let fps = 0;
+
+        // Index helper
+        function IX(i, j) {
+            return i + (N + 2) * j;
+        }
+
+        // Initialize canvas
+        function initCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = Math.min(container.clientWidth - 40, 800);
+            canvas.height = canvas.width;
+            document.getElementById('gridSize').textContent = `${N} × ${N}`;
+        }
+
+        // Add source
+        function addSource(x, s, dt) {
+            for (let i = 0; i < size; i++) {
+                x[i] += dt * s[i];
+            }
+        }
+
+        // Set boundary conditions
+        function setBnd(b, x) {
+            for (let i = 1; i <= N; i++) {
+                x[IX(0, i)] = b === 1 ? -x[IX(1, i)] : x[IX(1, i)];
+                x[IX(N + 1, i)] = b === 1 ? -x[IX(N, i)] : x[IX(N, i)];
+                x[IX(i, 0)] = b === 2 ? -x[IX(i, 1)] : x[IX(i, 1)];
+                x[IX(i, N + 1)] = b === 2 ? -x[IX(i, N)] : x[IX(i, N)];
+            }
+            x[IX(0, 0)] = 0.5 * (x[IX(1, 0)] + x[IX(0, 1)]);
+            x[IX(0, N + 1)] = 0.5 * (x[IX(1, N + 1)] + x[IX(0, N)]);
+            x[IX(N + 1, 0)] = 0.5 * (x[IX(N, 0)] + x[IX(N + 1, 1)]);
+            x[IX(N + 1, N + 1)] = 0.5 * (x[IX(N, N + 1)] + x[IX(N + 1, N)]);
+
+            // Handle obstacles
+            if (showObstacles) {
+                for (let i = 1; i <= N; i++) {
+                    for (let j = 1; j <= N; j++) {
+                        if (obstacles[IX(i, j)]) {
+                            if (b === 1) {
+                                x[IX(i, j)] = -x[IX(i - 1, j)];
+                            } else if (b === 2) {
+                                x[IX(i, j)] = -x[IX(i, j - 1)];
+                            } else {
+                                x[IX(i, j)] = 0;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Gauss-Seidel linear solver
+        function linSolve(b, x, x0, a, c) {
+            const cRecip = 1.0 / c;
+            for (let k = 0; k < iter; k++) {
+                for (let j = 1; j <= N; j++) {
+                    for (let i = 1; i <= N; i++) {
+                        x[IX(i, j)] = (x0[IX(i, j)] + a * (
+                            x[IX(i - 1, j)] + x[IX(i + 1, j)] +
+                            x[IX(i, j - 1)] + x[IX(i, j + 1)]
+                        )) * cRecip;
+                    }
+                }
+                setBnd(b, x);
+            }
+        }
+
+        // Diffusion step
+        function diffuse(b, x, x0, diff, dt) {
+            const a = dt * diff * N * N;
+            linSolve(b, x, x0, a, 1 + 4 * a);
+        }
+
+        // Advection step
+        function advect(b, d, d0, u, v, dt) {
+            const dt0 = dt * N;
+            for (let j = 1; j <= N; j++) {
+                for (let i = 1; i <= N; i++) {
+                    let x = i - dt0 * u[IX(i, j)];
+                    let y = j - dt0 * v[IX(i, j)];
+
+                    if (x < 0.5) x = 0.5;
+                    if (x > N + 0.5) x = N + 0.5;
+                    const i0 = Math.floor(x);
+                    const i1 = i0 + 1;
+
+                    if (y < 0.5) y = 0.5;
+                    if (y > N + 0.5) y = N + 0.5;
+                    const j0 = Math.floor(y);
+                    const j1 = j0 + 1;
+
+                    const s1 = x - i0;
+                    const s0 = 1 - s1;
+                    const t1 = y - j0;
+                    const t0 = 1 - t1;
+
+                    d[IX(i, j)] = s0 * (t0 * d0[IX(i0, j0)] + t1 * d0[IX(i0, j1)]) +
+                                  s1 * (t0 * d0[IX(i1, j0)] + t1 * d0[IX(i1, j1)]);
+                }
+            }
+            setBnd(b, d);
+        }
+
+        // Project velocity to be divergence-free
+        function project(u, v, p, div) {
+            const h = 1.0 / N;
+
+            for (let j = 1; j <= N; j++) {
+                for (let i = 1; i <= N; i++) {
+                    div[IX(i, j)] = -0.5 * h * (
+                        u[IX(i + 1, j)] - u[IX(i - 1, j)] +
+                        v[IX(i, j + 1)] - v[IX(i, j - 1)]
+                    );
+                    p[IX(i, j)] = 0;
+                }
+            }
+            setBnd(0, div);
+            setBnd(0, p);
+
+            linSolve(0, p, div, 1, 4);
+
+            for (let j = 1; j <= N; j++) {
+                for (let i = 1; i <= N; i++) {
+                    u[IX(i, j)] -= 0.5 * (p[IX(i + 1, j)] - p[IX(i - 1, j)]) * N;
+                    v[IX(i, j)] -= 0.5 * (p[IX(i, j + 1)] - p[IX(i, j - 1)]) * N;
+                }
+            }
+            setBnd(1, u);
+            setBnd(2, v);
+        }
+
+        // Density step
+        function densStep(x, x0, u, v, diff, dt) {
+            addSource(x, x0, dt);
+            [x0, x] = [x, x0];
+            diffuse(0, x, x0, diff, dt);
+            [x0, x] = [x, x0];
+            advect(0, x, x0, u, v, dt);
+
+            // Also advect hue
+            const hue0 = new Float32Array(hue);
+            advect(0, hue, hue0, u, v, dt);
+        }
+
+        // Velocity step
+        function velStep(u, v, u0, v0, visc, dt) {
+            addSource(u, u0, dt);
+            addSource(v, v0, dt);
+
+            [u0, u] = [u, u0];
+            diffuse(1, u, u0, visc, dt);
+            [v0, v] = [v, v0];
+            diffuse(2, v, v0, visc, dt);
+            project(u, v, u0, v0);
+
+            [u0, u] = [u, u0];
+            [v0, v] = [v, v0];
+            advect(1, u, u0, u0, v0, dt);
+            advect(2, v, v0, u0, v0, dt);
+            project(u, v, u0, v0);
+        }
+
+        // Color conversion
+        function hslToRgb(h, s, l) {
+            let r, g, b;
+            if (s === 0) {
+                r = g = b = l;
+            } else {
+                const hue2rgb = (p, q, t) => {
+                    if (t < 0) t += 1;
+                    if (t > 1) t -= 1;
+                    if (t < 1/6) return p + (q - p) * 6 * t;
+                    if (t < 1/2) return q;
+                    if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+                    return p;
+                };
+                const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                const p = 2 * l - q;
+                r = hue2rgb(p, q, h + 1/3);
+                g = hue2rgb(p, q, h);
+                b = hue2rgb(p, q, h - 1/3);
+            }
+            return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+        }
+
+        // Get color based on mode
+        function getColor(density, h, vx, vy) {
+            const d = Math.min(density, 1);
+
+            switch (colorMode) {
+                case 'rainbow': {
+                    const [r, g, b] = hslToRgb(h % 1, 0.8, 0.5 * d);
+                    return [r, g, b, Math.floor(d * 255)];
+                }
+                case 'thermal': {
+                    const r = Math.floor(Math.min(255, d * 510));
+                    const g = Math.floor(Math.min(255, Math.max(0, (d - 0.3) * 400)));
+                    const b = Math.floor(Math.min(255, Math.max(0, (d - 0.6) * 600)));
+                    return [r, g, b, Math.floor(d * 255)];
+                }
+                case 'ocean': {
+                    const r = Math.floor(d * 50);
+                    const g = Math.floor(100 + d * 155);
+                    const b = Math.floor(150 + d * 105);
+                    return [r, g, b, Math.floor(d * 255)];
+                }
+                case 'velocity': {
+                    const speed = Math.sqrt(vx * vx + vy * vy);
+                    const s = Math.min(speed * 50, 1);
+                    const angle = (Math.atan2(vy, vx) / Math.PI + 1) / 2;
+                    const [r, g, b] = hslToRgb(angle, 0.9, 0.3 + s * 0.4);
+                    return [r, g, b, Math.floor(Math.max(d, s) * 255)];
+                }
+                default:
+                    return [255, 255, 255, Math.floor(d * 255)];
+            }
+        }
+
+        // Render
+        function render() {
+            const cellWidth = canvas.width / N;
+            const cellHeight = canvas.height / N;
+
+            const imageData = ctx.createImageData(canvas.width, canvas.height);
+            const data = imageData.data;
+
+            let maxVel = 0;
+            let totalDens = 0;
+
+            for (let j = 1; j <= N; j++) {
+                for (let i = 1; i <= N; i++) {
+                    const idx = IX(i, j);
+                    const d = dens[idx];
+                    const vx = u[idx];
+                    const vy = v[idx];
+
+                    const vel = Math.sqrt(vx * vx + vy * vy);
+                    if (vel > maxVel) maxVel = vel;
+                    totalDens += d;
+
+                    const [r, g, b, a] = getColor(d, hue[idx], vx, vy);
+
+                    // Draw obstacle
+                    let or = r, og = g, ob = b, oa = a;
+                    if (showObstacles && obstacles[idx]) {
+                        or = 100; og = 100; ob = 100; oa = 255;
+                    }
+
+                    const x0 = Math.floor((i - 1) * cellWidth);
+                    const y0 = Math.floor((j - 1) * cellHeight);
+                    const x1 = Math.floor(i * cellWidth);
+                    const y1 = Math.floor(j * cellHeight);
+
+                    for (let py = y0; py < y1; py++) {
+                        for (let px = x0; px < x1; px++) {
+                            const pixelIdx = (py * canvas.width + px) * 4;
+                            data[pixelIdx] = or;
+                            data[pixelIdx + 1] = og;
+                            data[pixelIdx + 2] = ob;
+                            data[pixelIdx + 3] = oa;
+                        }
+                    }
+                }
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+
+            // Update stats
+            document.getElementById('maxVelocity').textContent = maxVel.toFixed(4);
+            document.getElementById('avgDensity').textContent = (totalDens / (N * N)).toFixed(4);
+        }
+
+        // Add force and dye at mouse position
+        function addForceAndDye() {
+            if (!isMouseDown) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = (mouseX - rect.left) / canvas.width * N + 1;
+            const y = (mouseY - rect.top) / canvas.height * N + 1;
+
+            const dx = mouseX - lastMouseX;
+            const dy = mouseY - lastMouseY;
+
+            const i = Math.floor(x);
+            const j = Math.floor(y);
+
+            if (i < 1 || i > N || j < 1 || j > N) return;
+
+            // Add force
+            for (let di = -brushSize; di <= brushSize; di++) {
+                for (let dj = -brushSize; dj <= brushSize; dj++) {
+                    const ii = i + di;
+                    const jj = j + dj;
+                    if (ii < 1 || ii > N || jj < 1 || jj > N) continue;
+
+                    const dist = Math.sqrt(di * di + dj * dj);
+                    if (dist > brushSize) continue;
+
+                    const falloff = 1 - dist / (brushSize + 1);
+                    const idx = IX(ii, jj);
+
+                    u_prev[idx] += dx * forceStrength * falloff;
+                    v_prev[idx] += dy * forceStrength * falloff;
+
+                    // Add dye (unless right-click)
+                    if (!isRightClick) {
+                        dens_prev[idx] += dyeAmount * falloff;
+                        // Assign hue based on time
+                        const t = performance.now() / 3000;
+                        hue[idx] = (t + i / N * 0.5 + j / N * 0.3) % 1;
+                    }
+                }
+            }
+        }
+
+        // Create obstacles
+        function createObstacles() {
+            obstacles.fill(0);
+
+            // Create a circle in the center
+            const cx = N / 2;
+            const cy = N / 2;
+            const r = N / 8;
+
+            for (let j = 1; j <= N; j++) {
+                for (let i = 1; i <= N; i++) {
+                    const dx = i - cx;
+                    const dy = j - cy;
+                    if (dx * dx + dy * dy < r * r) {
+                        obstacles[IX(i, j)] = 1;
+                    }
+                }
+            }
+
+            // Add some pillars
+            const pillars = [
+                { x: N * 0.25, y: N * 0.3, r: N * 0.05 },
+                { x: N * 0.75, y: N * 0.3, r: N * 0.05 },
+                { x: N * 0.25, y: N * 0.7, r: N * 0.05 },
+                { x: N * 0.75, y: N * 0.7, r: N * 0.05 },
+            ];
+
+            for (const p of pillars) {
+                for (let j = 1; j <= N; j++) {
+                    for (let i = 1; i <= N; i++) {
+                        const dx = i - p.x;
+                        const dy = j - p.y;
+                        if (dx * dx + dy * dy < p.r * p.r) {
+                            obstacles[IX(i, j)] = 1;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Add vortex
+        function addVortex() {
+            const cx = N / 2;
+            const cy = N / 2;
+            const strength = 500;
+
+            for (let j = 1; j <= N; j++) {
+                for (let i = 1; i <= N; i++) {
+                    const dx = i - cx;
+                    const dy = j - cy;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 1) continue;
+
+                    const falloff = Math.exp(-dist * dist / (N * N * 0.1));
+                    const idx = IX(i, j);
+
+                    u_prev[idx] += -dy / dist * strength * falloff;
+                    v_prev[idx] += dx / dist * strength * falloff;
+
+                    dens_prev[idx] += 50 * falloff;
+                    hue[idx] = (dist / N) % 1;
+                }
+            }
+        }
+
+        // Clear fluid
+        function clearFluid() {
+            dens.fill(0);
+            dens_prev.fill(0);
+            hue.fill(0);
+        }
+
+        // Reset all
+        function resetAll() {
+            u.fill(0);
+            v.fill(0);
+            u_prev.fill(0);
+            v_prev.fill(0);
+            dens.fill(0);
+            dens_prev.fill(0);
+            hue.fill(0);
+            obstacles.fill(0);
+            showObstacles = false;
+        }
+
+        // Simulation step
+        function step() {
+            addForceAndDye();
+
+            velStep(u, v, u_prev, v_prev, viscosity, dt);
+            densStep(dens, dens_prev, u, v, diffusion, dt);
+
+            // Clear sources
+            u_prev.fill(0);
+            v_prev.fill(0);
+            dens_prev.fill(0);
+
+            // Decay density slightly
+            for (let i = 0; i < size; i++) {
+                dens[i] *= 0.999;
+            }
+        }
+
+        // Animation loop
+        function animate() {
+            step();
+            render();
+
+            // FPS calculation
+            frameCount++;
+            const now = performance.now();
+            if (now - lastTime >= 1000) {
+                fps = frameCount;
+                frameCount = 0;
+                lastTime = now;
+                document.getElementById('fps').textContent = fps;
+            }
+
+            lastMouseX = mouseX;
+            lastMouseY = mouseY;
+
+            requestAnimationFrame(animate);
+        }
+
+        // Event listeners
+        canvas.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            isMouseDown = true;
+            isRightClick = e.button === 2;
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            lastMouseX = mouseX;
+            lastMouseY = mouseY;
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            isMouseDown = false;
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            isMouseDown = false;
+        });
+
+        canvas.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+        });
+
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            brushSize = Math.max(1, Math.min(10, brushSize - Math.sign(e.deltaY)));
+        });
+
+        // Control listeners
+        document.getElementById('viscosity').addEventListener('input', (e) => {
+            viscosity = parseFloat(e.target.value);
+            document.getElementById('viscosityValue').textContent = viscosity.toFixed(5);
+        });
+
+        document.getElementById('diffusion').addEventListener('input', (e) => {
+            diffusion = parseFloat(e.target.value);
+            document.getElementById('diffusionValue').textContent = diffusion.toFixed(5);
+        });
+
+        document.getElementById('forceStrength').addEventListener('input', (e) => {
+            forceStrength = parseFloat(e.target.value);
+            document.getElementById('forceStrengthValue').textContent = forceStrength;
+        });
+
+        document.getElementById('dyeAmount').addEventListener('input', (e) => {
+            dyeAmount = parseFloat(e.target.value);
+            document.getElementById('dyeAmountValue').textContent = dyeAmount;
+        });
+
+        document.querySelectorAll('.color-mode').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.color-mode').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                colorMode = btn.dataset.mode;
+            });
+        });
+
+        document.getElementById('clearBtn').addEventListener('click', clearFluid);
+        document.getElementById('resetBtn').addEventListener('click', resetAll);
+        document.getElementById('obstacleBtn').addEventListener('click', () => {
+            showObstacles = !showObstacles;
+            if (showObstacles) {
+                createObstacles();
+            } else {
+                obstacles.fill(0);
+            }
+        });
+        document.getElementById('vortexBtn').addEventListener('click', addVortex);
+
+        window.addEventListener('resize', initCanvas);
+
+        // Initialize and start
+        initCanvas();
+        animate();
+    </script>
+</body>
+</html>

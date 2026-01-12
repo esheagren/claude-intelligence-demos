@@ -1,0 +1,1121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voronoi Diagram Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0a;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            height: 100vh;
+        }
+
+        .controls {
+            background: rgba(20, 20, 35, 0.95);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        h1 {
+            font-size: 1.4em;
+            background: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 11px;
+            margin-bottom: 20px;
+        }
+
+        .control-section {
+            margin-bottom: 20px;
+        }
+
+        .control-section h3 {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #06b6d4;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .mode-btns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        .mode-btn {
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 11px;
+        }
+
+        .mode-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .mode-btn.active {
+            background: linear-gradient(135deg, rgba(6, 182, 212, 0.3), rgba(139, 92, 246, 0.3));
+            border-color: #06b6d4;
+        }
+
+        .slider-group {
+            margin-bottom: 12px;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .slider-value {
+            color: #8b5cf6;
+            font-weight: 600;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 5px;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            background: linear-gradient(135deg, #06b6d4, #8b5cf6);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+
+        input[type="checkbox"] {
+            width: 14px;
+            height: 14px;
+            accent-color: #06b6d4;
+        }
+
+        select {
+            width: 100%;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 6px;
+            color: #fff;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #06b6d4;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background: linear-gradient(135deg, #06b6d4, #8b5cf6);
+            border: none;
+            border-radius: 6px;
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 6px;
+            font-size: 12px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: none;
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+        }
+
+        .info-panel {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 12px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            gap: 20px;
+        }
+
+        .info-label {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .info-value {
+            color: #06b6d4;
+            font-weight: 600;
+        }
+
+        .help-text {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.4);
+            line-height: 1.5;
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+        }
+
+        .color-schemes {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+
+        .color-swatch {
+            height: 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .color-swatch:hover {
+            transform: scale(1.1);
+        }
+
+        .color-swatch.active {
+            border-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="controls">
+            <h1>Voronoi Diagrams</h1>
+            <p class="subtitle">Partitioning space by nearest neighbors</p>
+
+            <div class="control-section">
+                <h3>Mode</h3>
+                <div class="mode-btns">
+                    <button class="mode-btn active" data-mode="voronoi">Voronoi</button>
+                    <button class="mode-btn" data-mode="delaunay">Delaunay</button>
+                    <button class="mode-btn" data-mode="both">Both</button>
+                    <button class="mode-btn" data-mode="fortune">Fortune's</button>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>Points</h3>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Point Count</span>
+                        <span class="slider-value" id="pointsValue">50</span>
+                    </div>
+                    <input type="range" id="pointCount" min="3" max="500" value="50">
+                </div>
+                <button onclick="generateRandom()" class="btn-secondary">Generate Random</button>
+                <button onclick="generatePoisson()" class="btn-secondary">Poisson Disk</button>
+                <button onclick="generateGrid()" class="btn-secondary">Jittered Grid</button>
+                <button onclick="clearPoints()" class="btn-secondary">Clear All</button>
+            </div>
+
+            <div class="control-section">
+                <h3>Animation</h3>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="animate">
+                    <label for="animate">Animate Points</label>
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Speed</span>
+                        <span class="slider-value" id="speedValue">1.0</span>
+                    </div>
+                    <input type="range" id="animSpeed" min="0.1" max="3" step="0.1" value="1">
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="relax">
+                    <label for="relax">Lloyd Relaxation</label>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>Display</h3>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="showPoints" checked>
+                    <label for="showPoints">Show Points</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="showEdges" checked>
+                    <label for="showEdges">Show Edges</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="fillCells" checked>
+                    <label for="fillCells">Fill Cells</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="showCircumcircles">
+                    <label for="showCircumcircles">Circumcircles</label>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>Color Scheme</h3>
+                <div class="color-schemes" id="colorSchemes"></div>
+                <select id="colorMode">
+                    <option value="index">By Index</option>
+                    <option value="area">By Area</option>
+                    <option value="neighbors">By Neighbors</option>
+                    <option value="distance">By Distance</option>
+                    <option value="random">Random</option>
+                </select>
+            </div>
+
+            <div class="control-section">
+                <h3>Distance Metric</h3>
+                <select id="distanceMetric">
+                    <option value="euclidean">Euclidean</option>
+                    <option value="manhattan">Manhattan</option>
+                    <option value="chebyshev">Chebyshev</option>
+                    <option value="minkowski">Minkowski (p=3)</option>
+                </select>
+            </div>
+
+            <div class="help-text">
+                Click to add points. Drag points to move them.
+                Voronoi diagrams partition space into regions closest to each seed point.
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="canvas"></canvas>
+            <div class="info-panel">
+                <div class="info-row">
+                    <span class="info-label">Points:</span>
+                    <span class="info-value" id="numPoints">0</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Cells:</span>
+                    <span class="info-value" id="numCells">0</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Triangles:</span>
+                    <span class="info-value" id="numTriangles">0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // State
+        let points = [];
+        let velocities = [];
+        let voronoi = null;
+        let delaunay = null;
+        let mode = 'voronoi';
+        let colorScheme = 0;
+        let isDragging = false;
+        let dragIndex = -1;
+
+        // Color palettes
+        const palettes = [
+            ['#06b6d4', '#8b5cf6', '#ec4899', '#f97316', '#eab308', '#22c55e'],
+            ['#1e3a5f', '#3d5a80', '#98c1d9', '#e0fbfc', '#ee6c4d', '#293241'],
+            ['#264653', '#2a9d8f', '#e9c46a', '#f4a261', '#e76f51', '#1d3557'],
+            ['#f72585', '#7209b7', '#3a0ca3', '#4361ee', '#4cc9f0', '#4895ef'],
+            ['#0d1b2a', '#1b263b', '#415a77', '#778da9', '#e0e1dd', '#99d98c'],
+            ['#ff6b6b', '#feca57', '#48dbfb', '#ff9ff3', '#54a0ff', '#5f27cd'],
+            ['#2d3436', '#636e72', '#b2bec3', '#dfe6e9', '#00b894', '#00cec9'],
+            ['#fdcb6e', '#e17055', '#d63031', '#e84393', '#6c5ce7', '#0984e3']
+        ];
+
+        // Initialize color scheme swatches
+        function initColorSwatches() {
+            const container = document.getElementById('colorSchemes');
+            palettes.forEach((palette, i) => {
+                const swatch = document.createElement('div');
+                swatch.className = 'color-swatch' + (i === 0 ? ' active' : '');
+                swatch.style.background = `linear-gradient(135deg, ${palette[0]}, ${palette[2]})`;
+                swatch.onclick = () => {
+                    document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+                    swatch.classList.add('active');
+                    colorScheme = i;
+                    draw();
+                };
+                container.appendChild(swatch);
+            });
+        }
+
+        initColorSwatches();
+
+        // Resize canvas
+        function resizeCanvas() {
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+            computeVoronoi();
+            draw();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Distance functions
+        function euclidean(x1, y1, x2, y2) {
+            return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+        }
+
+        function manhattan(x1, y1, x2, y2) {
+            return Math.abs(x2 - x1) + Math.abs(y2 - y1);
+        }
+
+        function chebyshev(x1, y1, x2, y2) {
+            return Math.max(Math.abs(x2 - x1), Math.abs(y2 - y1));
+        }
+
+        function minkowski(x1, y1, x2, y2, p = 3) {
+            return Math.pow(Math.pow(Math.abs(x2 - x1), p) + Math.pow(Math.abs(y2 - y1), p), 1 / p);
+        }
+
+        function getDistance(x1, y1, x2, y2) {
+            const metric = document.getElementById('distanceMetric').value;
+            switch (metric) {
+                case 'manhattan': return manhattan(x1, y1, x2, y2);
+                case 'chebyshev': return chebyshev(x1, y1, x2, y2);
+                case 'minkowski': return minkowski(x1, y1, x2, y2);
+                default: return euclidean(x1, y1, x2, y2);
+            }
+        }
+
+        // Delaunay triangulation (Bowyer-Watson algorithm)
+        function computeDelaunay() {
+            if (points.length < 3) {
+                delaunay = { triangles: [], edges: [] };
+                return;
+            }
+
+            const width = canvas.offsetWidth;
+            const height = canvas.offsetHeight;
+
+            // Super triangle
+            const margin = Math.max(width, height) * 10;
+            const superTriangle = [
+                { x: -margin, y: -margin, isSuperVertex: true },
+                { x: width / 2, y: height + margin * 2, isSuperVertex: true },
+                { x: width + margin, y: -margin, isSuperVertex: true }
+            ];
+
+            let triangles = [superTriangle];
+
+            // Add each point
+            for (const point of points) {
+                const badTriangles = [];
+
+                // Find triangles whose circumcircle contains the point
+                for (const tri of triangles) {
+                    const cc = circumcircle(tri[0], tri[1], tri[2]);
+                    if (cc && euclidean(point.x, point.y, cc.x, cc.y) < cc.r) {
+                        badTriangles.push(tri);
+                    }
+                }
+
+                // Find boundary of polygonal hole
+                const polygon = [];
+                for (const tri of badTriangles) {
+                    for (let i = 0; i < 3; i++) {
+                        const edge = [tri[i], tri[(i + 1) % 3]];
+                        let isShared = false;
+
+                        for (const other of badTriangles) {
+                            if (other === tri) continue;
+                            for (let j = 0; j < 3; j++) {
+                                const otherEdge = [other[j], other[(j + 1) % 3]];
+                                if ((edge[0] === otherEdge[0] && edge[1] === otherEdge[1]) ||
+                                    (edge[0] === otherEdge[1] && edge[1] === otherEdge[0])) {
+                                    isShared = true;
+                                    break;
+                                }
+                            }
+                            if (isShared) break;
+                        }
+
+                        if (!isShared) {
+                            polygon.push(edge);
+                        }
+                    }
+                }
+
+                // Remove bad triangles
+                triangles = triangles.filter(t => !badTriangles.includes(t));
+
+                // Create new triangles
+                for (const edge of polygon) {
+                    triangles.push([edge[0], edge[1], point]);
+                }
+            }
+
+            // Remove triangles with super triangle vertices
+            triangles = triangles.filter(tri => {
+                return !tri[0].isSuperVertex && !tri[1].isSuperVertex && !tri[2].isSuperVertex;
+            });
+
+            // Extract edges
+            const edges = new Set();
+            for (const tri of triangles) {
+                for (let i = 0; i < 3; i++) {
+                    const p1 = tri[i];
+                    const p2 = tri[(i + 1) % 3];
+                    const key = p1.x < p2.x || (p1.x === p2.x && p1.y < p2.y) ?
+                        `${p1.x},${p1.y}-${p2.x},${p2.y}` :
+                        `${p2.x},${p2.y}-${p1.x},${p1.y}`;
+                    edges.add(key);
+                }
+            }
+
+            delaunay = {
+                triangles,
+                edges: Array.from(edges).map(e => {
+                    const [a, b] = e.split('-');
+                    const [x1, y1] = a.split(',').map(Number);
+                    const [x2, y2] = b.split(',').map(Number);
+                    return { x1, y1, x2, y2 };
+                })
+            };
+        }
+
+        function circumcircle(p1, p2, p3) {
+            const ax = p1.x, ay = p1.y;
+            const bx = p2.x, by = p2.y;
+            const cx = p3.x, cy = p3.y;
+
+            const d = 2 * (ax * (by - cy) + bx * (cy - ay) + cx * (ay - by));
+            if (Math.abs(d) < 1e-10) return null;
+
+            const ux = ((ax * ax + ay * ay) * (by - cy) + (bx * bx + by * by) * (cy - ay) + (cx * cx + cy * cy) * (ay - by)) / d;
+            const uy = ((ax * ax + ay * ay) * (cx - bx) + (bx * bx + by * by) * (ax - cx) + (cx * cx + cy * cy) * (bx - ax)) / d;
+
+            return { x: ux, y: uy, r: euclidean(ax, ay, ux, uy) };
+        }
+
+        // Compute Voronoi from Delaunay (dual graph)
+        function computeVoronoi() {
+            computeDelaunay();
+
+            if (!delaunay || delaunay.triangles.length === 0) {
+                voronoi = { cells: [], edges: [] };
+                return;
+            }
+
+            const width = canvas.offsetWidth;
+            const height = canvas.offsetHeight;
+
+            // Compute circumcenters
+            const circumcenters = delaunay.triangles.map(tri => circumcircle(tri[0], tri[1], tri[2]));
+
+            // Build cell vertices for each point
+            const cells = points.map((p, i) => {
+                const cellVertices = [];
+
+                // Find triangles containing this point
+                delaunay.triangles.forEach((tri, j) => {
+                    if (tri.includes(p) || tri.some(v => v.x === p.x && v.y === p.y)) {
+                        const cc = circumcenters[j];
+                        if (cc) cellVertices.push({ x: cc.x, y: cc.y, angle: Math.atan2(cc.y - p.y, cc.x - p.x) });
+                    }
+                });
+
+                // Sort by angle
+                cellVertices.sort((a, b) => a.angle - b.angle);
+
+                return { point: p, vertices: cellVertices };
+            });
+
+            // Compute Voronoi edges
+            const edges = [];
+
+            for (let i = 0; i < delaunay.triangles.length; i++) {
+                const tri = delaunay.triangles[i];
+                const cc1 = circumcenters[i];
+                if (!cc1) continue;
+
+                for (let j = 0; j < 3; j++) {
+                    const edge = [tri[j], tri[(j + 1) % 3]];
+
+                    // Find adjacent triangle
+                    for (let k = i + 1; k < delaunay.triangles.length; k++) {
+                        const other = delaunay.triangles[k];
+                        let sharedCount = 0;
+
+                        for (const v of edge) {
+                            if (other.some(ov => ov.x === v.x && ov.y === v.y)) {
+                                sharedCount++;
+                            }
+                        }
+
+                        if (sharedCount === 2) {
+                            const cc2 = circumcenters[k];
+                            if (cc2) {
+                                edges.push({ x1: cc1.x, y1: cc1.y, x2: cc2.x, y2: cc2.y });
+                            }
+                        }
+                    }
+                }
+            }
+
+            voronoi = { cells, edges, circumcenters };
+        }
+
+        // Draw
+        function draw() {
+            const width = canvas.offsetWidth;
+            const height = canvas.offsetHeight;
+
+            ctx.clearRect(0, 0, width, height);
+
+            const fillCells = document.getElementById('fillCells').checked;
+            const showEdges = document.getElementById('showEdges').checked;
+            const showPoints = document.getElementById('showPoints').checked;
+            const showCircumcircles = document.getElementById('showCircumcircles').checked;
+            const colorMode = document.getElementById('colorMode').value;
+            const palette = palettes[colorScheme];
+
+            // Fill cells using pixel-based approach for non-Euclidean metrics
+            if (fillCells && points.length > 0) {
+                const metric = document.getElementById('distanceMetric').value;
+
+                if (metric !== 'euclidean') {
+                    // Brute force for non-Euclidean
+                    const imageData = ctx.createImageData(width, height);
+                    const data = imageData.data;
+
+                    for (let y = 0; y < height; y++) {
+                        for (let x = 0; x < width; x++) {
+                            let minDist = Infinity;
+                            let closest = 0;
+
+                            for (let i = 0; i < points.length; i++) {
+                                const d = getDistance(x, y, points[i].x, points[i].y);
+                                if (d < minDist) {
+                                    minDist = d;
+                                    closest = i;
+                                }
+                            }
+
+                            const color = getColor(closest, palette, colorMode);
+                            const idx = (y * width + x) * 4;
+                            data[idx] = color.r;
+                            data[idx + 1] = color.g;
+                            data[idx + 2] = color.b;
+                            data[idx + 3] = 200;
+                        }
+                    }
+
+                    ctx.putImageData(imageData, 0, 0);
+                } else if (voronoi && voronoi.cells) {
+                    // Draw Voronoi cells as polygons
+                    voronoi.cells.forEach((cell, i) => {
+                        if (cell.vertices.length < 3) return;
+
+                        ctx.beginPath();
+                        ctx.moveTo(cell.vertices[0].x, cell.vertices[0].y);
+
+                        for (let j = 1; j < cell.vertices.length; j++) {
+                            ctx.lineTo(cell.vertices[j].x, cell.vertices[j].y);
+                        }
+
+                        ctx.closePath();
+
+                        const color = getColorHex(i, palette, colorMode);
+                        ctx.fillStyle = color + 'cc';
+                        ctx.fill();
+                    });
+                }
+            }
+
+            // Draw mode-specific content
+            if (mode === 'delaunay' || mode === 'both') {
+                if (delaunay && showEdges) {
+                    ctx.strokeStyle = mode === 'both' ? 'rgba(139, 92, 246, 0.6)' : '#8b5cf6';
+                    ctx.lineWidth = mode === 'both' ? 1 : 2;
+
+                    delaunay.edges.forEach(e => {
+                        ctx.beginPath();
+                        ctx.moveTo(e.x1, e.y1);
+                        ctx.lineTo(e.x2, e.y2);
+                        ctx.stroke();
+                    });
+                }
+
+                // Draw circumcircles
+                if (showCircumcircles && delaunay) {
+                    ctx.strokeStyle = 'rgba(236, 72, 153, 0.3)';
+                    ctx.lineWidth = 1;
+
+                    delaunay.triangles.forEach(tri => {
+                        const cc = circumcircle(tri[0], tri[1], tri[2]);
+                        if (cc) {
+                            ctx.beginPath();
+                            ctx.arc(cc.x, cc.y, cc.r, 0, Math.PI * 2);
+                            ctx.stroke();
+                        }
+                    });
+                }
+            }
+
+            if (mode === 'voronoi' || mode === 'both') {
+                if (voronoi && showEdges) {
+                    ctx.strokeStyle = mode === 'both' ? 'rgba(6, 182, 212, 0.8)' : '#06b6d4';
+                    ctx.lineWidth = 2;
+
+                    voronoi.edges.forEach(e => {
+                        ctx.beginPath();
+                        ctx.moveTo(e.x1, e.y1);
+                        ctx.lineTo(e.x2, e.y2);
+                        ctx.stroke();
+                    });
+                }
+            }
+
+            if (mode === 'fortune') {
+                // Draw fortune's algorithm sweep line animation
+                drawFortuneSweep();
+            }
+
+            // Draw points
+            if (showPoints) {
+                points.forEach((p, i) => {
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+                    ctx.fillStyle = '#fff';
+                    ctx.fill();
+                    ctx.strokeStyle = palette[i % palette.length];
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                });
+            }
+
+            // Update info
+            document.getElementById('numPoints').textContent = points.length;
+            document.getElementById('numCells').textContent = voronoi ? voronoi.cells.length : 0;
+            document.getElementById('numTriangles').textContent = delaunay ? delaunay.triangles.length : 0;
+        }
+
+        function getColor(index, palette, mode) {
+            let hex = palette[index % palette.length];
+
+            if (mode === 'random') {
+                hex = palette[Math.floor(Math.random() * palette.length)];
+            }
+
+            // Convert hex to RGB
+            const r = parseInt(hex.slice(1, 3), 16);
+            const g = parseInt(hex.slice(3, 5), 16);
+            const b = parseInt(hex.slice(5, 7), 16);
+
+            return { r, g, b };
+        }
+
+        function getColorHex(index, palette, mode) {
+            if (mode === 'random') {
+                return palette[Math.floor(Math.random() * palette.length)];
+            }
+            return palette[index % palette.length];
+        }
+
+        // Fortune's algorithm visualization
+        let fortuneTime = 0;
+
+        function drawFortuneSweep() {
+            const width = canvas.offsetWidth;
+            const height = canvas.offsetHeight;
+
+            const sweepY = (fortuneTime * height) % height;
+
+            // Draw sweep line
+            ctx.strokeStyle = '#ec4899';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(0, sweepY);
+            ctx.lineTo(width, sweepY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Draw parabolas for points above sweep line
+            points.forEach(p => {
+                if (p.y < sweepY) {
+                    drawParabola(p, sweepY);
+                }
+            });
+
+            fortuneTime += 0.002;
+            if (fortuneTime > 1) fortuneTime = 0;
+        }
+
+        function drawParabola(focus, directrix) {
+            const width = canvas.offsetWidth;
+
+            ctx.strokeStyle = 'rgba(6, 182, 212, 0.6)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+
+            for (let x = 0; x < width; x += 2) {
+                // Parabola equation: y = (x - fx)² / (2 * (fy - d)) + (fy + d) / 2
+                const fx = focus.x;
+                const fy = focus.y;
+                const d = directrix;
+
+                if (Math.abs(fy - d) < 1) continue;
+
+                const y = ((x - fx) ** 2) / (2 * (fy - d)) + (fy + d) / 2;
+
+                if (x === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+
+            ctx.stroke();
+        }
+
+        // Point generation
+        function generateRandom() {
+            const count = parseInt(document.getElementById('pointCount').value);
+            const width = canvas.offsetWidth;
+            const height = canvas.offsetHeight;
+
+            points = [];
+            velocities = [];
+
+            for (let i = 0; i < count; i++) {
+                points.push({
+                    x: Math.random() * width * 0.8 + width * 0.1,
+                    y: Math.random() * height * 0.8 + height * 0.1
+                });
+                velocities.push({
+                    vx: (Math.random() - 0.5) * 2,
+                    vy: (Math.random() - 0.5) * 2
+                });
+            }
+
+            computeVoronoi();
+            draw();
+        }
+
+        function generatePoisson() {
+            const count = parseInt(document.getElementById('pointCount').value);
+            const width = canvas.offsetWidth;
+            const height = canvas.offsetHeight;
+
+            const minDist = Math.sqrt((width * height) / count) * 0.8;
+            points = [];
+            velocities = [];
+
+            const grid = {};
+            const cellSize = minDist / Math.SQRT2;
+
+            function gridKey(x, y) {
+                return `${Math.floor(x / cellSize)},${Math.floor(y / cellSize)}`;
+            }
+
+            function isValidPoint(x, y) {
+                const gx = Math.floor(x / cellSize);
+                const gy = Math.floor(y / cellSize);
+
+                for (let dy = -2; dy <= 2; dy++) {
+                    for (let dx = -2; dx <= 2; dx++) {
+                        const key = `${gx + dx},${gy + dy}`;
+                        if (grid[key]) {
+                            const p = grid[key];
+                            if (euclidean(x, y, p.x, p.y) < minDist) {
+                                return false;
+                            }
+                        }
+                    }
+                }
+                return true;
+            }
+
+            // Start with random point
+            const firstPoint = { x: width / 2, y: height / 2 };
+            points.push(firstPoint);
+            velocities.push({ vx: 0, vy: 0 });
+            grid[gridKey(firstPoint.x, firstPoint.y)] = firstPoint;
+
+            const active = [firstPoint];
+
+            while (active.length > 0 && points.length < count) {
+                const idx = Math.floor(Math.random() * active.length);
+                const point = active[idx];
+
+                let found = false;
+                for (let i = 0; i < 30; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const r = minDist + Math.random() * minDist;
+                    const nx = point.x + r * Math.cos(angle);
+                    const ny = point.y + r * Math.sin(angle);
+
+                    if (nx > 0 && nx < width && ny > 0 && ny < height && isValidPoint(nx, ny)) {
+                        const newPoint = { x: nx, y: ny };
+                        points.push(newPoint);
+                        velocities.push({ vx: (Math.random() - 0.5) * 2, vy: (Math.random() - 0.5) * 2 });
+                        grid[gridKey(nx, ny)] = newPoint;
+                        active.push(newPoint);
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found) {
+                    active.splice(idx, 1);
+                }
+            }
+
+            computeVoronoi();
+            draw();
+        }
+
+        function generateGrid() {
+            const count = parseInt(document.getElementById('pointCount').value);
+            const width = canvas.offsetWidth;
+            const height = canvas.offsetHeight;
+
+            const cols = Math.ceil(Math.sqrt(count * width / height));
+            const rows = Math.ceil(count / cols);
+            const cellW = width / cols;
+            const cellH = height / rows;
+
+            points = [];
+            velocities = [];
+
+            for (let y = 0; y < rows && points.length < count; y++) {
+                for (let x = 0; x < cols && points.length < count; x++) {
+                    const jitterX = (Math.random() - 0.5) * cellW * 0.8;
+                    const jitterY = (Math.random() - 0.5) * cellH * 0.8;
+
+                    points.push({
+                        x: (x + 0.5) * cellW + jitterX,
+                        y: (y + 0.5) * cellH + jitterY
+                    });
+                    velocities.push({
+                        vx: (Math.random() - 0.5) * 2,
+                        vy: (Math.random() - 0.5) * 2
+                    });
+                }
+            }
+
+            computeVoronoi();
+            draw();
+        }
+
+        function clearPoints() {
+            points = [];
+            velocities = [];
+            computeVoronoi();
+            draw();
+        }
+
+        // Lloyd relaxation
+        function lloydRelax() {
+            if (!voronoi || !voronoi.cells) return;
+
+            voronoi.cells.forEach((cell, i) => {
+                if (cell.vertices.length < 3) return;
+
+                // Compute centroid
+                let cx = 0, cy = 0;
+                cell.vertices.forEach(v => {
+                    cx += v.x;
+                    cy += v.y;
+                });
+                cx /= cell.vertices.length;
+                cy /= cell.vertices.length;
+
+                // Move point towards centroid
+                const width = canvas.offsetWidth;
+                const height = canvas.offsetHeight;
+
+                points[i].x += (cx - points[i].x) * 0.1;
+                points[i].y += (cy - points[i].y) * 0.1;
+
+                // Clamp to bounds
+                points[i].x = Math.max(10, Math.min(width - 10, points[i].x));
+                points[i].y = Math.max(10, Math.min(height - 10, points[i].y));
+            });
+
+            computeVoronoi();
+        }
+
+        // Animation
+        function animate() {
+            const isAnimating = document.getElementById('animate').checked;
+            const isRelaxing = document.getElementById('relax').checked;
+            const speed = parseFloat(document.getElementById('animSpeed').value);
+
+            if (isAnimating && points.length > 0) {
+                const width = canvas.offsetWidth;
+                const height = canvas.offsetHeight;
+
+                points.forEach((p, i) => {
+                    if (!velocities[i]) velocities[i] = { vx: 0, vy: 0 };
+
+                    p.x += velocities[i].vx * speed;
+                    p.y += velocities[i].vy * speed;
+
+                    if (p.x < 10 || p.x > width - 10) velocities[i].vx *= -1;
+                    if (p.y < 10 || p.y > height - 10) velocities[i].vy *= -1;
+
+                    p.x = Math.max(10, Math.min(width - 10, p.x));
+                    p.y = Math.max(10, Math.min(height - 10, p.y));
+                });
+
+                computeVoronoi();
+            }
+
+            if (isRelaxing) {
+                lloydRelax();
+            }
+
+            draw();
+            requestAnimationFrame(animate);
+        }
+
+        // Mouse interaction
+        canvas.addEventListener('mousedown', e => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            // Check if clicking on existing point
+            for (let i = 0; i < points.length; i++) {
+                if (euclidean(x, y, points[i].x, points[i].y) < 15) {
+                    isDragging = true;
+                    dragIndex = i;
+                    return;
+                }
+            }
+
+            // Add new point
+            points.push({ x, y });
+            velocities.push({ vx: (Math.random() - 0.5) * 2, vy: (Math.random() - 0.5) * 2 });
+            computeVoronoi();
+            draw();
+        });
+
+        canvas.addEventListener('mousemove', e => {
+            if (!isDragging) return;
+
+            const rect = canvas.getBoundingClientRect();
+            points[dragIndex].x = e.clientX - rect.left;
+            points[dragIndex].y = e.clientY - rect.top;
+
+            computeVoronoi();
+            draw();
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            isDragging = false;
+            dragIndex = -1;
+        });
+
+        // Mode buttons
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                mode = btn.dataset.mode;
+                fortuneTime = 0;
+                draw();
+            });
+        });
+
+        // Slider displays
+        document.getElementById('pointCount').addEventListener('input', e => {
+            document.getElementById('pointsValue').textContent = e.target.value;
+        });
+
+        document.getElementById('animSpeed').addEventListener('input', e => {
+            document.getElementById('speedValue').textContent = parseFloat(e.target.value).toFixed(1);
+        });
+
+        // Distance metric change
+        document.getElementById('distanceMetric').addEventListener('change', () => {
+            computeVoronoi();
+            draw();
+        });
+
+        // Start
+        generateRandom();
+        animate();
+    </script>
+</body>
+</html>

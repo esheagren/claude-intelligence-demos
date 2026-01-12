@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Turing Machine</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #0a0a15 0%, #15101a 50%, #0a1515 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #ffd700, #ffaa00, #ff8800);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 30px;
+        }
+
+        .tape-section {
+            background: rgba(20, 20, 30, 0.8);
+            border: 1px solid #333;
+            border-radius: 10px;
+            padding: 30px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .tape-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            height: 120px;
+            margin: 20px 0;
+        }
+
+        .tape {
+            display: flex;
+            transition: transform 0.3s ease;
+        }
+
+        .cell {
+            width: 60px;
+            height: 80px;
+            border: 2px solid #444;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            font-weight: bold;
+            background: rgba(30, 30, 50, 0.8);
+            margin: 0 2px;
+            transition: all 0.3s;
+        }
+
+        .cell.active {
+            border-color: #ffd700;
+            background: rgba(255, 215, 0, 0.2);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+            transform: scale(1.1);
+        }
+
+        .head {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-top: 25px solid #ffd700;
+            transition: left 0.3s;
+        }
+
+        .state-display {
+            text-align: center;
+            font-size: 1.5em;
+            margin: 20px 0;
+        }
+
+        .state-display .state {
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 20px;
+        }
+
+        .panel {
+            background: rgba(20, 20, 30, 0.8);
+            border: 1px solid #333;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .panel h2 {
+            color: #ffd700;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .controls button {
+            padding: 12px 20px;
+            background: linear-gradient(90deg, #ffd700, #ff8800);
+            border: none;
+            border-radius: 5px;
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .controls button:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+        }
+
+        .controls button.secondary {
+            background: linear-gradient(90deg, #444, #666);
+            color: #fff;
+        }
+
+        .controls button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .speed-control label {
+            color: #aaa;
+        }
+
+        .speed-control input {
+            flex: 1;
+        }
+
+        .preset-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .preset-btn {
+            padding: 10px;
+            background: rgba(100, 100, 100, 0.2);
+            border: 1px solid #444;
+            border-radius: 5px;
+            color: #aaa;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: all 0.3s;
+        }
+
+        .preset-btn:hover {
+            background: rgba(255, 215, 0, 0.2);
+            border-color: #ffd700;
+            color: #fff;
+        }
+
+        .preset-btn.active {
+            background: rgba(255, 215, 0, 0.2);
+            border-color: #ffd700;
+            color: #fff;
+        }
+
+        .transition-table {
+            max-height: 300px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+        }
+
+        .transition-table table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85em;
+        }
+
+        .transition-table th {
+            background: rgba(255, 215, 0, 0.2);
+            padding: 8px;
+            text-align: left;
+            color: #ffd700;
+            position: sticky;
+            top: 0;
+        }
+
+        .transition-table td {
+            padding: 8px;
+            border-bottom: 1px solid #333;
+        }
+
+        .transition-table tr.active {
+            background: rgba(255, 215, 0, 0.1);
+        }
+
+        .transition-table tr:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .stat-box {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5em;
+            color: #ffd700;
+        }
+
+        .stat-label {
+            font-size: 0.75em;
+            color: #888;
+        }
+
+        .history-log {
+            max-height: 200px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 0.8em;
+        }
+
+        .history-entry {
+            padding: 5px;
+            border-bottom: 1px solid #222;
+            display: flex;
+            gap: 10px;
+        }
+
+        .history-step {
+            color: #888;
+            width: 40px;
+        }
+
+        .history-action {
+            color: #ffd700;
+        }
+
+        .input-section {
+            margin-bottom: 15px;
+        }
+
+        .input-section label {
+            display: block;
+            color: #aaa;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+
+        .input-section input {
+            width: 100%;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid #444;
+            border-radius: 5px;
+            color: #fff;
+            font-family: inherit;
+        }
+
+        .info-box {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            font-size: 0.85em;
+            line-height: 1.6;
+            color: #aaa;
+        }
+
+        .info-box h3 {
+            color: #ffd700;
+            margin-bottom: 10px;
+        }
+
+        .halted {
+            text-align: center;
+            padding: 20px;
+            background: rgba(0, 255, 0, 0.1);
+            border: 1px solid #00ff00;
+            border-radius: 8px;
+            color: #00ff00;
+            margin-top: 10px;
+        }
+
+        .running {
+            text-align: center;
+            padding: 10px;
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid #ffd700;
+            border-radius: 8px;
+            color: #ffd700;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Interactive Turing Machine</h1>
+        <p class="subtitle">The Foundation of Computation | Universal Computing | Halting Problem</p>
+
+        <div class="tape-section">
+            <div class="state-display">
+                Current State: <span class="state" id="currentState">q0</span>
+                | Symbol: <span class="state" id="currentSymbol">_</span>
+            </div>
+            <div class="tape-container">
+                <div class="head" id="head"></div>
+                <div class="tape" id="tape"></div>
+            </div>
+            <div class="controls" style="justify-content: center;">
+                <button onclick="step()">Step</button>
+                <button onclick="run()" id="runBtn">Run</button>
+                <button onclick="pause()" class="secondary">Pause</button>
+                <button onclick="reset()" class="secondary">Reset</button>
+            </div>
+            <div id="statusDisplay"></div>
+        </div>
+
+        <div class="main-grid">
+            <div class="panel">
+                <h2>Transition Table (δ Function)</h2>
+                <div class="transition-table" id="transitionTable"></div>
+
+                <h2 style="margin-top: 20px;">Execution History</h2>
+                <div class="history-log" id="historyLog"></div>
+            </div>
+
+            <div class="panel">
+                <h2>Machine Presets</h2>
+                <div class="preset-buttons">
+                    <button class="preset-btn active" data-preset="binary-increment">Binary +1</button>
+                    <button class="preset-btn" data-preset="palindrome">Palindrome</button>
+                    <button class="preset-btn" data-preset="binary-add">Binary Add</button>
+                    <button class="preset-btn" data-preset="busy-beaver-3">Busy Beaver 3</button>
+                    <button class="preset-btn" data-preset="copy">Copy String</button>
+                    <button class="preset-btn" data-preset="multiply">Unary ×2</button>
+                </div>
+
+                <h2>Input</h2>
+                <div class="input-section">
+                    <label>Initial Tape:</label>
+                    <input type="text" id="tapeInput" value="1011" placeholder="Enter symbols...">
+                </div>
+
+                <div class="controls">
+                    <button onclick="loadInput()">Load Tape</button>
+                </div>
+
+                <h2>Speed</h2>
+                <div class="speed-control">
+                    <label>Delay:</label>
+                    <input type="range" id="speed" min="50" max="1000" value="300">
+                    <span id="speedValue">300ms</span>
+                </div>
+
+                <h2>Statistics</h2>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-value" id="stepCount">0</div>
+                        <div class="stat-label">Steps</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="headPosition">0</div>
+                        <div class="stat-label">Head Position</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="stateCount">0</div>
+                        <div class="stat-label">States Visited</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="tapeLength">0</div>
+                        <div class="stat-label">Tape Length</div>
+                    </div>
+                </div>
+
+                <h2>About</h2>
+                <div class="info-box">
+                    <h3>Turing Machine</h3>
+                    <p>A theoretical model of computation invented by Alan Turing in 1936. Despite its simplicity, it can compute anything that any computer can compute.</p>
+                    <p style="margin-top: 10px;">Components: infinite tape, read/write head, state register, and transition function (δ).</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Turing Machine definition
+        let machine = {
+            states: [],
+            alphabet: [],
+            transitions: {},
+            initialState: 'q0',
+            acceptStates: ['qH'],
+            blankSymbol: '_'
+        };
+
+        let tape = [];
+        let headPosition = 0;
+        let currentState = 'q0';
+        let stepCount = 0;
+        let isRunning = false;
+        let runInterval = null;
+        let history = [];
+        let visitedStates = new Set();
+
+        const VISIBLE_CELLS = 15;
+
+        // Preset machines
+        const presets = {
+            'binary-increment': {
+                description: 'Increments a binary number by 1',
+                initialTape: '1011',
+                machine: {
+                    states: ['q0', 'qH'],
+                    alphabet: ['0', '1', '_'],
+                    initialState: 'q0',
+                    acceptStates: ['qH'],
+                    transitions: {
+                        'q0,0': { write: '0', move: 'R', next: 'q0' },
+                        'q0,1': { write: '1', move: 'R', next: 'q0' },
+                        'q0,_': { write: '_', move: 'L', next: 'q1' },
+                        'q1,0': { write: '1', move: 'L', next: 'qH' },
+                        'q1,1': { write: '0', move: 'L', next: 'q1' },
+                        'q1,_': { write: '1', move: 'L', next: 'qH' }
+                    }
+                }
+            },
+            'palindrome': {
+                description: 'Checks if input is a palindrome',
+                initialTape: '101',
+                machine: {
+                    states: ['q0', 'q1', 'q2', 'q3', 'q4', 'qY', 'qN'],
+                    alphabet: ['0', '1', 'X', '_'],
+                    initialState: 'q0',
+                    acceptStates: ['qY', 'qN'],
+                    transitions: {
+                        'q0,0': { write: 'X', move: 'R', next: 'q1' },
+                        'q0,1': { write: 'X', move: 'R', next: 'q2' },
+                        'q0,X': { write: 'X', move: 'R', next: 'q0' },
+                        'q0,_': { write: '_', move: 'L', next: 'qY' },
+                        'q1,0': { write: '0', move: 'R', next: 'q1' },
+                        'q1,1': { write: '1', move: 'R', next: 'q1' },
+                        'q1,X': { write: 'X', move: 'L', next: 'q3' },
+                        'q1,_': { write: '_', move: 'L', next: 'q3' },
+                        'q2,0': { write: '0', move: 'R', next: 'q2' },
+                        'q2,1': { write: '1', move: 'R', next: 'q2' },
+                        'q2,X': { write: 'X', move: 'L', next: 'q4' },
+                        'q2,_': { write: '_', move: 'L', next: 'q4' },
+                        'q3,0': { write: 'X', move: 'L', next: 'q5' },
+                        'q3,X': { write: 'X', move: 'L', next: 'qY' },
+                        'q3,1': { write: '1', move: 'L', next: 'qN' },
+                        'q4,1': { write: 'X', move: 'L', next: 'q5' },
+                        'q4,X': { write: 'X', move: 'L', next: 'qY' },
+                        'q4,0': { write: '0', move: 'L', next: 'qN' },
+                        'q5,0': { write: '0', move: 'L', next: 'q5' },
+                        'q5,1': { write: '1', move: 'L', next: 'q5' },
+                        'q5,X': { write: 'X', move: 'R', next: 'q0' }
+                    }
+                }
+            },
+            'binary-add': {
+                description: 'Adds 1 to a binary number',
+                initialTape: '111',
+                machine: {
+                    states: ['q0', 'q1', 'qH'],
+                    alphabet: ['0', '1', '_'],
+                    initialState: 'q0',
+                    acceptStates: ['qH'],
+                    transitions: {
+                        'q0,0': { write: '0', move: 'R', next: 'q0' },
+                        'q0,1': { write: '1', move: 'R', next: 'q0' },
+                        'q0,_': { write: '_', move: 'L', next: 'q1' },
+                        'q1,0': { write: '1', move: 'N', next: 'qH' },
+                        'q1,1': { write: '0', move: 'L', next: 'q1' },
+                        'q1,_': { write: '1', move: 'N', next: 'qH' }
+                    }
+                }
+            },
+            'busy-beaver-3': {
+                description: '3-state Busy Beaver (writes max 1s)',
+                initialTape: '',
+                machine: {
+                    states: ['A', 'B', 'C', 'HALT'],
+                    alphabet: ['0', '1'],
+                    initialState: 'A',
+                    acceptStates: ['HALT'],
+                    blankSymbol: '0',
+                    transitions: {
+                        'A,0': { write: '1', move: 'R', next: 'B' },
+                        'A,1': { write: '1', move: 'L', next: 'C' },
+                        'B,0': { write: '1', move: 'L', next: 'A' },
+                        'B,1': { write: '1', move: 'R', next: 'B' },
+                        'C,0': { write: '1', move: 'L', next: 'B' },
+                        'C,1': { write: '1', move: 'N', next: 'HALT' }
+                    }
+                }
+            },
+            'copy': {
+                description: 'Copies a unary string',
+                initialTape: '111',
+                machine: {
+                    states: ['q0', 'q1', 'q2', 'q3', 'q4', 'qH'],
+                    alphabet: ['1', 'X', '#', '_'],
+                    initialState: 'q0',
+                    acceptStates: ['qH'],
+                    transitions: {
+                        'q0,1': { write: 'X', move: 'R', next: 'q1' },
+                        'q0,#': { write: '#', move: 'R', next: 'q4' },
+                        'q1,1': { write: '1', move: 'R', next: 'q1' },
+                        'q1,#': { write: '#', move: 'R', next: 'q2' },
+                        'q1,_': { write: '#', move: 'R', next: 'q2' },
+                        'q2,1': { write: '1', move: 'R', next: 'q2' },
+                        'q2,_': { write: '1', move: 'L', next: 'q3' },
+                        'q3,1': { write: '1', move: 'L', next: 'q3' },
+                        'q3,#': { write: '#', move: 'L', next: 'q3' },
+                        'q3,X': { write: '1', move: 'R', next: 'q0' },
+                        'q4,1': { write: '1', move: 'R', next: 'q4' },
+                        'q4,_': { write: '_', move: 'L', next: 'qH' }
+                    }
+                }
+            },
+            'multiply': {
+                description: 'Doubles a unary number',
+                initialTape: '111',
+                machine: {
+                    states: ['q0', 'q1', 'q2', 'q3', 'qH'],
+                    alphabet: ['1', 'X', '_'],
+                    initialState: 'q0',
+                    acceptStates: ['qH'],
+                    transitions: {
+                        'q0,1': { write: 'X', move: 'R', next: 'q1' },
+                        'q0,_': { write: '_', move: 'L', next: 'q3' },
+                        'q0,X': { write: 'X', move: 'R', next: 'q0' },
+                        'q1,1': { write: '1', move: 'R', next: 'q1' },
+                        'q1,_': { write: '1', move: 'R', next: 'q2' },
+                        'q2,_': { write: '1', move: 'L', next: 'q3' },
+                        'q3,1': { write: '1', move: 'L', next: 'q3' },
+                        'q3,X': { write: '1', move: 'R', next: 'q0' }
+                    }
+                }
+            }
+        };
+
+        function loadPreset(name) {
+            const preset = presets[name];
+            machine = { ...preset.machine };
+            document.getElementById('tapeInput').value = preset.initialTape;
+            document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+            document.querySelector(`[data-preset="${name}"]`).classList.add('active');
+            loadInput();
+        }
+
+        function loadInput() {
+            const input = document.getElementById('tapeInput').value;
+            initializeTape(input);
+            reset();
+        }
+
+        function initializeTape(input) {
+            tape = [];
+            const blank = machine.blankSymbol || '_';
+
+            // Add padding
+            for (let i = 0; i < 10; i++) tape.push(blank);
+
+            // Add input
+            for (const char of input) {
+                tape.push(char || blank);
+            }
+
+            // Add trailing padding
+            for (let i = 0; i < 20; i++) tape.push(blank);
+
+            headPosition = 10;
+        }
+
+        function renderTape() {
+            const tapeEl = document.getElementById('tape');
+            tapeEl.innerHTML = '';
+
+            const start = Math.max(0, headPosition - Math.floor(VISIBLE_CELLS / 2));
+            const end = Math.min(tape.length, start + VISIBLE_CELLS);
+
+            for (let i = start; i < end; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell' + (i === headPosition ? ' active' : '');
+                cell.textContent = tape[i] || (machine.blankSymbol || '_');
+                tapeEl.appendChild(cell);
+            }
+
+            // Update head position indicator
+            const headEl = document.getElementById('head');
+            const activeCell = tapeEl.querySelector('.active');
+            if (activeCell) {
+                const rect = activeCell.getBoundingClientRect();
+                const containerRect = tapeEl.parentElement.getBoundingClientRect();
+                headEl.style.left = (rect.left - containerRect.left + rect.width / 2) + 'px';
+            }
+
+            document.getElementById('currentState').textContent = currentState;
+            document.getElementById('currentSymbol').textContent = tape[headPosition] || '_';
+        }
+
+        function renderTransitionTable() {
+            const table = document.getElementById('transitionTable');
+            let html = '<table><thead><tr><th>State</th><th>Read</th><th>Write</th><th>Move</th><th>Next</th></tr></thead><tbody>';
+
+            for (const [key, trans] of Object.entries(machine.transitions)) {
+                const [state, symbol] = key.split(',');
+                const isActive = state === currentState && symbol === tape[headPosition];
+                html += `<tr class="${isActive ? 'active' : ''}">
+                    <td>${state}</td>
+                    <td>${symbol}</td>
+                    <td>${trans.write}</td>
+                    <td>${trans.move}</td>
+                    <td>${trans.next}</td>
+                </tr>`;
+            }
+
+            html += '</tbody></table>';
+            table.innerHTML = html;
+        }
+
+        function step() {
+            if (machine.acceptStates.includes(currentState)) {
+                showHalted();
+                return false;
+            }
+
+            const symbol = tape[headPosition] || (machine.blankSymbol || '_');
+            const key = `${currentState},${symbol}`;
+            const transition = machine.transitions[key];
+
+            if (!transition) {
+                showHalted('No transition defined');
+                return false;
+            }
+
+            // Record history
+            history.push({
+                step: stepCount,
+                state: currentState,
+                symbol: symbol,
+                action: `Write ${transition.write}, Move ${transition.move}, → ${transition.next}`
+            });
+
+            // Execute transition
+            tape[headPosition] = transition.write;
+
+            if (transition.move === 'R') {
+                headPosition++;
+                if (headPosition >= tape.length) {
+                    tape.push(machine.blankSymbol || '_');
+                }
+            } else if (transition.move === 'L') {
+                headPosition--;
+                if (headPosition < 0) {
+                    tape.unshift(machine.blankSymbol || '_');
+                    headPosition = 0;
+                }
+            }
+
+            currentState = transition.next;
+            visitedStates.add(currentState);
+            stepCount++;
+
+            updateDisplay();
+
+            if (machine.acceptStates.includes(currentState)) {
+                showHalted();
+                return false;
+            }
+
+            return true;
+        }
+
+        function run() {
+            if (isRunning) return;
+            isRunning = true;
+
+            document.getElementById('statusDisplay').innerHTML =
+                '<div class="running">Running...</div>';
+
+            const speed = parseInt(document.getElementById('speed').value);
+
+            function runStep() {
+                if (!isRunning) return;
+
+                if (step()) {
+                    runInterval = setTimeout(runStep, speed);
+                } else {
+                    isRunning = false;
+                }
+            }
+
+            runStep();
+        }
+
+        function pause() {
+            isRunning = false;
+            if (runInterval) {
+                clearTimeout(runInterval);
+                runInterval = null;
+            }
+            document.getElementById('statusDisplay').innerHTML = '';
+        }
+
+        function reset() {
+            pause();
+            const input = document.getElementById('tapeInput').value;
+            initializeTape(input);
+            currentState = machine.initialState || 'q0';
+            stepCount = 0;
+            history = [];
+            visitedStates = new Set([currentState]);
+            document.getElementById('statusDisplay').innerHTML = '';
+            updateDisplay();
+        }
+
+        function showHalted(message = 'Machine halted') {
+            isRunning = false;
+            document.getElementById('statusDisplay').innerHTML =
+                `<div class="halted">${message} in state ${currentState} after ${stepCount} steps</div>`;
+        }
+
+        function updateDisplay() {
+            renderTape();
+            renderTransitionTable();
+            updateStats();
+            updateHistory();
+        }
+
+        function updateStats() {
+            document.getElementById('stepCount').textContent = stepCount;
+            document.getElementById('headPosition').textContent = headPosition;
+            document.getElementById('stateCount').textContent = visitedStates.size;
+
+            // Count non-blank cells
+            const blank = machine.blankSymbol || '_';
+            const usedCells = tape.filter(c => c !== blank).length;
+            document.getElementById('tapeLength').textContent = usedCells;
+        }
+
+        function updateHistory() {
+            const log = document.getElementById('historyLog');
+            log.innerHTML = '';
+
+            const recent = history.slice(-20).reverse();
+            for (const entry of recent) {
+                const div = document.createElement('div');
+                div.className = 'history-entry';
+                div.innerHTML = `
+                    <span class="history-step">#${entry.step}</span>
+                    <span class="history-action">${entry.state}/${entry.symbol}: ${entry.action}</span>
+                `;
+                log.appendChild(div);
+            }
+        }
+
+        // Event listeners
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => loadPreset(btn.dataset.preset));
+        });
+
+        document.getElementById('speed').addEventListener('input', (e) => {
+            document.getElementById('speedValue').textContent = e.target.value + 'ms';
+        });
+
+        document.getElementById('tapeInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') loadInput();
+        });
+
+        // Initialize
+        loadPreset('binary-increment');
+    </script>
+</body>
+</html>

@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Genetic Algorithm Visualizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+            color: #e0e0e0;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            font-weight: 300;
+            background: linear-gradient(135deg, #58a6ff 0%, #3fb950 50%, #f778ba 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 1.1em;
+        }
+
+        .problem-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .problem-tab {
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.9em;
+        }
+
+        .problem-tab:hover {
+            background: rgba(88, 166, 255, 0.1);
+            border-color: rgba(88, 166, 255, 0.3);
+        }
+
+        .problem-tab.active {
+            background: linear-gradient(135deg, rgba(88, 166, 255, 0.2), rgba(63, 185, 80, 0.2));
+            border-color: rgba(88, 166, 255, 0.5);
+            color: #fff;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 30px;
+        }
+
+        .visualization-panel {
+            background: rgba(22, 27, 34, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 20px;
+        }
+
+        .canvas-container {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+        }
+
+        .fitness-chart {
+            height: 150px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .chart-title {
+            font-size: 0.8em;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 10px;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .panel {
+            background: rgba(22, 27, 34, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 20px;
+        }
+
+        .panel h3 {
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group label {
+            display: block;
+            font-size: 0.8em;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 6px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            -webkit-appearance: none;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #58a6ff, #3fb950);
+            cursor: pointer;
+        }
+
+        select {
+            width: 100%;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 6px;
+            color: #fff;
+            font-size: 0.9em;
+        }
+
+        .value-display {
+            text-align: right;
+            font-size: 0.75em;
+            color: #58a6ff;
+            margin-top: 4px;
+            font-family: monospace;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .stat-item {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.3em;
+            font-weight: 300;
+            color: #3fb950;
+            font-family: monospace;
+        }
+
+        .stat-label {
+            font-size: 0.7em;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 4px;
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        button {
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 0.85em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+
+        button.primary {
+            background: linear-gradient(135deg, rgba(88, 166, 255, 0.3), rgba(63, 185, 80, 0.3));
+            border-color: rgba(88, 166, 255, 0.5);
+        }
+
+        button.primary:hover {
+            background: linear-gradient(135deg, rgba(88, 166, 255, 0.5), rgba(63, 185, 80, 0.5));
+        }
+
+        .genome-display {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-family: monospace;
+            font-size: 0.75em;
+            max-height: 120px;
+            overflow-y: auto;
+            word-break: break-all;
+        }
+
+        .genome-display .label {
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 5px;
+        }
+
+        .genome-display .value {
+            color: #58a6ff;
+        }
+
+        .population-view {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            max-height: 150px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .individual {
+            width: 8px;
+            height: 8px;
+            border-radius: 2px;
+            transition: transform 0.2s;
+        }
+
+        .individual:hover {
+            transform: scale(2);
+            z-index: 10;
+        }
+
+        .info-box {
+            background: rgba(88, 166, 255, 0.1);
+            border: 1px solid rgba(88, 166, 255, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            font-size: 0.85em;
+            line-height: 1.6;
+        }
+
+        .info-box h4 {
+            color: #58a6ff;
+            margin-bottom: 8px;
+        }
+
+        @media (max-width: 900px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Genetic Algorithm Visualizer</h1>
+            <p class="subtitle">Watch evolution solve optimization problems</p>
+        </header>
+
+        <div class="problem-tabs">
+            <div class="problem-tab active" data-problem="tsp">Traveling Salesman</div>
+            <div class="problem-tab" data-problem="string">String Evolution</div>
+            <div class="problem-tab" data-problem="function">Function Optimization</div>
+            <div class="problem-tab" data-problem="knapsack">Knapsack Problem</div>
+        </div>
+
+        <div class="main-layout">
+            <div class="visualization-panel">
+                <div class="canvas-container">
+                    <canvas id="mainCanvas" height="400"></canvas>
+                </div>
+                <div class="fitness-chart">
+                    <div class="chart-title">Fitness Over Generations</div>
+                    <canvas id="chartCanvas" height="100"></canvas>
+                </div>
+            </div>
+
+            <div class="sidebar">
+                <div class="panel">
+                    <h3>Parameters</h3>
+                    <div class="control-group">
+                        <label>Population Size</label>
+                        <input type="range" id="popSize" min="20" max="500" value="100">
+                        <div class="value-display" id="popSizeVal">100</div>
+                    </div>
+                    <div class="control-group">
+                        <label>Mutation Rate</label>
+                        <input type="range" id="mutationRate" min="1" max="50" value="5">
+                        <div class="value-display" id="mutationRateVal">5%</div>
+                    </div>
+                    <div class="control-group">
+                        <label>Crossover Rate</label>
+                        <input type="range" id="crossoverRate" min="50" max="100" value="80">
+                        <div class="value-display" id="crossoverRateVal">80%</div>
+                    </div>
+                    <div class="control-group">
+                        <label>Selection Method</label>
+                        <select id="selectionMethod">
+                            <option value="tournament">Tournament</option>
+                            <option value="roulette">Roulette Wheel</option>
+                            <option value="rank">Rank Selection</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label>Elitism (Top %)</label>
+                        <input type="range" id="elitism" min="0" max="20" value="5">
+                        <div class="value-display" id="elitismVal">5%</div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h3>Statistics</h3>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-value" id="generation">0</div>
+                            <div class="stat-label">Generation</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="bestFitness">0</div>
+                            <div class="stat-label">Best Fitness</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="avgFitness">0</div>
+                            <div class="stat-label">Avg Fitness</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="diversity">100%</div>
+                            <div class="stat-label">Diversity</div>
+                        </div>
+                    </div>
+                    <div class="genome-display">
+                        <div class="label">Best Genome:</div>
+                        <div class="value" id="bestGenome">-</div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h3>Population</h3>
+                    <div class="population-view" id="populationView"></div>
+                </div>
+
+                <div class="buttons">
+                    <button class="primary" id="startBtn">Start</button>
+                    <button id="stepBtn">Step</button>
+                    <button id="resetBtn">Reset</button>
+                    <button id="speedBtn">Speed: 1x</button>
+                </div>
+
+                <div class="info-box" id="infoBox">
+                    <h4>Traveling Salesman Problem</h4>
+                    <p>Find the shortest route visiting all cities exactly once. The genome represents city visit order.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Canvas setup
+        const mainCanvas = document.getElementById('mainCanvas');
+        const mainCtx = mainCanvas.getContext('2d');
+        const chartCanvas = document.getElementById('chartCanvas');
+        const chartCtx = chartCanvas.getContext('2d');
+
+        // State
+        let currentProblem = 'tsp';
+        let population = [];
+        let generation = 0;
+        let isRunning = false;
+        let speed = 1;
+        let fitnessHistory = { best: [], avg: [] };
+        let animationId = null;
+
+        // Problem-specific data
+        let cities = [];
+        let targetString = 'HELLO GENETIC ALGORITHM';
+        let knapsackItems = [];
+        let knapsackCapacity = 50;
+
+        // GA parameters
+        let popSize = 100;
+        let mutationRate = 0.05;
+        let crossoverRate = 0.8;
+        let selectionMethod = 'tournament';
+        let elitismRate = 0.05;
+
+        // Resize canvases
+        function resizeCanvases() {
+            const container = mainCanvas.parentElement;
+            mainCanvas.width = container.clientWidth;
+            mainCanvas.height = 400;
+            chartCanvas.width = chartCanvas.parentElement.clientWidth - 30;
+            chartCanvas.height = 100;
+        }
+
+        // Initialize TSP cities
+        function initTSP() {
+            cities = [];
+            const numCities = 20;
+            const padding = 50;
+            for (let i = 0; i < numCities; i++) {
+                cities.push({
+                    x: padding + Math.random() * (mainCanvas.width - 2 * padding),
+                    y: padding + Math.random() * (mainCanvas.height - 2 * padding)
+                });
+            }
+        }
+
+        // Initialize knapsack items
+        function initKnapsack() {
+            knapsackItems = [];
+            const numItems = 20;
+            for (let i = 0; i < numItems; i++) {
+                knapsackItems.push({
+                    weight: Math.floor(Math.random() * 20) + 1,
+                    value: Math.floor(Math.random() * 100) + 1,
+                    name: String.fromCharCode(65 + i)
+                });
+            }
+            knapsackCapacity = 50;
+        }
+
+        // Create random individual
+        function createIndividual() {
+            switch (currentProblem) {
+                case 'tsp':
+                    // Permutation of city indices
+                    const indices = [...Array(cities.length).keys()];
+                    for (let i = indices.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [indices[i], indices[j]] = [indices[j], indices[i]];
+                    }
+                    return { genome: indices };
+
+                case 'string':
+                    // Random string of same length as target
+                    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ ';
+                    return {
+                        genome: Array(targetString.length).fill(0)
+                            .map(() => chars[Math.floor(Math.random() * chars.length)]).join('')
+                    };
+
+                case 'function':
+                    // Two floating point numbers (x, y)
+                    return {
+                        genome: [Math.random() * 10 - 5, Math.random() * 10 - 5]
+                    };
+
+                case 'knapsack':
+                    // Binary array
+                    return {
+                        genome: Array(knapsackItems.length).fill(0)
+                            .map(() => Math.random() < 0.5 ? 1 : 0)
+                    };
+            }
+        }
+
+        // Calculate fitness
+        function calculateFitness(individual) {
+            switch (currentProblem) {
+                case 'tsp':
+                    // Negative distance (we want to minimize)
+                    let distance = 0;
+                    const route = individual.genome;
+                    for (let i = 0; i < route.length; i++) {
+                        const from = cities[route[i]];
+                        const to = cities[route[(i + 1) % route.length]];
+                        distance += Math.sqrt(
+                            Math.pow(to.x - from.x, 2) + Math.pow(to.y - from.y, 2)
+                        );
+                    }
+                    return 10000 / distance;
+
+                case 'string':
+                    // Number of matching characters
+                    let matches = 0;
+                    for (let i = 0; i < targetString.length; i++) {
+                        if (individual.genome[i] === targetString[i]) matches++;
+                    }
+                    return matches;
+
+                case 'function':
+                    // Rastrigin function (minimize, so negate)
+                    const [x, y] = individual.genome;
+                    const A = 10;
+                    const rastrigin = 2 * A +
+                        (x * x - A * Math.cos(2 * Math.PI * x)) +
+                        (y * y - A * Math.cos(2 * Math.PI * y));
+                    return 100 / (1 + rastrigin);
+
+                case 'knapsack':
+                    let totalWeight = 0, totalValue = 0;
+                    individual.genome.forEach((included, i) => {
+                        if (included) {
+                            totalWeight += knapsackItems[i].weight;
+                            totalValue += knapsackItems[i].value;
+                        }
+                    });
+                    // Penalty for exceeding capacity
+                    if (totalWeight > knapsackCapacity) {
+                        return totalValue * 0.1;
+                    }
+                    return totalValue;
+            }
+        }
+
+        // Selection methods
+        function select() {
+            switch (selectionMethod) {
+                case 'tournament':
+                    const tournamentSize = 3;
+                    let best = population[Math.floor(Math.random() * population.length)];
+                    for (let i = 1; i < tournamentSize; i++) {
+                        const contestant = population[Math.floor(Math.random() * population.length)];
+                        if (contestant.fitness > best.fitness) best = contestant;
+                    }
+                    return best;
+
+                case 'roulette':
+                    const totalFitness = population.reduce((sum, ind) => sum + Math.max(0.001, ind.fitness), 0);
+                    let random = Math.random() * totalFitness;
+                    for (const ind of population) {
+                        random -= Math.max(0.001, ind.fitness);
+                        if (random <= 0) return ind;
+                    }
+                    return population[population.length - 1];
+
+                case 'rank':
+                    const sorted = [...population].sort((a, b) => a.fitness - b.fitness);
+                    const ranks = sorted.map((_, i) => i + 1);
+                    const totalRank = ranks.reduce((a, b) => a + b, 0);
+                    let r = Math.random() * totalRank;
+                    for (let i = 0; i < sorted.length; i++) {
+                        r -= ranks[i];
+                        if (r <= 0) return sorted[i];
+                    }
+                    return sorted[sorted.length - 1];
+            }
+        }
+
+        // Crossover
+        function crossover(parent1, parent2) {
+            if (Math.random() > crossoverRate) {
+                return [{ genome: [...parent1.genome] }, { genome: [...parent2.genome] }];
+            }
+
+            switch (currentProblem) {
+                case 'tsp':
+                    // Order crossover (OX)
+                    const size = parent1.genome.length;
+                    const start = Math.floor(Math.random() * size);
+                    const end = start + Math.floor(Math.random() * (size - start));
+
+                    const child1Genome = Array(size).fill(-1);
+                    const child2Genome = Array(size).fill(-1);
+
+                    // Copy segment
+                    for (let i = start; i <= end; i++) {
+                        child1Genome[i] = parent1.genome[i];
+                        child2Genome[i] = parent2.genome[i];
+                    }
+
+                    // Fill remaining
+                    let pos1 = (end + 1) % size;
+                    let pos2 = (end + 1) % size;
+                    for (let i = 0; i < size; i++) {
+                        const idx = (end + 1 + i) % size;
+                        if (!child1Genome.includes(parent2.genome[idx])) {
+                            child1Genome[pos1] = parent2.genome[idx];
+                            pos1 = (pos1 + 1) % size;
+                        }
+                        if (!child2Genome.includes(parent1.genome[idx])) {
+                            child2Genome[pos2] = parent1.genome[idx];
+                            pos2 = (pos2 + 1) % size;
+                        }
+                    }
+
+                    return [{ genome: child1Genome }, { genome: child2Genome }];
+
+                case 'string':
+                    // Single point crossover
+                    const point = Math.floor(Math.random() * parent1.genome.length);
+                    return [
+                        { genome: parent1.genome.slice(0, point) + parent2.genome.slice(point) },
+                        { genome: parent2.genome.slice(0, point) + parent1.genome.slice(point) }
+                    ];
+
+                case 'function':
+                    // Blend crossover
+                    const alpha = 0.5;
+                    const child1 = [
+                        alpha * parent1.genome[0] + (1 - alpha) * parent2.genome[0],
+                        alpha * parent1.genome[1] + (1 - alpha) * parent2.genome[1]
+                    ];
+                    const child2 = [
+                        (1 - alpha) * parent1.genome[0] + alpha * parent2.genome[0],
+                        (1 - alpha) * parent1.genome[1] + alpha * parent2.genome[1]
+                    ];
+                    return [{ genome: child1 }, { genome: child2 }];
+
+                case 'knapsack':
+                    // Two-point crossover
+                    const p1 = Math.floor(Math.random() * parent1.genome.length);
+                    const p2 = p1 + Math.floor(Math.random() * (parent1.genome.length - p1));
+                    const c1 = [...parent1.genome];
+                    const c2 = [...parent2.genome];
+                    for (let i = p1; i <= p2; i++) {
+                        [c1[i], c2[i]] = [c2[i], c1[i]];
+                    }
+                    return [{ genome: c1 }, { genome: c2 }];
+            }
+        }
+
+        // Mutation
+        function mutate(individual) {
+            if (Math.random() > mutationRate) return;
+
+            switch (currentProblem) {
+                case 'tsp':
+                    // Swap mutation
+                    const i = Math.floor(Math.random() * individual.genome.length);
+                    const j = Math.floor(Math.random() * individual.genome.length);
+                    [individual.genome[i], individual.genome[j]] =
+                        [individual.genome[j], individual.genome[i]];
+                    break;
+
+                case 'string':
+                    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ ';
+                    const pos = Math.floor(Math.random() * individual.genome.length);
+                    individual.genome = individual.genome.slice(0, pos) +
+                        chars[Math.floor(Math.random() * chars.length)] +
+                        individual.genome.slice(pos + 1);
+                    break;
+
+                case 'function':
+                    const idx = Math.floor(Math.random() * 2);
+                    individual.genome[idx] += (Math.random() - 0.5) * 2;
+                    individual.genome[idx] = Math.max(-5, Math.min(5, individual.genome[idx]));
+                    break;
+
+                case 'knapsack':
+                    const bit = Math.floor(Math.random() * individual.genome.length);
+                    individual.genome[bit] = 1 - individual.genome[bit];
+                    break;
+            }
+        }
+
+        // Initialize population
+        function initPopulation() {
+            population = [];
+            for (let i = 0; i < popSize; i++) {
+                const individual = createIndividual();
+                individual.fitness = calculateFitness(individual);
+                population.push(individual);
+            }
+            population.sort((a, b) => b.fitness - a.fitness);
+        }
+
+        // Evolve one generation
+        function evolve() {
+            const newPopulation = [];
+
+            // Elitism
+            const eliteCount = Math.floor(popSize * elitismRate);
+            for (let i = 0; i < eliteCount; i++) {
+                newPopulation.push({ genome: JSON.parse(JSON.stringify(population[i].genome)) });
+            }
+
+            // Generate rest of population
+            while (newPopulation.length < popSize) {
+                const parent1 = select();
+                const parent2 = select();
+                const [child1, child2] = crossover(parent1, parent2);
+
+                mutate(child1);
+                mutate(child2);
+
+                newPopulation.push(child1);
+                if (newPopulation.length < popSize) {
+                    newPopulation.push(child2);
+                }
+            }
+
+            // Calculate fitness
+            newPopulation.forEach(ind => {
+                ind.fitness = calculateFitness(ind);
+            });
+
+            population = newPopulation;
+            population.sort((a, b) => b.fitness - a.fitness);
+            generation++;
+
+            // Record history
+            const avgFitness = population.reduce((sum, ind) => sum + ind.fitness, 0) / population.length;
+            fitnessHistory.best.push(population[0].fitness);
+            fitnessHistory.avg.push(avgFitness);
+
+            updateStats();
+            draw();
+        }
+
+        // Draw visualization
+        function draw() {
+            mainCtx.fillStyle = '#0d1117';
+            mainCtx.fillRect(0, 0, mainCanvas.width, mainCanvas.height);
+
+            switch (currentProblem) {
+                case 'tsp':
+                    drawTSP();
+                    break;
+                case 'string':
+                    drawString();
+                    break;
+                case 'function':
+                    drawFunction();
+                    break;
+                case 'knapsack':
+                    drawKnapsack();
+                    break;
+            }
+
+            drawChart();
+            drawPopulationView();
+        }
+
+        // Draw TSP
+        function drawTSP() {
+            const best = population[0];
+
+            // Draw all routes faintly
+            mainCtx.strokeStyle = 'rgba(88, 166, 255, 0.1)';
+            mainCtx.lineWidth = 1;
+            population.slice(1, 20).forEach(ind => {
+                mainCtx.beginPath();
+                ind.genome.forEach((cityIdx, i) => {
+                    const city = cities[cityIdx];
+                    if (i === 0) mainCtx.moveTo(city.x, city.y);
+                    else mainCtx.lineTo(city.x, city.y);
+                });
+                mainCtx.closePath();
+                mainCtx.stroke();
+            });
+
+            // Draw best route
+            mainCtx.strokeStyle = '#3fb950';
+            mainCtx.lineWidth = 3;
+            mainCtx.beginPath();
+            best.genome.forEach((cityIdx, i) => {
+                const city = cities[cityIdx];
+                if (i === 0) mainCtx.moveTo(city.x, city.y);
+                else mainCtx.lineTo(city.x, city.y);
+            });
+            mainCtx.closePath();
+            mainCtx.stroke();
+
+            // Draw cities
+            cities.forEach((city, i) => {
+                mainCtx.fillStyle = '#58a6ff';
+                mainCtx.beginPath();
+                mainCtx.arc(city.x, city.y, 8, 0, Math.PI * 2);
+                mainCtx.fill();
+
+                mainCtx.fillStyle = '#fff';
+                mainCtx.font = '10px sans-serif';
+                mainCtx.textAlign = 'center';
+                mainCtx.fillText(i, city.x, city.y + 3);
+            });
+        }
+
+        // Draw string evolution
+        function drawString() {
+            const best = population[0];
+
+            mainCtx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            mainCtx.font = '14px monospace';
+            mainCtx.textAlign = 'center';
+            mainCtx.fillText('Target:', mainCanvas.width / 2, 50);
+
+            mainCtx.fillStyle = '#58a6ff';
+            mainCtx.font = '24px monospace';
+            mainCtx.fillText(targetString, mainCanvas.width / 2, 85);
+
+            mainCtx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            mainCtx.font = '14px monospace';
+            mainCtx.fillText('Best:', mainCanvas.width / 2, 150);
+
+            // Draw best string with color coding
+            const startX = mainCanvas.width / 2 - (best.genome.length * 14) / 2;
+            for (let i = 0; i < best.genome.length; i++) {
+                mainCtx.fillStyle = best.genome[i] === targetString[i] ? '#3fb950' : '#f778ba';
+                mainCtx.font = '24px monospace';
+                mainCtx.textAlign = 'left';
+                mainCtx.fillText(best.genome[i], startX + i * 14, 185);
+            }
+
+            // Show top individuals
+            mainCtx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            mainCtx.font = '12px monospace';
+            mainCtx.textAlign = 'center';
+            mainCtx.fillText('Top 5 Individuals:', mainCanvas.width / 2, 250);
+
+            population.slice(0, 5).forEach((ind, i) => {
+                mainCtx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                mainCtx.fillText(`${i + 1}. ${ind.genome} (${ind.fitness}/${targetString.length})`,
+                    mainCanvas.width / 2, 280 + i * 25);
+            });
+        }
+
+        // Draw function optimization
+        function drawFunction() {
+            const padding = 40;
+            const width = mainCanvas.width - 2 * padding;
+            const height = mainCanvas.height - 2 * padding;
+
+            // Draw heatmap of Rastrigin function
+            const imageData = mainCtx.createImageData(width, height);
+            for (let py = 0; py < height; py++) {
+                for (let px = 0; px < width; px++) {
+                    const x = (px / width) * 10 - 5;
+                    const y = (py / height) * 10 - 5;
+                    const A = 10;
+                    const rastrigin = 2 * A +
+                        (x * x - A * Math.cos(2 * Math.PI * x)) +
+                        (y * y - A * Math.cos(2 * Math.PI * y));
+
+                    const normalized = Math.min(1, rastrigin / 80);
+                    const idx = (py * width + px) * 4;
+                    imageData.data[idx] = normalized * 100;
+                    imageData.data[idx + 1] = (1 - normalized) * 100;
+                    imageData.data[idx + 2] = 150;
+                    imageData.data[idx + 3] = 255;
+                }
+            }
+            mainCtx.putImageData(imageData, padding, padding);
+
+            // Draw population points
+            population.forEach((ind, i) => {
+                const px = padding + ((ind.genome[0] + 5) / 10) * width;
+                const py = padding + ((ind.genome[1] + 5) / 10) * height;
+
+                mainCtx.fillStyle = i === 0 ? '#3fb950' : 'rgba(88, 166, 255, 0.5)';
+                mainCtx.beginPath();
+                mainCtx.arc(px, py, i === 0 ? 8 : 4, 0, Math.PI * 2);
+                mainCtx.fill();
+            });
+
+            // Draw optimal point marker
+            mainCtx.strokeStyle = '#f778ba';
+            mainCtx.lineWidth = 2;
+            const optX = padding + width / 2;
+            const optY = padding + height / 2;
+            mainCtx.beginPath();
+            mainCtx.moveTo(optX - 10, optY);
+            mainCtx.lineTo(optX + 10, optY);
+            mainCtx.moveTo(optX, optY - 10);
+            mainCtx.lineTo(optX, optY + 10);
+            mainCtx.stroke();
+        }
+
+        // Draw knapsack
+        function drawKnapsack() {
+            const best = population[0];
+            const itemWidth = 60;
+            const itemHeight = 40;
+            const cols = Math.floor((mainCanvas.width - 40) / (itemWidth + 10));
+
+            let totalWeight = 0, totalValue = 0;
+
+            knapsackItems.forEach((item, i) => {
+                const col = i % cols;
+                const row = Math.floor(i / cols);
+                const x = 20 + col * (itemWidth + 10);
+                const y = 20 + row * (itemHeight + 30);
+
+                const included = best.genome[i];
+
+                mainCtx.fillStyle = included ? 'rgba(63, 185, 80, 0.3)' : 'rgba(255, 255, 255, 0.1)';
+                mainCtx.strokeStyle = included ? '#3fb950' : 'rgba(255, 255, 255, 0.2)';
+                mainCtx.lineWidth = 2;
+
+                mainCtx.beginPath();
+                mainCtx.roundRect(x, y, itemWidth, itemHeight, 6);
+                mainCtx.fill();
+                mainCtx.stroke();
+
+                mainCtx.fillStyle = '#fff';
+                mainCtx.font = 'bold 14px sans-serif';
+                mainCtx.textAlign = 'center';
+                mainCtx.fillText(item.name, x + itemWidth / 2, y + 16);
+
+                mainCtx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                mainCtx.font = '10px sans-serif';
+                mainCtx.fillText(`W:${item.weight} V:${item.value}`, x + itemWidth / 2, y + 32);
+
+                if (included) {
+                    totalWeight += item.weight;
+                    totalValue += item.value;
+                }
+            });
+
+            // Draw summary
+            const summaryY = mainCanvas.height - 60;
+            mainCtx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            mainCtx.fillRect(0, summaryY, mainCanvas.width, 60);
+
+            mainCtx.fillStyle = '#fff';
+            mainCtx.font = '16px sans-serif';
+            mainCtx.textAlign = 'center';
+            mainCtx.fillText(
+                `Total Weight: ${totalWeight}/${knapsackCapacity} | Total Value: ${totalValue}`,
+                mainCanvas.width / 2, summaryY + 35
+            );
+
+            if (totalWeight > knapsackCapacity) {
+                mainCtx.fillStyle = '#f778ba';
+                mainCtx.fillText('OVERWEIGHT!', mainCanvas.width / 2, summaryY + 55);
+            }
+        }
+
+        // Draw fitness chart
+        function drawChart() {
+            chartCtx.fillStyle = 'rgba(13, 17, 23, 0.8)';
+            chartCtx.fillRect(0, 0, chartCanvas.width, chartCanvas.height);
+
+            if (fitnessHistory.best.length < 2) return;
+
+            const maxFitness = Math.max(...fitnessHistory.best, ...fitnessHistory.avg);
+            const minFitness = Math.min(...fitnessHistory.best, ...fitnessHistory.avg);
+            const range = maxFitness - minFitness || 1;
+
+            // Draw average line
+            chartCtx.strokeStyle = 'rgba(88, 166, 255, 0.5)';
+            chartCtx.lineWidth = 1;
+            chartCtx.beginPath();
+            fitnessHistory.avg.forEach((fitness, i) => {
+                const x = (i / (fitnessHistory.avg.length - 1)) * chartCanvas.width;
+                const y = chartCanvas.height - ((fitness - minFitness) / range) * (chartCanvas.height - 10) - 5;
+                if (i === 0) chartCtx.moveTo(x, y);
+                else chartCtx.lineTo(x, y);
+            });
+            chartCtx.stroke();
+
+            // Draw best line
+            chartCtx.strokeStyle = '#3fb950';
+            chartCtx.lineWidth = 2;
+            chartCtx.beginPath();
+            fitnessHistory.best.forEach((fitness, i) => {
+                const x = (i / (fitnessHistory.best.length - 1)) * chartCanvas.width;
+                const y = chartCanvas.height - ((fitness - minFitness) / range) * (chartCanvas.height - 10) - 5;
+                if (i === 0) chartCtx.moveTo(x, y);
+                else chartCtx.lineTo(x, y);
+            });
+            chartCtx.stroke();
+        }
+
+        // Draw population view
+        function drawPopulationView() {
+            const container = document.getElementById('populationView');
+            const maxFitness = Math.max(...population.map(p => p.fitness));
+            const minFitness = Math.min(...population.map(p => p.fitness));
+            const range = maxFitness - minFitness || 1;
+
+            container.innerHTML = population.map(ind => {
+                const normalized = (ind.fitness - minFitness) / range;
+                const hue = normalized * 120; // Red to green
+                return `<div class="individual" style="background: hsl(${hue}, 70%, 50%);"></div>`;
+            }).join('');
+        }
+
+        // Update statistics display
+        function updateStats() {
+            document.getElementById('generation').textContent = generation;
+            document.getElementById('bestFitness').textContent = population[0].fitness.toFixed(2);
+
+            const avgFitness = population.reduce((sum, ind) => sum + ind.fitness, 0) / population.length;
+            document.getElementById('avgFitness').textContent = avgFitness.toFixed(2);
+
+            // Calculate diversity (unique genomes)
+            const unique = new Set(population.map(ind => JSON.stringify(ind.genome)));
+            const diversity = (unique.size / population.length * 100).toFixed(0);
+            document.getElementById('diversity').textContent = diversity + '%';
+
+            // Display best genome
+            const best = population[0];
+            let genomeStr;
+            switch (currentProblem) {
+                case 'tsp':
+                    genomeStr = best.genome.join(' -> ');
+                    break;
+                case 'string':
+                    genomeStr = best.genome;
+                    break;
+                case 'function':
+                    genomeStr = `(${best.genome[0].toFixed(4)}, ${best.genome[1].toFixed(4)})`;
+                    break;
+                case 'knapsack':
+                    genomeStr = best.genome.map((b, i) => b ? knapsackItems[i].name : '').filter(s => s).join(', ');
+                    break;
+            }
+            document.getElementById('bestGenome').textContent = genomeStr;
+        }
+
+        // Update info box
+        function updateInfoBox() {
+            const info = {
+                tsp: {
+                    title: 'Traveling Salesman Problem',
+                    text: 'Find the shortest route visiting all cities exactly once. Uses order crossover and swap mutation.'
+                },
+                string: {
+                    title: 'String Evolution',
+                    text: 'Evolve random strings to match a target. Each matching character increases fitness.'
+                },
+                function: {
+                    title: 'Function Optimization',
+                    text: 'Find the minimum of the Rastrigin function (at origin). Uses blend crossover and Gaussian mutation.'
+                },
+                knapsack: {
+                    title: 'Knapsack Problem',
+                    text: 'Maximize total value while staying under weight limit. Uses two-point crossover and bit flip mutation.'
+                }
+            };
+
+            const i = info[currentProblem];
+            document.getElementById('infoBox').innerHTML = `<h4>${i.title}</h4><p>${i.text}</p>`;
+        }
+
+        // Reset
+        function reset() {
+            isRunning = false;
+            document.getElementById('startBtn').textContent = 'Start';
+            generation = 0;
+            fitnessHistory = { best: [], avg: [] };
+
+            switch (currentProblem) {
+                case 'tsp':
+                    initTSP();
+                    break;
+                case 'knapsack':
+                    initKnapsack();
+                    break;
+            }
+
+            initPopulation();
+            updateStats();
+            draw();
+        }
+
+        // Animation loop
+        function animate() {
+            if (isRunning) {
+                for (let i = 0; i < speed; i++) {
+                    evolve();
+                }
+            }
+            animationId = requestAnimationFrame(animate);
+        }
+
+        // Event listeners
+        document.querySelectorAll('.problem-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.problem-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentProblem = tab.dataset.problem;
+                updateInfoBox();
+                reset();
+            });
+        });
+
+        document.getElementById('popSize').addEventListener('input', e => {
+            popSize = parseInt(e.target.value);
+            document.getElementById('popSizeVal').textContent = popSize;
+        });
+
+        document.getElementById('mutationRate').addEventListener('input', e => {
+            mutationRate = parseInt(e.target.value) / 100;
+            document.getElementById('mutationRateVal').textContent = e.target.value + '%';
+        });
+
+        document.getElementById('crossoverRate').addEventListener('input', e => {
+            crossoverRate = parseInt(e.target.value) / 100;
+            document.getElementById('crossoverRateVal').textContent = e.target.value + '%';
+        });
+
+        document.getElementById('selectionMethod').addEventListener('change', e => {
+            selectionMethod = e.target.value;
+        });
+
+        document.getElementById('elitism').addEventListener('input', e => {
+            elitismRate = parseInt(e.target.value) / 100;
+            document.getElementById('elitismVal').textContent = e.target.value + '%';
+        });
+
+        document.getElementById('startBtn').addEventListener('click', () => {
+            isRunning = !isRunning;
+            document.getElementById('startBtn').textContent = isRunning ? 'Pause' : 'Start';
+        });
+
+        document.getElementById('stepBtn').addEventListener('click', () => {
+            if (!isRunning) evolve();
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', reset);
+
+        document.getElementById('speedBtn').addEventListener('click', () => {
+            speed = speed === 1 ? 5 : speed === 5 ? 10 : 1;
+            document.getElementById('speedBtn').textContent = `Speed: ${speed}x`;
+        });
+
+        // Initialize
+        window.addEventListener('resize', () => {
+            resizeCanvases();
+            reset();
+        });
+
+        resizeCanvases();
+        initTSP();
+        initKnapsack();
+        initPopulation();
+        updateInfoBox();
+        updateStats();
+        draw();
+        animate();
+    </script>
+</body>
+</html>

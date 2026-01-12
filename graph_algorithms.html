@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graph Algorithm Visualizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #0a0a15 0%, #0a1520 50%, #0a150a 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        #canvas {
+            flex: 1;
+            background: radial-gradient(ellipse at center, #101520 0%, #050a0f 100%);
+            cursor: crosshair;
+        }
+
+        .sidebar {
+            width: 320px;
+            background: rgba(15, 20, 25, 0.95);
+            border-left: 1px solid #333;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        h1 {
+            font-size: 1.4em;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #4ecdc4, #44a08d);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 0.8em;
+            margin-bottom: 20px;
+        }
+
+        .panel {
+            margin-bottom: 20px;
+        }
+
+        .panel h2 {
+            color: #4ecdc4;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #333;
+        }
+
+        .algorithm-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .algo-btn {
+            padding: 10px;
+            background: rgba(100, 100, 100, 0.2);
+            border: 1px solid #444;
+            border-radius: 5px;
+            color: #aaa;
+            cursor: pointer;
+            font-size: 0.75em;
+            transition: all 0.3s;
+        }
+
+        .algo-btn:hover {
+            background: rgba(78, 205, 196, 0.2);
+            border-color: #4ecdc4;
+        }
+
+        .algo-btn.active {
+            background: rgba(78, 205, 196, 0.2);
+            border-color: #4ecdc4;
+            color: #fff;
+        }
+
+        .controls {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .controls button {
+            flex: 1;
+            padding: 10px;
+            background: linear-gradient(90deg, #4ecdc4, #44a08d);
+            border: none;
+            border-radius: 5px;
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: all 0.3s;
+        }
+
+        .controls button:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 15px rgba(78, 205, 196, 0.4);
+        }
+
+        .controls button.secondary {
+            background: linear-gradient(90deg, #444, #555);
+            color: #fff;
+        }
+
+        .mode-toggle {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 8px;
+            background: rgba(100, 100, 100, 0.2);
+            border: 1px solid #444;
+            border-radius: 5px;
+            color: #888;
+            cursor: pointer;
+            font-size: 0.75em;
+            transition: all 0.3s;
+        }
+
+        .mode-btn.active {
+            background: rgba(78, 205, 196, 0.2);
+            border-color: #4ecdc4;
+            color: #fff;
+        }
+
+        .param-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .param-row label {
+            flex: 0 0 70px;
+            color: #888;
+            font-size: 0.8em;
+        }
+
+        .param-row input {
+            flex: 1;
+        }
+
+        .param-row span {
+            width: 40px;
+            text-align: right;
+            font-size: 0.8em;
+            color: #4ecdc4;
+        }
+
+        .preset-btns {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+
+        .preset-btn {
+            padding: 8px 5px;
+            background: rgba(100, 100, 100, 0.2);
+            border: 1px solid #444;
+            border-radius: 5px;
+            color: #888;
+            cursor: pointer;
+            font-size: 0.7em;
+            transition: all 0.3s;
+        }
+
+        .preset-btn:hover {
+            background: rgba(78, 205, 196, 0.2);
+            border-color: #4ecdc4;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .stat-box {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.2em;
+            color: #4ecdc4;
+        }
+
+        .stat-label {
+            font-size: 0.7em;
+            color: #666;
+        }
+
+        .log-container {
+            max-height: 150px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 5px;
+            padding: 10px;
+            font-size: 0.75em;
+        }
+
+        .log-entry {
+            padding: 4px;
+            border-bottom: 1px solid #222;
+            color: #aaa;
+        }
+
+        .log-entry.visit {
+            color: #4ecdc4;
+        }
+
+        .log-entry.path {
+            color: #ffcc00;
+        }
+
+        .info-box {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 5px;
+            padding: 10px;
+            font-size: 0.8em;
+            line-height: 1.5;
+            color: #888;
+        }
+
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.75em;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <canvas id="canvas"></canvas>
+        <div class="sidebar">
+            <h1>Graph Algorithms</h1>
+            <p class="subtitle">Traversal, Pathfinding & Analysis</p>
+
+            <div class="panel">
+                <h2>Algorithm</h2>
+                <div class="algorithm-grid">
+                    <button class="algo-btn active" data-algo="bfs">BFS</button>
+                    <button class="algo-btn" data-algo="dfs">DFS</button>
+                    <button class="algo-btn" data-algo="dijkstra">Dijkstra</button>
+                    <button class="algo-btn" data-algo="astar">A*</button>
+                    <button class="algo-btn" data-algo="prim">Prim MST</button>
+                    <button class="algo-btn" data-algo="kruskal">Kruskal MST</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>Edit Mode</h2>
+                <div class="mode-toggle">
+                    <button class="mode-btn active" data-mode="node">Add Node</button>
+                    <button class="mode-btn" data-mode="edge">Add Edge</button>
+                    <button class="mode-btn" data-mode="delete">Delete</button>
+                    <button class="mode-btn" data-mode="start">Set Start</button>
+                    <button class="mode-btn" data-mode="goal">Set Goal</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>Controls</h2>
+                <div class="controls">
+                    <button onclick="runAlgorithm()">Run</button>
+                    <button onclick="stepAlgorithm()">Step</button>
+                    <button onclick="resetVisualization()" class="secondary">Reset</button>
+                </div>
+                <div class="controls">
+                    <button onclick="clearGraph()" class="secondary">Clear All</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>Presets</h2>
+                <div class="preset-btns">
+                    <button class="preset-btn" onclick="loadPreset('grid')">Grid</button>
+                    <button class="preset-btn" onclick="loadPreset('tree')">Tree</button>
+                    <button class="preset-btn" onclick="loadPreset('random')">Random</button>
+                    <button class="preset-btn" onclick="loadPreset('complete')">Complete</button>
+                    <button class="preset-btn" onclick="loadPreset('maze')">Maze</button>
+                    <button class="preset-btn" onclick="loadPreset('cycle')">Cycle</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>Parameters</h2>
+                <div class="param-row">
+                    <label>Speed:</label>
+                    <input type="range" id="speed" min="50" max="1000" value="200">
+                    <span id="speedValue">200ms</span>
+                </div>
+                <div class="param-row">
+                    <label>Weighted:</label>
+                    <input type="checkbox" id="weighted">
+                </div>
+                <div class="param-row">
+                    <label>Directed:</label>
+                    <input type="checkbox" id="directed">
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>Statistics</h2>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-value" id="nodeCount">0</div>
+                        <div class="stat-label">Nodes</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="edgeCount">0</div>
+                        <div class="stat-label">Edges</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="visitedCount">0</div>
+                        <div class="stat-label">Visited</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="pathLength">-</div>
+                        <div class="stat-label">Path Length</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>Execution Log</h2>
+                <div class="log-container" id="logContainer"></div>
+            </div>
+
+            <div class="panel">
+                <h2>Legend</h2>
+                <div class="legend">
+                    <div class="legend-item"><div class="legend-color" style="background: #4ecdc4;"></div> Start</div>
+                    <div class="legend-item"><div class="legend-color" style="background: #ff6b6b;"></div> Goal</div>
+                    <div class="legend-item"><div class="legend-color" style="background: #ffd93d;"></div> Current</div>
+                    <div class="legend-item"><div class="legend-color" style="background: #6bcb77;"></div> Visited</div>
+                    <div class="legend-item"><div class="legend-color" style="background: #ff9f1c;"></div> Path</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        function resize() {
+            canvas.width = canvas.clientWidth;
+            canvas.height = canvas.clientHeight;
+            render();
+        }
+        resize();
+        window.addEventListener('resize', resize);
+
+        // Graph data structures
+        let nodes = [];
+        let edges = [];
+        let startNode = null;
+        let goalNode = null;
+        let selectedNode = null;
+        let editMode = 'node';
+        let algorithm = 'bfs';
+        let isRunning = false;
+        let animationQueue = [];
+        let visited = new Set();
+        let current = null;
+        let path = [];
+        let mstEdges = [];
+
+        class Node {
+            constructor(x, y) {
+                this.id = nodes.length;
+                this.x = x;
+                this.y = y;
+                this.radius = 20;
+            }
+        }
+
+        class Edge {
+            constructor(from, to, weight = 1) {
+                this.from = from;
+                this.to = to;
+                this.weight = weight;
+            }
+        }
+
+        function getNeighbors(node) {
+            const neighbors = [];
+            const directed = document.getElementById('directed').checked;
+
+            for (const edge of edges) {
+                if (edge.from === node.id) {
+                    neighbors.push({ node: nodes[edge.to], edge });
+                }
+                if (!directed && edge.to === node.id) {
+                    neighbors.push({ node: nodes[edge.from], edge });
+                }
+            }
+
+            return neighbors;
+        }
+
+        function distance(n1, n2) {
+            return Math.sqrt(Math.pow(n1.x - n2.x, 2) + Math.pow(n1.y - n2.y, 2));
+        }
+
+        // Algorithm implementations
+        async function bfs() {
+            if (!startNode) return;
+
+            const queue = [startNode];
+            const parent = new Map();
+            visited.add(startNode.id);
+
+            while (queue.length > 0 && isRunning) {
+                current = queue.shift();
+                logEntry(`Visiting node ${current.id}`, 'visit');
+
+                if (current === goalNode) {
+                    reconstructPath(parent);
+                    return;
+                }
+
+                for (const { node } of getNeighbors(current)) {
+                    if (!visited.has(node.id)) {
+                        visited.add(node.id);
+                        parent.set(node.id, current.id);
+                        queue.push(node);
+                    }
+                }
+
+                render();
+                await delay();
+            }
+        }
+
+        async function dfs() {
+            if (!startNode) return;
+
+            const stack = [startNode];
+            const parent = new Map();
+
+            while (stack.length > 0 && isRunning) {
+                current = stack.pop();
+
+                if (visited.has(current.id)) continue;
+                visited.add(current.id);
+                logEntry(`Visiting node ${current.id}`, 'visit');
+
+                if (current === goalNode) {
+                    reconstructPath(parent);
+                    return;
+                }
+
+                for (const { node } of getNeighbors(current)) {
+                    if (!visited.has(node.id)) {
+                        parent.set(node.id, current.id);
+                        stack.push(node);
+                    }
+                }
+
+                render();
+                await delay();
+            }
+        }
+
+        async function dijkstra() {
+            if (!startNode) return;
+
+            const dist = new Map();
+            const parent = new Map();
+            const pq = [];
+
+            for (const node of nodes) {
+                dist.set(node.id, Infinity);
+            }
+            dist.set(startNode.id, 0);
+            pq.push({ node: startNode, dist: 0 });
+
+            while (pq.length > 0 && isRunning) {
+                pq.sort((a, b) => a.dist - b.dist);
+                const { node: u } = pq.shift();
+
+                if (visited.has(u.id)) continue;
+                visited.add(u.id);
+                current = u;
+                logEntry(`Visiting node ${u.id} (dist: ${dist.get(u.id).toFixed(1)})`, 'visit');
+
+                if (u === goalNode) {
+                    reconstructPath(parent);
+                    return;
+                }
+
+                for (const { node: v, edge } of getNeighbors(u)) {
+                    const weight = document.getElementById('weighted').checked ?
+                        edge.weight : 1;
+                    const alt = dist.get(u.id) + weight;
+
+                    if (alt < dist.get(v.id)) {
+                        dist.set(v.id, alt);
+                        parent.set(v.id, u.id);
+                        pq.push({ node: v, dist: alt });
+                    }
+                }
+
+                render();
+                await delay();
+            }
+        }
+
+        async function astar() {
+            if (!startNode || !goalNode) return;
+
+            const gScore = new Map();
+            const fScore = new Map();
+            const parent = new Map();
+            const openSet = [startNode];
+
+            for (const node of nodes) {
+                gScore.set(node.id, Infinity);
+                fScore.set(node.id, Infinity);
+            }
+            gScore.set(startNode.id, 0);
+            fScore.set(startNode.id, distance(startNode, goalNode));
+
+            while (openSet.length > 0 && isRunning) {
+                openSet.sort((a, b) => fScore.get(a.id) - fScore.get(b.id));
+                current = openSet.shift();
+
+                logEntry(`Visiting node ${current.id} (f: ${fScore.get(current.id).toFixed(1)})`, 'visit');
+                visited.add(current.id);
+
+                if (current === goalNode) {
+                    reconstructPath(parent);
+                    return;
+                }
+
+                for (const { node: neighbor, edge } of getNeighbors(current)) {
+                    const weight = document.getElementById('weighted').checked ?
+                        edge.weight : distance(current, neighbor);
+                    const tentativeG = gScore.get(current.id) + weight;
+
+                    if (tentativeG < gScore.get(neighbor.id)) {
+                        parent.set(neighbor.id, current.id);
+                        gScore.set(neighbor.id, tentativeG);
+                        fScore.set(neighbor.id, tentativeG + distance(neighbor, goalNode));
+
+                        if (!openSet.includes(neighbor)) {
+                            openSet.push(neighbor);
+                        }
+                    }
+                }
+
+                render();
+                await delay();
+            }
+        }
+
+        async function prim() {
+            if (nodes.length === 0) return;
+
+            const inMST = new Set();
+            const edgeQueue = [];
+            mstEdges = [];
+
+            inMST.add(nodes[0].id);
+            current = nodes[0];
+            visited.add(nodes[0].id);
+
+            for (const { node, edge } of getNeighbors(nodes[0])) {
+                edgeQueue.push({ edge, from: nodes[0].id, to: node.id });
+            }
+
+            while (edgeQueue.length > 0 && inMST.size < nodes.length && isRunning) {
+                edgeQueue.sort((a, b) => a.edge.weight - b.edge.weight);
+                const { edge, from, to } = edgeQueue.shift();
+
+                if (inMST.has(to)) continue;
+
+                inMST.add(to);
+                visited.add(to);
+                mstEdges.push(edge);
+                current = nodes[to];
+                logEntry(`Adding edge ${from}-${to} (weight: ${edge.weight})`, 'path');
+
+                for (const { node: neighbor, edge: e } of getNeighbors(nodes[to])) {
+                    if (!inMST.has(neighbor.id)) {
+                        edgeQueue.push({ edge: e, from: to, to: neighbor.id });
+                    }
+                }
+
+                render();
+                await delay();
+            }
+
+            current = null;
+            render();
+        }
+
+        async function kruskal() {
+            if (edges.length === 0) return;
+
+            const parent = new Array(nodes.length).fill(0).map((_, i) => i);
+            const rank = new Array(nodes.length).fill(0);
+            mstEdges = [];
+
+            function find(x) {
+                if (parent[x] !== x) parent[x] = find(parent[x]);
+                return parent[x];
+            }
+
+            function union(x, y) {
+                const px = find(x), py = find(y);
+                if (px === py) return false;
+                if (rank[px] < rank[py]) parent[px] = py;
+                else if (rank[px] > rank[py]) parent[py] = px;
+                else { parent[py] = px; rank[px]++; }
+                return true;
+            }
+
+            const sortedEdges = [...edges].sort((a, b) => a.weight - b.weight);
+
+            for (const edge of sortedEdges) {
+                if (!isRunning) break;
+
+                if (union(edge.from, edge.to)) {
+                    mstEdges.push(edge);
+                    visited.add(edge.from);
+                    visited.add(edge.to);
+                    logEntry(`Adding edge ${edge.from}-${edge.to} (weight: ${edge.weight})`, 'path');
+                    render();
+                    await delay();
+                }
+
+                if (mstEdges.length === nodes.length - 1) break;
+            }
+
+            current = null;
+            render();
+        }
+
+        function reconstructPath(parent) {
+            path = [];
+            let node = goalNode.id;
+
+            while (node !== undefined) {
+                path.unshift(node);
+                node = parent.get(node);
+            }
+
+            logEntry(`Path found: ${path.join(' → ')}`, 'path');
+            document.getElementById('pathLength').textContent = path.length - 1;
+            render();
+        }
+
+        function delay() {
+            const speed = parseInt(document.getElementById('speed').value);
+            return new Promise(resolve => setTimeout(resolve, speed));
+        }
+
+        function logEntry(message, type = '') {
+            const log = document.getElementById('logContainer');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = message;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function runAlgorithm() {
+            resetVisualization();
+            isRunning = true;
+
+            switch (algorithm) {
+                case 'bfs': bfs(); break;
+                case 'dfs': dfs(); break;
+                case 'dijkstra': dijkstra(); break;
+                case 'astar': astar(); break;
+                case 'prim': prim(); break;
+                case 'kruskal': kruskal(); break;
+            }
+        }
+
+        function stepAlgorithm() {
+            // Simplified: just run with longer delay
+            document.getElementById('speed').value = 1000;
+            document.getElementById('speedValue').textContent = '1000ms';
+            runAlgorithm();
+        }
+
+        function resetVisualization() {
+            isRunning = false;
+            visited.clear();
+            current = null;
+            path = [];
+            mstEdges = [];
+            document.getElementById('logContainer').innerHTML = '';
+            document.getElementById('visitedCount').textContent = '0';
+            document.getElementById('pathLength').textContent = '-';
+            render();
+        }
+
+        function clearGraph() {
+            nodes = [];
+            edges = [];
+            startNode = null;
+            goalNode = null;
+            resetVisualization();
+            updateStats();
+        }
+
+        function loadPreset(type) {
+            clearGraph();
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+
+            switch (type) {
+                case 'grid':
+                    const gridSize = 5;
+                    const spacing = 80;
+                    for (let i = 0; i < gridSize; i++) {
+                        for (let j = 0; j < gridSize; j++) {
+                            const node = new Node(
+                                cx - (gridSize-1)*spacing/2 + j*spacing,
+                                cy - (gridSize-1)*spacing/2 + i*spacing
+                            );
+                            nodes.push(node);
+                        }
+                    }
+                    for (let i = 0; i < gridSize; i++) {
+                        for (let j = 0; j < gridSize; j++) {
+                            const idx = i * gridSize + j;
+                            if (j < gridSize - 1) {
+                                edges.push(new Edge(idx, idx + 1, Math.random() * 9 + 1));
+                            }
+                            if (i < gridSize - 1) {
+                                edges.push(new Edge(idx, idx + gridSize, Math.random() * 9 + 1));
+                            }
+                        }
+                    }
+                    startNode = nodes[0];
+                    goalNode = nodes[nodes.length - 1];
+                    break;
+
+                case 'tree':
+                    const levels = 4;
+                    let y = 100;
+                    let nodeIdx = 0;
+                    for (let level = 0; level < levels; level++) {
+                        const count = Math.pow(2, level);
+                        const startX = cx - (count - 1) * 60;
+                        for (let i = 0; i < count; i++) {
+                            nodes.push(new Node(startX + i * 120, y));
+                            if (level > 0) {
+                                edges.push(new Edge(Math.floor((nodeIdx - 1) / 2), nodeIdx, Math.random() * 5 + 1));
+                            }
+                            nodeIdx++;
+                        }
+                        y += 100;
+                    }
+                    startNode = nodes[0];
+                    goalNode = nodes[nodes.length - 1];
+                    break;
+
+                case 'random':
+                    for (let i = 0; i < 15; i++) {
+                        nodes.push(new Node(
+                            100 + Math.random() * (canvas.width - 500),
+                            100 + Math.random() * (canvas.height - 200)
+                        ));
+                    }
+                    for (let i = 0; i < nodes.length; i++) {
+                        const connections = 1 + Math.floor(Math.random() * 3);
+                        for (let c = 0; c < connections; c++) {
+                            const j = Math.floor(Math.random() * nodes.length);
+                            if (i !== j) {
+                                edges.push(new Edge(i, j, Math.random() * 10 + 1));
+                            }
+                        }
+                    }
+                    startNode = nodes[0];
+                    goalNode = nodes[nodes.length - 1];
+                    break;
+
+                case 'complete':
+                    const n = 6;
+                    for (let i = 0; i < n; i++) {
+                        const angle = (i / n) * Math.PI * 2 - Math.PI / 2;
+                        nodes.push(new Node(cx + Math.cos(angle) * 150, cy + Math.sin(angle) * 150));
+                    }
+                    for (let i = 0; i < n; i++) {
+                        for (let j = i + 1; j < n; j++) {
+                            edges.push(new Edge(i, j, Math.random() * 10 + 1));
+                        }
+                    }
+                    startNode = nodes[0];
+                    goalNode = nodes[Math.floor(n/2)];
+                    break;
+
+                case 'maze':
+                    // Simple maze-like structure
+                    const cols = 7, rows = 5;
+                    const w = 70, h = 70;
+                    for (let r = 0; r < rows; r++) {
+                        for (let c = 0; c < cols; c++) {
+                            nodes.push(new Node(cx - (cols-1)*w/2 + c*w, cy - (rows-1)*h/2 + r*h));
+                        }
+                    }
+                    // Create maze pattern
+                    const mazeEdges = [
+                        [0,1],[1,2],[3,4],[4,5],[5,6],
+                        [7,8],[9,10],[10,11],[12,13],
+                        [14,15],[15,16],[17,18],[18,19],[19,20],
+                        [21,22],[23,24],[24,25],[25,26],[26,27],
+                        [28,29],[29,30],[31,32],[32,33],[33,34],
+                        [0,7],[1,8],[2,9],[4,11],[5,12],[6,13],
+                        [7,14],[8,15],[10,17],[11,18],[13,20],
+                        [14,21],[16,23],[17,24],[19,26],[20,27],
+                        [21,28],[22,29],[24,31],[25,32],[27,34]
+                    ];
+                    for (const [a, b] of mazeEdges) {
+                        if (a < nodes.length && b < nodes.length) {
+                            edges.push(new Edge(a, b, 1));
+                        }
+                    }
+                    startNode = nodes[0];
+                    goalNode = nodes[nodes.length - 1];
+                    break;
+
+                case 'cycle':
+                    const size = 8;
+                    for (let i = 0; i < size; i++) {
+                        const angle = (i / size) * Math.PI * 2 - Math.PI / 2;
+                        nodes.push(new Node(cx + Math.cos(angle) * 150, cy + Math.sin(angle) * 150));
+                    }
+                    for (let i = 0; i < size; i++) {
+                        edges.push(new Edge(i, (i + 1) % size, Math.random() * 5 + 1));
+                    }
+                    startNode = nodes[0];
+                    goalNode = nodes[Math.floor(size/2)];
+                    break;
+            }
+
+            updateStats();
+            render();
+        }
+
+        function render() {
+            ctx.fillStyle = '#0a0f14';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw edges
+            for (const edge of edges) {
+                const from = nodes[edge.from];
+                const to = nodes[edge.to];
+                const isMST = mstEdges.includes(edge);
+                const isPath = path.includes(edge.from) && path.includes(edge.to) &&
+                    Math.abs(path.indexOf(edge.from) - path.indexOf(edge.to)) === 1;
+
+                ctx.beginPath();
+                ctx.moveTo(from.x, from.y);
+                ctx.lineTo(to.x, to.y);
+
+                if (isMST) {
+                    ctx.strokeStyle = '#ff9f1c';
+                    ctx.lineWidth = 3;
+                } else if (isPath) {
+                    ctx.strokeStyle = '#ff9f1c';
+                    ctx.lineWidth = 3;
+                } else {
+                    ctx.strokeStyle = '#334';
+                    ctx.lineWidth = 1;
+                }
+                ctx.stroke();
+
+                // Draw weight
+                if (document.getElementById('weighted').checked) {
+                    const mx = (from.x + to.x) / 2;
+                    const my = (from.y + to.y) / 2;
+                    ctx.fillStyle = '#666';
+                    ctx.font = '10px Courier New';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(edge.weight.toFixed(1), mx, my - 5);
+                }
+
+                // Draw arrow for directed
+                if (document.getElementById('directed').checked) {
+                    const angle = Math.atan2(to.y - from.y, to.x - from.x);
+                    const len = 10;
+                    const tx = to.x - Math.cos(angle) * to.radius;
+                    const ty = to.y - Math.sin(angle) * to.radius;
+
+                    ctx.beginPath();
+                    ctx.moveTo(tx, ty);
+                    ctx.lineTo(tx - len * Math.cos(angle - 0.3), ty - len * Math.sin(angle - 0.3));
+                    ctx.lineTo(tx - len * Math.cos(angle + 0.3), ty - len * Math.sin(angle + 0.3));
+                    ctx.closePath();
+                    ctx.fillStyle = ctx.strokeStyle;
+                    ctx.fill();
+                }
+            }
+
+            // Draw nodes
+            for (const node of nodes) {
+                let color = '#445';
+                let glow = false;
+
+                if (node === startNode) { color = '#4ecdc4'; glow = true; }
+                else if (node === goalNode) { color = '#ff6b6b'; glow = true; }
+                else if (node === current) { color = '#ffd93d'; glow = true; }
+                else if (path.includes(node.id)) { color = '#ff9f1c'; }
+                else if (visited.has(node.id)) { color = '#6bcb77'; }
+
+                if (glow) {
+                    const gradient = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, node.radius * 2);
+                    gradient.addColorStop(0, color + '80');
+                    gradient.addColorStop(1, 'transparent');
+                    ctx.fillStyle = gradient;
+                    ctx.beginPath();
+                    ctx.arc(node.x, node.y, node.radius * 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
+                ctx.fillStyle = color;
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 12px Courier New';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(node.id, node.x, node.y);
+            }
+
+            document.getElementById('visitedCount').textContent = visited.size;
+        }
+
+        function updateStats() {
+            document.getElementById('nodeCount').textContent = nodes.length;
+            document.getElementById('edgeCount').textContent = edges.length;
+        }
+
+        function getNodeAt(x, y) {
+            for (const node of nodes) {
+                const dx = x - node.x;
+                const dy = y - node.y;
+                if (dx * dx + dy * dy < node.radius * node.radius) {
+                    return node;
+                }
+            }
+            return null;
+        }
+
+        // Event listeners
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const node = getNodeAt(x, y);
+
+            switch (editMode) {
+                case 'node':
+                    if (!node) {
+                        nodes.push(new Node(x, y));
+                    }
+                    break;
+
+                case 'edge':
+                    if (node) {
+                        if (selectedNode && selectedNode !== node) {
+                            const weight = Math.round(distance(selectedNode, node) / 20);
+                            edges.push(new Edge(selectedNode.id, node.id, weight));
+                            selectedNode = null;
+                        } else {
+                            selectedNode = node;
+                        }
+                    }
+                    break;
+
+                case 'delete':
+                    if (node) {
+                        edges = edges.filter(e => e.from !== node.id && e.to !== node.id);
+                        nodes = nodes.filter(n => n !== node);
+                        // Reindex
+                        nodes.forEach((n, i) => n.id = i);
+                        if (startNode === node) startNode = null;
+                        if (goalNode === node) goalNode = null;
+                    }
+                    break;
+
+                case 'start':
+                    if (node) startNode = node;
+                    break;
+
+                case 'goal':
+                    if (node) goalNode = node;
+                    break;
+            }
+
+            updateStats();
+            render();
+        });
+
+        document.querySelectorAll('.algo-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.algo-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                algorithm = btn.dataset.algo;
+            });
+        });
+
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                editMode = btn.dataset.mode;
+                selectedNode = null;
+            });
+        });
+
+        document.getElementById('speed').addEventListener('input', (e) => {
+            document.getElementById('speedValue').textContent = e.target.value + 'ms';
+        });
+
+        // Initialize
+        loadPreset('grid');
+    </script>
+</body>
+</html>

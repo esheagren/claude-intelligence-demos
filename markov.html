@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markov Chain Text Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #e0e0e0;
+            padding: 30px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #888;
+            font-size: 1.1em;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 25px;
+        }
+
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .panel {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 20px;
+        }
+
+        .panel h2 {
+            color: #f093fb;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 200px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 15px;
+            color: #e0e0e0;
+            font-family: inherit;
+            font-size: 14px;
+            resize: vertical;
+            line-height: 1.6;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #f093fb;
+        }
+
+        .output-text {
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            padding: 20px;
+            min-height: 200px;
+            font-size: 16px;
+            line-height: 1.8;
+            white-space: pre-wrap;
+        }
+
+        .output-text .highlight {
+            background: rgba(240, 147, 251, 0.3);
+            padding: 2px 4px;
+            border-radius: 3px;
+            transition: background 0.3s;
+        }
+
+        .controls-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .control-group {
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        .control-group h3 {
+            color: #f5576c;
+            margin-bottom: 12px;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .control-row {
+            margin-bottom: 12px;
+        }
+
+        .control-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .control-row label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+
+        .control-row label span {
+            color: #f093fb;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #333;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            cursor: pointer;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: #e0e0e0;
+            font-size: 14px;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #f093fb;
+        }
+
+        .btn {
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            font-size: 0.95em;
+            width: 100%;
+        }
+
+        .btn.primary {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            color: white;
+        }
+
+        .btn.secondary {
+            background: rgba(255,255,255,0.1);
+            color: #e0e0e0;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(240, 147, 251, 0.3);
+        }
+
+        .button-row {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .preset-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .preset-btn {
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.1);
+            color: #e0e0e0;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: all 0.2s;
+        }
+
+        .preset-btn:hover {
+            background: rgba(240, 147, 251, 0.3);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .stat-box {
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.3em;
+            color: #f093fb;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            font-size: 0.75em;
+            color: #888;
+            margin-top: 3px;
+        }
+
+        .chain-visual {
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            padding: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .transition {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            margin-bottom: 5px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 6px;
+            font-size: 0.9em;
+        }
+
+        .transition-from {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            padding: 4px 8px;
+            border-radius: 4px;
+            color: white;
+            font-weight: bold;
+            margin-right: 10px;
+            min-width: 80px;
+            text-align: center;
+            font-size: 0.85em;
+        }
+
+        .transition-arrow {
+            color: #888;
+            margin-right: 10px;
+        }
+
+        .transition-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .transition-option {
+            background: rgba(255,255,255,0.1);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+        }
+
+        .transition-option .prob {
+            color: #f5576c;
+            margin-left: 4px;
+        }
+
+        .info-box {
+            background: rgba(240, 147, 251, 0.1);
+            border-left: 3px solid #f093fb;
+            padding: 12px;
+            border-radius: 0 8px 8px 0;
+            font-size: 0.85em;
+            line-height: 1.6;
+        }
+
+        .generation-mode {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.1);
+            color: #e0e0e0;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: all 0.2s;
+        }
+
+        .mode-btn.active {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            color: white;
+        }
+
+        @media (max-width: 1000px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Markov Chain Text</h1>
+            <p class="subtitle">Statistical text generation from transition probabilities</p>
+        </header>
+
+        <div class="main-content">
+            <div class="left-panel">
+                <div class="panel">
+                    <h2>Training Text</h2>
+                    <textarea id="inputText" placeholder="Enter or paste text here to train the Markov chain...">The quick brown fox jumps over the lazy dog. The dog barks at the fox. The fox runs away from the dog. The lazy dog sleeps in the sun. The brown fox hunts in the forest. The forest is quiet and peaceful. The quick fox is very clever. The clever fox outsmarts the lazy dog.</textarea>
+                </div>
+
+                <div class="panel">
+                    <h2>Generated Text</h2>
+                    <div class="output-text" id="outputText">
+                        Click "Generate" to create text based on the training data...
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h2>Transition Graph</h2>
+                    <div class="chain-visual" id="chainVisual">
+                        <em style="color: #666;">Build chain to see transitions...</em>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls-panel">
+                <div class="control-group">
+                    <h3>Statistics</h3>
+                    <div class="stats-grid">
+                        <div class="stat-box">
+                            <div class="stat-value" id="uniqueStates">0</div>
+                            <div class="stat-label">Unique States</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="totalTransitions">0</div>
+                            <div class="stat-label">Transitions</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="avgBranching">0</div>
+                            <div class="stat-label">Avg Branching</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="entropy">0</div>
+                            <div class="stat-label">Entropy</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>Chain Order</h3>
+                    <div class="generation-mode">
+                        <button class="mode-btn" data-mode="word">Word</button>
+                        <button class="mode-btn active" data-mode="ngram">N-gram</button>
+                        <button class="mode-btn" data-mode="char">Char</button>
+                    </div>
+                    <div class="control-row">
+                        <label>N-gram Size <span id="ngramVal">2</span></label>
+                        <input type="range" id="ngramSize" min="1" max="5" value="2">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>Generation Settings</h3>
+                    <div class="control-row">
+                        <label>Output Length <span id="lengthVal">50</span></label>
+                        <input type="range" id="outputLength" min="10" max="200" value="50">
+                    </div>
+                    <div class="control-row">
+                        <label>Temperature <span id="tempVal">1.0</span></label>
+                        <input type="range" id="temperature" min="1" max="30" value="10">
+                    </div>
+                    <div class="control-row">
+                        <label>Starting Text (optional)</label>
+                        <input type="text" id="seedText" placeholder="Start with...">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>Actions</h3>
+                    <div class="button-row">
+                        <button class="btn primary" id="buildChain">Build Chain</button>
+                        <button class="btn primary" id="generateBtn">Generate Text</button>
+                        <button class="btn secondary" id="animateBtn">Animate Generation</button>
+                        <button class="btn secondary" id="clearOutput">Clear Output</button>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>Sample Texts</h3>
+                    <div class="preset-buttons">
+                        <button class="preset-btn" data-preset="shakespeare">Shakespeare</button>
+                        <button class="preset-btn" data-preset="science">Science</button>
+                        <button class="preset-btn" data-preset="poetry">Poetry</button>
+                        <button class="preset-btn" data-preset="philosophy">Philosophy</button>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>About</h3>
+                    <div class="info-box">
+                        <strong>Markov Chains</strong> model sequences where the next state depends only on the current state.<br><br>
+                        <strong>N-grams</strong> use N previous tokens as the state, capturing more context.<br><br>
+                        <strong>Temperature</strong> controls randomness: lower = more predictable, higher = more creative.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let chain = {};
+        let mode = 'ngram'; // word, ngram, char
+        let ngramSize = 2;
+        let outputLength = 50;
+        let temperature = 1.0;
+        let isAnimating = false;
+
+        // Sample texts
+        const presets = {
+            shakespeare: `To be, or not to be, that is the question: Whether 'tis nobler in the mind to suffer the slings and arrows of outrageous fortune, or to take arms against a sea of troubles, and by opposing end them? To die, to sleep, no more; and by a sleep to say we end the heart-ache and the thousand natural shocks that flesh is heir to. 'Tis a consummation devoutly to be wished. To die, to sleep; to sleep, perchance to dream. Ay, there's the rub; for in that sleep of death what dreams may come when we have shuffled off this mortal coil.`,
+
+            science: `The universe is vast and mysterious. Galaxies contain billions of stars, and each star may have planets orbiting it. The laws of physics govern the motion of celestial bodies. Gravity pulls matter together, forming stars and planets. Light travels at a constant speed through the vacuum of space. Black holes bend spacetime itself. Quantum mechanics describes the behavior of particles at the smallest scales. The universe began with the Big Bang, expanding from an infinitely dense point.`,
+
+            poetry: `The wind whispers through the ancient trees. Stars shine bright in the midnight sky. Rivers flow to the endless sea. Mountains rise above the clouds. Flowers bloom in the morning light. Rain falls gently on the earth. The moon casts silver shadows. Birds sing their eternal songs. Time passes like flowing water. Dreams dance in the night.`,
+
+            philosophy: `What is the nature of reality? Does free will exist, or are our choices determined? The mind perceives the world, but can we trust our perceptions? Knowledge requires justification and truth. Consciousness remains the greatest mystery. We seek meaning in an uncertain universe. Existence precedes essence, or does it? The examined life is worth living. Truth, beauty, and goodness intertwine. Wisdom comes from questioning everything.`
+        };
+
+        function tokenize(text) {
+            if (mode === 'char') {
+                return text.split('');
+            } else {
+                // Word or n-gram mode: split by whitespace
+                return text.split(/\s+/).filter(w => w.length > 0);
+            }
+        }
+
+        function getState(tokens, index, n) {
+            if (mode === 'char') {
+                return tokens.slice(index, index + n).join('');
+            } else {
+                return tokens.slice(index, index + n).join(' ');
+            }
+        }
+
+        function buildMarkovChain() {
+            const text = document.getElementById('inputText').value;
+            const tokens = tokenize(text);
+            const n = mode === 'char' ? ngramSize : ngramSize;
+
+            chain = {};
+
+            for (let i = 0; i < tokens.length - n; i++) {
+                const state = getState(tokens, i, n);
+                const next = tokens[i + n];
+
+                if (!chain[state]) {
+                    chain[state] = {};
+                }
+                chain[state][next] = (chain[state][next] || 0) + 1;
+            }
+
+            // Convert counts to probabilities
+            for (const state in chain) {
+                const total = Object.values(chain[state]).reduce((a, b) => a + b, 0);
+                for (const next in chain[state]) {
+                    chain[state][next] /= total;
+                }
+            }
+
+            updateStats();
+            updateChainVisual();
+        }
+
+        function selectNext(state) {
+            if (!chain[state]) return null;
+
+            const options = chain[state];
+            const keys = Object.keys(options);
+
+            if (keys.length === 0) return null;
+
+            // Apply temperature
+            const weights = keys.map(k => Math.pow(options[k], 1 / temperature));
+            const total = weights.reduce((a, b) => a + b, 0);
+
+            let r = Math.random() * total;
+            for (let i = 0; i < keys.length; i++) {
+                r -= weights[i];
+                if (r <= 0) return keys[i];
+            }
+
+            return keys[keys.length - 1];
+        }
+
+        function generateText() {
+            if (Object.keys(chain).length === 0) {
+                buildMarkovChain();
+            }
+
+            const states = Object.keys(chain);
+            if (states.length === 0) {
+                document.getElementById('outputText').textContent = 'No valid chain built. Add more training text.';
+                return '';
+            }
+
+            const n = mode === 'char' ? ngramSize : ngramSize;
+            let seed = document.getElementById('seedText').value.trim();
+
+            // Find starting state
+            let currentState;
+            if (seed) {
+                const seedTokens = tokenize(seed);
+                if (seedTokens.length >= n) {
+                    currentState = getState(seedTokens, seedTokens.length - n, n);
+                    if (!chain[currentState]) {
+                        currentState = states[Math.floor(Math.random() * states.length)];
+                    }
+                } else {
+                    currentState = states[Math.floor(Math.random() * states.length)];
+                }
+            } else {
+                currentState = states[Math.floor(Math.random() * states.length)];
+            }
+
+            let output = seed || currentState;
+            let tokens = tokenize(output);
+
+            for (let i = 0; i < outputLength; i++) {
+                const next = selectNext(currentState);
+                if (!next) break;
+
+                if (mode === 'char') {
+                    output += next;
+                    tokens.push(next);
+                } else {
+                    output += ' ' + next;
+                    tokens.push(next);
+                }
+
+                currentState = getState(tokens, tokens.length - n, n);
+            }
+
+            document.getElementById('outputText').textContent = output;
+            return output;
+        }
+
+        async function animateGeneration() {
+            if (isAnimating) return;
+            isAnimating = true;
+
+            if (Object.keys(chain).length === 0) {
+                buildMarkovChain();
+            }
+
+            const states = Object.keys(chain);
+            if (states.length === 0) {
+                isAnimating = false;
+                return;
+            }
+
+            const n = mode === 'char' ? ngramSize : ngramSize;
+            let seed = document.getElementById('seedText').value.trim();
+
+            let currentState;
+            if (seed) {
+                const seedTokens = tokenize(seed);
+                if (seedTokens.length >= n) {
+                    currentState = getState(seedTokens, seedTokens.length - n, n);
+                    if (!chain[currentState]) {
+                        currentState = states[Math.floor(Math.random() * states.length)];
+                    }
+                } else {
+                    currentState = states[Math.floor(Math.random() * states.length)];
+                }
+            } else {
+                currentState = states[Math.floor(Math.random() * states.length)];
+            }
+
+            let output = seed || currentState;
+            let tokens = tokenize(output);
+            const outputEl = document.getElementById('outputText');
+
+            outputEl.innerHTML = output + '<span class="highlight">|</span>';
+
+            for (let i = 0; i < outputLength && isAnimating; i++) {
+                await new Promise(r => setTimeout(r, 100));
+
+                const next = selectNext(currentState);
+                if (!next) break;
+
+                if (mode === 'char') {
+                    output += next;
+                    tokens.push(next);
+                } else {
+                    output += ' ' + next;
+                    tokens.push(next);
+                }
+
+                outputEl.innerHTML = output + '<span class="highlight">|</span>';
+                currentState = getState(tokens, tokens.length - n, n);
+            }
+
+            outputEl.textContent = output;
+            isAnimating = false;
+        }
+
+        function updateStats() {
+            const numStates = Object.keys(chain).length;
+            let totalTrans = 0;
+            let totalBranching = 0;
+            let totalEntropy = 0;
+
+            for (const state in chain) {
+                const options = chain[state];
+                const numOptions = Object.keys(options).length;
+                totalTrans += numOptions;
+                totalBranching += numOptions;
+
+                // Calculate entropy for this state
+                let entropy = 0;
+                for (const prob of Object.values(options)) {
+                    if (prob > 0) {
+                        entropy -= prob * Math.log2(prob);
+                    }
+                }
+                totalEntropy += entropy;
+            }
+
+            document.getElementById('uniqueStates').textContent = numStates;
+            document.getElementById('totalTransitions').textContent = totalTrans;
+            document.getElementById('avgBranching').textContent = numStates > 0 ? (totalBranching / numStates).toFixed(1) : '0';
+            document.getElementById('entropy').textContent = numStates > 0 ? (totalEntropy / numStates).toFixed(2) : '0';
+        }
+
+        function updateChainVisual() {
+            const visual = document.getElementById('chainVisual');
+
+            if (Object.keys(chain).length === 0) {
+                visual.innerHTML = '<em style="color: #666;">No chain built yet...</em>';
+                return;
+            }
+
+            // Show top states by number of transitions
+            const states = Object.entries(chain)
+                .map(([state, trans]) => ({
+                    state,
+                    transitions: trans,
+                    count: Object.keys(trans).length
+                }))
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 15);
+
+            visual.innerHTML = states.map(({ state, transitions }) => {
+                const topTrans = Object.entries(transitions)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 5);
+
+                const optionsHtml = topTrans.map(([next, prob]) =>
+                    `<span class="transition-option">${escapeHtml(next)}<span class="prob">${(prob * 100).toFixed(0)}%</span></span>`
+                ).join('');
+
+                return `
+                    <div class="transition">
+                        <span class="transition-from">${escapeHtml(state.substring(0, 12))}</span>
+                        <span class="transition-arrow">→</span>
+                        <div class="transition-options">${optionsHtml}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Event listeners
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                mode = btn.dataset.mode;
+                chain = {}; // Reset chain
+            });
+        });
+
+        document.getElementById('ngramSize').addEventListener('input', e => {
+            ngramSize = parseInt(e.target.value);
+            document.getElementById('ngramVal').textContent = ngramSize;
+            chain = {}; // Reset chain
+        });
+
+        document.getElementById('outputLength').addEventListener('input', e => {
+            outputLength = parseInt(e.target.value);
+            document.getElementById('lengthVal').textContent = outputLength;
+        });
+
+        document.getElementById('temperature').addEventListener('input', e => {
+            temperature = parseInt(e.target.value) / 10;
+            document.getElementById('tempVal').textContent = temperature.toFixed(1);
+        });
+
+        document.getElementById('buildChain').addEventListener('click', buildMarkovChain);
+        document.getElementById('generateBtn').addEventListener('click', generateText);
+        document.getElementById('animateBtn').addEventListener('click', animateGeneration);
+
+        document.getElementById('clearOutput').addEventListener('click', () => {
+            document.getElementById('outputText').textContent = 'Click "Generate" to create text...';
+            isAnimating = false;
+        });
+
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.getElementById('inputText').value = presets[btn.dataset.preset];
+                chain = {};
+                buildMarkovChain();
+            });
+        });
+
+        // Initialize
+        buildMarkovChain();
+    </script>
+</body>
+</html>

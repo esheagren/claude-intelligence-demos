@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloth Physics Simulation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #e0e0e0;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .canvas-area {
+            flex: 1;
+            position: relative;
+        }
+
+        #clothCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .header-overlay {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+        }
+
+        h1 {
+            font-size: 2em;
+            background: linear-gradient(135deg, #e94560, #533483);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            color: #888;
+            font-size: 0.95em;
+        }
+
+        .controls-panel {
+            width: 300px;
+            background: rgba(0,0,0,0.8);
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .control-group {
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        .control-group h3 {
+            color: #e94560;
+            margin-bottom: 12px;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .control-row {
+            margin-bottom: 10px;
+        }
+
+        .control-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .control-row label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+            font-size: 0.85em;
+        }
+
+        .control-row label span {
+            color: #e94560;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 5px;
+            border-radius: 3px;
+            background: #333;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #e94560, #533483);
+            cursor: pointer;
+        }
+
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .checkbox-row input {
+            width: 16px;
+            height: 16px;
+            accent-color: #e94560;
+        }
+
+        .button-row {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .btn {
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85em;
+        }
+
+        .btn.primary {
+            background: linear-gradient(135deg, #e94560, #533483);
+            color: white;
+        }
+
+        .btn.secondary {
+            background: rgba(255,255,255,0.1);
+            color: #e0e0e0;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .preset-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+        }
+
+        .preset-btn {
+            padding: 10px 8px;
+            border: none;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.1);
+            color: #e0e0e0;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: all 0.2s;
+        }
+
+        .preset-btn:hover {
+            background: rgba(233, 69, 96, 0.3);
+        }
+
+        .preset-btn.active {
+            background: linear-gradient(135deg, #e94560, #533483);
+            color: white;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .stat-box {
+            background: rgba(0,0,0,0.3);
+            border-radius: 6px;
+            padding: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.1em;
+            color: #e94560;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            font-size: 0.7em;
+            color: #888;
+        }
+
+        .info-box {
+            background: rgba(233, 69, 96, 0.1);
+            border-left: 3px solid #e94560;
+            padding: 10px;
+            border-radius: 0 8px 8px 0;
+            font-size: 0.8em;
+            line-height: 1.5;
+        }
+
+        .mouse-info {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.7);
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 0.85em;
+        }
+
+        .mouse-info span {
+            color: #e94560;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="canvas-area">
+            <canvas id="clothCanvas"></canvas>
+            <div class="header-overlay">
+                <h1>Cloth Physics</h1>
+                <p class="subtitle">Mass-spring fabric simulation</p>
+            </div>
+            <div class="mouse-info">
+                <span>Drag</span>: Move cloth | <span>Shift+Drag</span>: Cut cloth | <span>Right-click</span>: Pin/Unpin
+            </div>
+        </div>
+
+        <div class="controls-panel">
+            <div class="control-group">
+                <h3>Statistics</h3>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-value" id="particleCount">0</div>
+                        <div class="stat-label">Particles</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="constraintCount">0</div>
+                        <div class="stat-label">Springs</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="fpsDisplay">0</div>
+                        <div class="stat-label">FPS</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="iterDisplay">4</div>
+                        <div class="stat-label">Iterations</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Physics</h3>
+                <div class="control-row">
+                    <label>Gravity <span id="gravityVal">0.50</span></label>
+                    <input type="range" id="gravity" min="0" max="200" value="50">
+                </div>
+                <div class="control-row">
+                    <label>Stiffness <span id="stiffnessVal">0.80</span></label>
+                    <input type="range" id="stiffness" min="1" max="100" value="80">
+                </div>
+                <div class="control-row">
+                    <label>Damping <span id="dampingVal">0.99</span></label>
+                    <input type="range" id="damping" min="90" max="100" value="99">
+                </div>
+                <div class="control-row">
+                    <label>Iterations <span id="iterationsVal">4</span></label>
+                    <input type="range" id="iterations" min="1" max="10" value="4">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Wind</h3>
+                <div class="control-row">
+                    <label>Wind X <span id="windXVal">0.00</span></label>
+                    <input type="range" id="windX" min="-100" max="100" value="0">
+                </div>
+                <div class="control-row">
+                    <label>Wind Y <span id="windYVal">0.00</span></label>
+                    <input type="range" id="windY" min="-100" max="100" value="0">
+                </div>
+                <div class="control-row">
+                    <label>Turbulence <span id="turbulenceVal">0.00</span></label>
+                    <input type="range" id="turbulence" min="0" max="100" value="0">
+                </div>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="windEnabled">
+                    <label for="windEnabled">Enable Wind</label>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Collision</h3>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="sphereEnabled">
+                    <label for="sphereEnabled">Enable Sphere</label>
+                </div>
+                <div class="control-row">
+                    <label>Sphere X <span id="sphereXVal">0.50</span></label>
+                    <input type="range" id="sphereX" min="0" max="100" value="50">
+                </div>
+                <div class="control-row">
+                    <label>Sphere Y <span id="sphereYVal">0.60</span></label>
+                    <input type="range" id="sphereY" min="0" max="100" value="60">
+                </div>
+                <div class="control-row">
+                    <label>Sphere Radius <span id="sphereRadiusVal">80</span></label>
+                    <input type="range" id="sphereRadius" min="20" max="150" value="80">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Cloth Setup</h3>
+                <div class="control-row">
+                    <label>Width <span id="clothWidthVal">30</span></label>
+                    <input type="range" id="clothWidth" min="10" max="60" value="30">
+                </div>
+                <div class="control-row">
+                    <label>Height <span id="clothHeightVal">20</span></label>
+                    <input type="range" id="clothHeight" min="10" max="40" value="20">
+                </div>
+                <div class="control-row">
+                    <label>Spacing <span id="spacingVal">15</span></label>
+                    <input type="range" id="spacing" min="5" max="25" value="15">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Display</h3>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="showParticles">
+                    <label for="showParticles">Show Particles</label>
+                </div>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="showSprings" checked>
+                    <label for="showSprings">Show Springs</label>
+                </div>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="showFaces" checked>
+                    <label for="showFaces">Show Faces</label>
+                </div>
+                <div class="checkbox-row">
+                    <input type="checkbox" id="colorByStress" checked>
+                    <label for="colorByStress">Color by Stress</label>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Presets</h3>
+                <div class="preset-buttons">
+                    <button class="preset-btn active" data-preset="hanging">Hanging</button>
+                    <button class="preset-btn" data-preset="curtain">Curtain</button>
+                    <button class="preset-btn" data-preset="flag">Flag</button>
+                    <button class="preset-btn" data-preset="hammock">Hammock</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Actions</h3>
+                <div class="button-row">
+                    <button class="btn primary" id="resetCloth">Reset Cloth</button>
+                    <button class="btn secondary" id="dropCloth">Drop Cloth</button>
+                    <button class="btn secondary" id="tearRandom">Tear Random</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>About</h3>
+                <div class="info-box">
+                    <strong>Verlet Integration</strong> provides stable simulation by storing position history instead of velocity.<br><br>
+                    <strong>Constraint Solving</strong> maintains spring rest lengths through iterative relaxation.<br><br>
+                    Springs connect particles in structural (adjacent), shear (diagonal), and bend (skip one) patterns.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('clothCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Physics settings
+        let gravity = 0.5;
+        let stiffness = 0.8;
+        let damping = 0.99;
+        let iterations = 4;
+
+        // Wind settings
+        let windEnabled = false;
+        let windX = 0;
+        let windY = 0;
+        let turbulence = 0;
+
+        // Sphere collision
+        let sphereEnabled = false;
+        let sphereX = 0.5;
+        let sphereY = 0.6;
+        let sphereRadius = 80;
+
+        // Cloth settings
+        let clothWidth = 30;
+        let clothHeight = 20;
+        let spacing = 15;
+
+        // Display settings
+        let showParticles = false;
+        let showSprings = true;
+        let showFaces = true;
+        let colorByStress = true;
+
+        // State
+        let particles = [];
+        let constraints = [];
+        let currentPreset = 'hanging';
+        let fps = 0;
+        let lastTime = performance.now();
+        let frameCount = 0;
+
+        // Mouse state
+        let mousePos = null;
+        let selectedParticle = null;
+        let cutting = false;
+
+        class Particle {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.prevX = x;
+                this.prevY = y;
+                this.pinned = false;
+                this.mass = 1;
+            }
+
+            update() {
+                if (this.pinned) return;
+
+                const vx = (this.x - this.prevX) * damping;
+                const vy = (this.y - this.prevY) * damping;
+
+                this.prevX = this.x;
+                this.prevY = this.y;
+
+                // Apply gravity
+                this.y += gravity;
+
+                // Apply wind
+                if (windEnabled) {
+                    let wx = windX * 0.1;
+                    let wy = windY * 0.1;
+
+                    if (turbulence > 0) {
+                        wx += (Math.random() - 0.5) * turbulence * 0.2;
+                        wy += (Math.random() - 0.5) * turbulence * 0.2;
+                    }
+
+                    this.x += wx;
+                    this.y += wy;
+                }
+
+                // Apply velocity
+                this.x += vx;
+                this.y += vy;
+
+                // Sphere collision
+                if (sphereEnabled) {
+                    const sx = sphereX * canvas.width;
+                    const sy = sphereY * canvas.height;
+                    const dx = this.x - sx;
+                    const dy = this.y - sy;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < sphereRadius + 5) {
+                        const ratio = (sphereRadius + 5) / dist;
+                        this.x = sx + dx * ratio;
+                        this.y = sy + dy * ratio;
+                    }
+                }
+
+                // Floor collision
+                if (this.y > canvas.height - 10) {
+                    this.y = canvas.height - 10;
+                    this.prevY = this.y + vy * 0.5;
+                }
+
+                // Wall collisions
+                if (this.x < 10) {
+                    this.x = 10;
+                    this.prevX = this.x + vx * 0.5;
+                }
+                if (this.x > canvas.width - 10) {
+                    this.x = canvas.width - 10;
+                    this.prevX = this.x + vx * 0.5;
+                }
+            }
+        }
+
+        class Constraint {
+            constructor(p1, p2, type = 'structural') {
+                this.p1 = p1;
+                this.p2 = p2;
+                this.type = type;
+                this.restLength = this.getLength();
+                this.active = true;
+            }
+
+            getLength() {
+                const dx = this.p2.x - this.p1.x;
+                const dy = this.p2.y - this.p1.y;
+                return Math.sqrt(dx * dx + dy * dy);
+            }
+
+            getStress() {
+                return Math.abs(this.getLength() - this.restLength) / this.restLength;
+            }
+
+            solve() {
+                if (!this.active) return;
+
+                const dx = this.p2.x - this.p1.x;
+                const dy = this.p2.y - this.p1.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist === 0) return;
+
+                const diff = (dist - this.restLength) / dist;
+                const offsetX = dx * diff * 0.5 * stiffness;
+                const offsetY = dy * diff * 0.5 * stiffness;
+
+                if (!this.p1.pinned) {
+                    this.p1.x += offsetX;
+                    this.p1.y += offsetY;
+                }
+                if (!this.p2.pinned) {
+                    this.p2.x -= offsetX;
+                    this.p2.y -= offsetY;
+                }
+            }
+        }
+
+        function createCloth() {
+            particles = [];
+            constraints = [];
+
+            const startX = (canvas.width - clothWidth * spacing) / 2;
+            const startY = 50;
+
+            // Create particles
+            for (let y = 0; y < clothHeight; y++) {
+                for (let x = 0; x < clothWidth; x++) {
+                    const p = new Particle(
+                        startX + x * spacing,
+                        startY + y * spacing
+                    );
+                    particles.push(p);
+                }
+            }
+
+            // Apply preset pinning
+            applyPreset(currentPreset);
+
+            // Create constraints
+            for (let y = 0; y < clothHeight; y++) {
+                for (let x = 0; x < clothWidth; x++) {
+                    const i = y * clothWidth + x;
+
+                    // Structural (horizontal and vertical)
+                    if (x < clothWidth - 1) {
+                        constraints.push(new Constraint(particles[i], particles[i + 1], 'structural'));
+                    }
+                    if (y < clothHeight - 1) {
+                        constraints.push(new Constraint(particles[i], particles[i + clothWidth], 'structural'));
+                    }
+
+                    // Shear (diagonal)
+                    if (x < clothWidth - 1 && y < clothHeight - 1) {
+                        constraints.push(new Constraint(particles[i], particles[i + clothWidth + 1], 'shear'));
+                        constraints.push(new Constraint(particles[i + 1], particles[i + clothWidth], 'shear'));
+                    }
+
+                    // Bend (skip one)
+                    if (x < clothWidth - 2) {
+                        constraints.push(new Constraint(particles[i], particles[i + 2], 'bend'));
+                    }
+                    if (y < clothHeight - 2) {
+                        constraints.push(new Constraint(particles[i], particles[i + clothWidth * 2], 'bend'));
+                    }
+                }
+            }
+
+            updateStats();
+        }
+
+        function applyPreset(preset) {
+            // Reset all pins
+            for (const p of particles) {
+                p.pinned = false;
+            }
+
+            switch (preset) {
+                case 'hanging':
+                    // Pin top row at intervals
+                    for (let x = 0; x < clothWidth; x += 5) {
+                        particles[x].pinned = true;
+                    }
+                    particles[clothWidth - 1].pinned = true;
+                    break;
+
+                case 'curtain':
+                    // Pin entire top row
+                    for (let x = 0; x < clothWidth; x++) {
+                        particles[x].pinned = true;
+                    }
+                    break;
+
+                case 'flag':
+                    // Pin left edge
+                    for (let y = 0; y < clothHeight; y++) {
+                        particles[y * clothWidth].pinned = true;
+                    }
+                    break;
+
+                case 'hammock':
+                    // Pin top corners
+                    particles[0].pinned = true;
+                    particles[clothWidth - 1].pinned = true;
+                    break;
+            }
+        }
+
+        function update() {
+            // Update particles
+            for (const p of particles) {
+                p.update();
+            }
+
+            // Solve constraints multiple times
+            for (let i = 0; i < iterations; i++) {
+                for (const c of constraints) {
+                    c.solve();
+                }
+            }
+
+            // Handle mouse drag
+            if (selectedParticle && mousePos) {
+                selectedParticle.x = mousePos.x;
+                selectedParticle.y = mousePos.y;
+            }
+        }
+
+        function draw() {
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw sphere
+            if (sphereEnabled) {
+                const sx = sphereX * canvas.width;
+                const sy = sphereY * canvas.height;
+
+                const gradient = ctx.createRadialGradient(
+                    sx - sphereRadius * 0.3, sy - sphereRadius * 0.3, 0,
+                    sx, sy, sphereRadius
+                );
+                gradient.addColorStop(0, '#666');
+                gradient.addColorStop(1, '#222');
+
+                ctx.beginPath();
+                ctx.arc(sx, sy, sphereRadius, 0, Math.PI * 2);
+                ctx.fillStyle = gradient;
+                ctx.fill();
+                ctx.strokeStyle = '#888';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+
+            // Draw faces (filled triangles)
+            if (showFaces) {
+                for (let y = 0; y < clothHeight - 1; y++) {
+                    for (let x = 0; x < clothWidth - 1; x++) {
+                        const i = y * clothWidth + x;
+                        const p1 = particles[i];
+                        const p2 = particles[i + 1];
+                        const p3 = particles[i + clothWidth];
+                        const p4 = particles[i + clothWidth + 1];
+
+                        // Calculate face normal for shading
+                        const v1x = p2.x - p1.x;
+                        const v1y = p2.y - p1.y;
+                        const v2x = p3.x - p1.x;
+                        const v2y = p3.y - p1.y;
+                        const cross = v1x * v2y - v1y * v2x;
+                        const shade = Math.abs(cross) / (spacing * spacing * 2);
+
+                        let color;
+                        if (colorByStress) {
+                            // Color by stress
+                            const stress = (
+                                getConstraintStress(i, i + 1) +
+                                getConstraintStress(i, i + clothWidth)
+                            ) / 2;
+                            const hue = 240 - stress * 240;
+                            color = `hsla(${hue}, 70%, ${40 + shade * 30}%, 0.9)`;
+                        } else {
+                            const brightness = 30 + shade * 40;
+                            color = `hsla(340, 70%, ${brightness}%, 0.9)`;
+                        }
+
+                        // First triangle
+                        ctx.beginPath();
+                        ctx.moveTo(p1.x, p1.y);
+                        ctx.lineTo(p2.x, p2.y);
+                        ctx.lineTo(p3.x, p3.y);
+                        ctx.closePath();
+                        ctx.fillStyle = color;
+                        ctx.fill();
+
+                        // Second triangle
+                        ctx.beginPath();
+                        ctx.moveTo(p2.x, p2.y);
+                        ctx.lineTo(p4.x, p4.y);
+                        ctx.lineTo(p3.x, p3.y);
+                        ctx.closePath();
+                        ctx.fill();
+                    }
+                }
+            }
+
+            // Draw springs/constraints
+            if (showSprings) {
+                for (const c of constraints) {
+                    if (!c.active) continue;
+
+                    let color;
+                    let width = 1;
+
+                    if (colorByStress) {
+                        const stress = c.getStress();
+                        const hue = 240 - Math.min(stress * 10, 1) * 240;
+                        color = `hsl(${hue}, 70%, 50%)`;
+                        width = 1 + stress * 2;
+                    } else {
+                        switch (c.type) {
+                            case 'structural': color = 'rgba(233, 69, 96, 0.8)'; break;
+                            case 'shear': color = 'rgba(83, 52, 131, 0.5)'; break;
+                            case 'bend': color = 'rgba(100, 100, 100, 0.3)'; break;
+                        }
+                    }
+
+                    ctx.beginPath();
+                    ctx.moveTo(c.p1.x, c.p1.y);
+                    ctx.lineTo(c.p2.x, c.p2.y);
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = width;
+                    ctx.stroke();
+                }
+            }
+
+            // Draw particles
+            if (showParticles) {
+                for (const p of particles) {
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.pinned ? 5 : 3, 0, Math.PI * 2);
+                    ctx.fillStyle = p.pinned ? '#e94560' : '#fff';
+                    ctx.fill();
+                }
+            }
+
+            // Highlight selected particle
+            if (selectedParticle) {
+                ctx.beginPath();
+                ctx.arc(selectedParticle.x, selectedParticle.y, 8, 0, Math.PI * 2);
+                ctx.strokeStyle = '#e94560';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+        }
+
+        function getConstraintStress(i1, i2) {
+            for (const c of constraints) {
+                if ((particles.indexOf(c.p1) === i1 && particles.indexOf(c.p2) === i2) ||
+                    (particles.indexOf(c.p1) === i2 && particles.indexOf(c.p2) === i1)) {
+                    return c.active ? c.getStress() : 0;
+                }
+            }
+            return 0;
+        }
+
+        function updateStats() {
+            document.getElementById('particleCount').textContent = particles.length;
+            document.getElementById('constraintCount').textContent = constraints.filter(c => c.active).length;
+            document.getElementById('iterDisplay').textContent = iterations;
+        }
+
+        function findNearestParticle(x, y, maxDist = 20) {
+            let nearest = null;
+            let minDist = maxDist;
+
+            for (const p of particles) {
+                const dx = p.x - x;
+                const dy = p.y - y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist < minDist) {
+                    minDist = dist;
+                    nearest = p;
+                }
+            }
+
+            return nearest;
+        }
+
+        function cutConstraintsNear(x, y, radius = 15) {
+            for (const c of constraints) {
+                if (!c.active) continue;
+
+                // Point to line segment distance
+                const dx = c.p2.x - c.p1.x;
+                const dy = c.p2.y - c.p1.y;
+                const len2 = dx * dx + dy * dy;
+
+                if (len2 === 0) continue;
+
+                const t = Math.max(0, Math.min(1,
+                    ((x - c.p1.x) * dx + (y - c.p1.y) * dy) / len2
+                ));
+
+                const closestX = c.p1.x + t * dx;
+                const closestY = c.p1.y + t * dy;
+
+                const distX = x - closestX;
+                const distY = y - closestY;
+                const dist = Math.sqrt(distX * distX + distY * distY);
+
+                if (dist < radius) {
+                    c.active = false;
+                }
+            }
+        }
+
+        function animate() {
+            update();
+            draw();
+
+            frameCount++;
+            const now = performance.now();
+            if (now - lastTime >= 1000) {
+                fps = frameCount;
+                frameCount = 0;
+                lastTime = now;
+                document.getElementById('fpsDisplay').textContent = fps;
+                updateStats();
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        function resize() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+        }
+
+        // Event listeners
+        document.getElementById('gravity').addEventListener('input', e => {
+            gravity = parseInt(e.target.value) / 100;
+            document.getElementById('gravityVal').textContent = gravity.toFixed(2);
+        });
+
+        document.getElementById('stiffness').addEventListener('input', e => {
+            stiffness = parseInt(e.target.value) / 100;
+            document.getElementById('stiffnessVal').textContent = stiffness.toFixed(2);
+        });
+
+        document.getElementById('damping').addEventListener('input', e => {
+            damping = parseInt(e.target.value) / 100;
+            document.getElementById('dampingVal').textContent = damping.toFixed(2);
+        });
+
+        document.getElementById('iterations').addEventListener('input', e => {
+            iterations = parseInt(e.target.value);
+            document.getElementById('iterationsVal').textContent = iterations;
+            document.getElementById('iterDisplay').textContent = iterations;
+        });
+
+        document.getElementById('windX').addEventListener('input', e => {
+            windX = parseInt(e.target.value) / 100;
+            document.getElementById('windXVal').textContent = windX.toFixed(2);
+        });
+
+        document.getElementById('windY').addEventListener('input', e => {
+            windY = parseInt(e.target.value) / 100;
+            document.getElementById('windYVal').textContent = windY.toFixed(2);
+        });
+
+        document.getElementById('turbulence').addEventListener('input', e => {
+            turbulence = parseInt(e.target.value) / 100;
+            document.getElementById('turbulenceVal').textContent = turbulence.toFixed(2);
+        });
+
+        document.getElementById('windEnabled').addEventListener('change', e => {
+            windEnabled = e.target.checked;
+        });
+
+        document.getElementById('sphereEnabled').addEventListener('change', e => {
+            sphereEnabled = e.target.checked;
+        });
+
+        document.getElementById('sphereX').addEventListener('input', e => {
+            sphereX = parseInt(e.target.value) / 100;
+            document.getElementById('sphereXVal').textContent = sphereX.toFixed(2);
+        });
+
+        document.getElementById('sphereY').addEventListener('input', e => {
+            sphereY = parseInt(e.target.value) / 100;
+            document.getElementById('sphereYVal').textContent = sphereY.toFixed(2);
+        });
+
+        document.getElementById('sphereRadius').addEventListener('input', e => {
+            sphereRadius = parseInt(e.target.value);
+            document.getElementById('sphereRadiusVal').textContent = sphereRadius;
+        });
+
+        document.getElementById('clothWidth').addEventListener('input', e => {
+            clothWidth = parseInt(e.target.value);
+            document.getElementById('clothWidthVal').textContent = clothWidth;
+        });
+
+        document.getElementById('clothHeight').addEventListener('input', e => {
+            clothHeight = parseInt(e.target.value);
+            document.getElementById('clothHeightVal').textContent = clothHeight;
+        });
+
+        document.getElementById('spacing').addEventListener('input', e => {
+            spacing = parseInt(e.target.value);
+            document.getElementById('spacingVal').textContent = spacing;
+        });
+
+        document.getElementById('showParticles').addEventListener('change', e => {
+            showParticles = e.target.checked;
+        });
+
+        document.getElementById('showSprings').addEventListener('change', e => {
+            showSprings = e.target.checked;
+        });
+
+        document.getElementById('showFaces').addEventListener('change', e => {
+            showFaces = e.target.checked;
+        });
+
+        document.getElementById('colorByStress').addEventListener('change', e => {
+            colorByStress = e.target.checked;
+        });
+
+        document.getElementById('resetCloth').addEventListener('click', createCloth);
+
+        document.getElementById('dropCloth').addEventListener('click', () => {
+            for (const p of particles) {
+                p.pinned = false;
+            }
+        });
+
+        document.getElementById('tearRandom').addEventListener('click', () => {
+            const activeConstraints = constraints.filter(c => c.active);
+            const numTear = Math.min(10, activeConstraints.length);
+            for (let i = 0; i < numTear; i++) {
+                const idx = Math.floor(Math.random() * activeConstraints.length);
+                activeConstraints[idx].active = false;
+            }
+        });
+
+        // Preset buttons
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentPreset = btn.dataset.preset;
+                createCloth();
+            });
+        });
+
+        // Mouse interactions
+        canvas.addEventListener('mousedown', e => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            if (e.button === 2) {
+                // Right click - pin/unpin
+                const p = findNearestParticle(x, y);
+                if (p) {
+                    p.pinned = !p.pinned;
+                }
+            } else if (e.shiftKey) {
+                // Shift + click - start cutting
+                cutting = true;
+                cutConstraintsNear(x, y);
+            } else {
+                // Left click - drag
+                selectedParticle = findNearestParticle(x, y);
+                mousePos = { x, y };
+            }
+        });
+
+        canvas.addEventListener('mousemove', e => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            mousePos = { x, y };
+
+            if (cutting) {
+                cutConstraintsNear(x, y);
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            selectedParticle = null;
+            cutting = false;
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            selectedParticle = null;
+            cutting = false;
+            mousePos = null;
+        });
+
+        canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+        window.addEventListener('resize', () => {
+            resize();
+            createCloth();
+        });
+
+        // Initialize
+        resize();
+        createCloth();
+        animate();
+    </script>
+</body>
+</html>

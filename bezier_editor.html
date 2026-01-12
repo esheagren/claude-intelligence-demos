@@ -1,0 +1,1216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bezier Curve Editor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 50%, #16213e 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .canvas-container {
+            flex: 1;
+            position: relative;
+        }
+
+        #canvas {
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+        }
+
+        .sidebar {
+            width: 320px;
+            background: rgba(20, 20, 35, 0.95);
+            border-left: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        header {
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 1.4em;
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            font-size: 0.85em;
+            opacity: 0.9;
+        }
+
+        .panel {
+            padding: 15px 20px;
+            border-bottom: 1px solid #333;
+        }
+
+        .panel-title {
+            font-size: 0.9em;
+            color: #667eea;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .curve-type-btns {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .curve-btn {
+            padding: 10px;
+            background: rgba(60, 60, 80, 0.5);
+            border: 1px solid #444;
+            color: #aaa;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85em;
+        }
+
+        .curve-btn:hover {
+            background: rgba(80, 80, 100, 0.6);
+            color: white;
+        }
+
+        .curve-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            font-size: 0.85em;
+            color: #888;
+        }
+
+        .control-value {
+            color: #667eea;
+            font-weight: 500;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            background: #333;
+            border-radius: 3px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85em;
+            color: #aaa;
+            cursor: pointer;
+        }
+
+        .checkbox-label input {
+            accent-color: #667eea;
+        }
+
+        .action-btns {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            flex: 1;
+            min-width: 80px;
+            padding: 10px;
+            background: rgba(60, 60, 80, 0.5);
+            border: 1px solid #444;
+            color: #aaa;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            background: rgba(80, 80, 100, 0.6);
+            color: white;
+        }
+
+        .action-btn.primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: transparent;
+        }
+
+        .points-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .point-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 10px;
+            background: rgba(40, 40, 60, 0.5);
+            border-radius: 4px;
+            margin-bottom: 5px;
+            font-size: 0.85em;
+        }
+
+        .point-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .point-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .point-coords {
+            color: #888;
+            font-family: monospace;
+        }
+
+        .point-delete {
+            background: none;
+            border: none;
+            color: #ff6b6b;
+            cursor: pointer;
+            font-size: 1em;
+            opacity: 0.6;
+        }
+
+        .point-delete:hover {
+            opacity: 1;
+        }
+
+        .math-display {
+            background: rgba(30, 30, 50, 0.8);
+            padding: 12px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8em;
+            line-height: 1.6;
+            overflow-x: auto;
+        }
+
+        .math-formula {
+            color: #9fcdff;
+            margin-bottom: 8px;
+        }
+
+        .math-value {
+            color: #50fa7b;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .info-item {
+            background: rgba(40, 40, 60, 0.5);
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .info-label {
+            font-size: 0.75em;
+            color: #888;
+            margin-bottom: 4px;
+        }
+
+        .info-value {
+            font-size: 1.1em;
+            color: #667eea;
+            font-weight: 500;
+        }
+
+        .tooltip {
+            position: absolute;
+            background: rgba(20, 20, 35, 0.95);
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            pointer-events: none;
+            display: none;
+            border: 1px solid #444;
+            z-index: 100;
+        }
+
+        .instructions {
+            font-size: 0.8em;
+            color: #888;
+            line-height: 1.5;
+        }
+
+        .instructions li {
+            margin-bottom: 5px;
+            margin-left: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="canvas-container">
+            <canvas id="canvas"></canvas>
+            <div class="tooltip" id="tooltip"></div>
+        </div>
+        <div class="sidebar">
+            <header>
+                <h1>Bezier Curve Editor</h1>
+                <div class="subtitle">Interactive Curve Design</div>
+            </header>
+
+            <div class="panel">
+                <div class="panel-title">Curve Type</div>
+                <div class="curve-type-btns">
+                    <button class="curve-btn" data-type="linear">Linear</button>
+                    <button class="curve-btn active" data-type="quadratic">Quadratic</button>
+                    <button class="curve-btn" data-type="cubic">Cubic</button>
+                    <button class="curve-btn" data-type="higher">Higher Order</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">Animation</div>
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>Parameter t</span>
+                        <span class="control-value" id="t-value">0.50</span>
+                    </div>
+                    <input type="range" id="t-slider" min="0" max="1" step="0.01" value="0.5">
+                </div>
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>Animation Speed</span>
+                        <span class="control-value" id="speed-value">1.0x</span>
+                    </div>
+                    <input type="range" id="speed-slider" min="0.1" max="3" step="0.1" value="1">
+                </div>
+                <div class="checkbox-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="animate-t"> Animate t
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="show-construction" checked> Show Construction
+                    </label>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">Display Options</div>
+                <div class="checkbox-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="show-curve" checked> Curve
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="show-control-polygon" checked> Control Polygon
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="show-tangent"> Tangent
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="show-normal"> Normal
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="show-curvature"> Curvature Comb
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="show-bounding-box"> Bounding Box
+                    </label>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">Control Points</div>
+                <div class="points-list" id="points-list"></div>
+                <div class="action-btns" style="margin-top: 10px;">
+                    <button class="action-btn" id="clear-btn">Clear All</button>
+                    <button class="action-btn" id="preset-btn">Load Preset</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">Curve Information</div>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-label">Degree</div>
+                        <div class="info-value" id="degree-value">-</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Arc Length</div>
+                        <div class="info-value" id="length-value">-</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Point at t</div>
+                        <div class="info-value" id="point-at-t">-</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Curvature at t</div>
+                        <div class="info-value" id="curvature-at-t">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">Mathematical Formula</div>
+                <div class="math-display" id="math-display">
+                    Click to add control points
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">Instructions</div>
+                <ul class="instructions">
+                    <li>Click on canvas to add control points</li>
+                    <li>Drag points to modify the curve</li>
+                    <li>Right-click point to delete</li>
+                    <li>Use t slider to trace the curve</li>
+                    <li>Enable "Show Construction" to see de Casteljau's algorithm</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const tooltip = document.getElementById('tooltip');
+
+        // State
+        let controlPoints = [];
+        let selectedPoint = null;
+        let dragOffset = { x: 0, y: 0 };
+        let t = 0.5;
+        let animateT = false;
+        let animationSpeed = 1;
+        let curveType = 'quadratic';
+
+        // Display options
+        let showCurve = true;
+        let showControlPolygon = true;
+        let showConstruction = true;
+        let showTangent = false;
+        let showNormal = false;
+        let showCurvature = false;
+        let showBoundingBox = false;
+
+        // Colors
+        const colors = {
+            curve: '#667eea',
+            controlPolygon: 'rgba(255, 255, 255, 0.3)',
+            controlPoint: '#ff6b6b',
+            constructionLines: ['#50fa7b', '#ff79c6', '#bd93f9', '#8be9fd'],
+            constructionPoint: '#f1fa8c',
+            tangent: '#ff9800',
+            normal: '#00bcd4',
+            curvature: 'rgba(255, 152, 0, 0.5)',
+            boundingBox: 'rgba(255, 255, 255, 0.2)',
+            grid: 'rgba(255, 255, 255, 0.05)'
+        };
+
+        // Resize canvas
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            draw();
+        }
+
+        // Draw grid
+        function drawGrid() {
+            const gridSize = 50;
+            ctx.strokeStyle = colors.grid;
+            ctx.lineWidth = 1;
+
+            for (let x = 0; x < canvas.width; x += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+
+            for (let y = 0; y < canvas.height; y += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+        }
+
+        // Binomial coefficient
+        function binomial(n, k) {
+            if (k < 0 || k > n) return 0;
+            if (k === 0 || k === n) return 1;
+            let result = 1;
+            for (let i = 0; i < k; i++) {
+                result = result * (n - i) / (i + 1);
+            }
+            return result;
+        }
+
+        // Evaluate Bezier curve at t using Bernstein polynomials
+        function evaluateBezier(points, t) {
+            const n = points.length - 1;
+            let x = 0, y = 0;
+
+            for (let i = 0; i <= n; i++) {
+                const b = binomial(n, i) * Math.pow(1 - t, n - i) * Math.pow(t, i);
+                x += b * points[i].x;
+                y += b * points[i].y;
+            }
+
+            return { x, y };
+        }
+
+        // De Casteljau's algorithm - returns all intermediate points
+        function deCasteljau(points, t) {
+            if (points.length === 0) return [];
+
+            const levels = [points.slice()];
+
+            while (levels[levels.length - 1].length > 1) {
+                const currentLevel = levels[levels.length - 1];
+                const nextLevel = [];
+
+                for (let i = 0; i < currentLevel.length - 1; i++) {
+                    nextLevel.push({
+                        x: (1 - t) * currentLevel[i].x + t * currentLevel[i + 1].x,
+                        y: (1 - t) * currentLevel[i].y + t * currentLevel[i + 1].y
+                    });
+                }
+
+                levels.push(nextLevel);
+            }
+
+            return levels;
+        }
+
+        // Calculate derivative at t
+        function bezierDerivative(points, t) {
+            if (points.length < 2) return { x: 0, y: 0 };
+
+            const n = points.length - 1;
+            const derivativePoints = [];
+
+            for (let i = 0; i < n; i++) {
+                derivativePoints.push({
+                    x: n * (points[i + 1].x - points[i].x),
+                    y: n * (points[i + 1].y - points[i].y)
+                });
+            }
+
+            return evaluateBezier(derivativePoints, t);
+        }
+
+        // Calculate second derivative at t
+        function bezierSecondDerivative(points, t) {
+            if (points.length < 3) return { x: 0, y: 0 };
+
+            const n = points.length - 1;
+            const derivativePoints = [];
+
+            for (let i = 0; i < n; i++) {
+                derivativePoints.push({
+                    x: n * (points[i + 1].x - points[i].x),
+                    y: n * (points[i + 1].y - points[i].y)
+                });
+            }
+
+            return bezierDerivative(derivativePoints, t);
+        }
+
+        // Calculate curvature at t
+        function calculateCurvature(points, t) {
+            const d1 = bezierDerivative(points, t);
+            const d2 = bezierSecondDerivative(points, t);
+
+            const cross = d1.x * d2.y - d1.y * d2.x;
+            const speed = Math.pow(d1.x * d1.x + d1.y * d1.y, 1.5);
+
+            if (speed < 0.0001) return 0;
+            return cross / speed;
+        }
+
+        // Approximate arc length
+        function calculateArcLength(points, segments = 100) {
+            if (points.length < 2) return 0;
+
+            let length = 0;
+            let prevPoint = evaluateBezier(points, 0);
+
+            for (let i = 1; i <= segments; i++) {
+                const t = i / segments;
+                const point = evaluateBezier(points, t);
+                length += Math.sqrt(
+                    Math.pow(point.x - prevPoint.x, 2) +
+                    Math.pow(point.y - prevPoint.y, 2)
+                );
+                prevPoint = point;
+            }
+
+            return length;
+        }
+
+        // Calculate bounding box
+        function calculateBoundingBox(points) {
+            if (points.length === 0) return null;
+
+            let minX = Infinity, minY = Infinity;
+            let maxX = -Infinity, maxY = -Infinity;
+
+            // Sample curve
+            for (let i = 0; i <= 100; i++) {
+                const t = i / 100;
+                const p = evaluateBezier(points, t);
+                minX = Math.min(minX, p.x);
+                minY = Math.min(minY, p.y);
+                maxX = Math.max(maxX, p.x);
+                maxY = Math.max(maxY, p.y);
+            }
+
+            return { minX, minY, maxX, maxY };
+        }
+
+        // Draw control polygon
+        function drawControlPolygon() {
+            if (controlPoints.length < 2) return;
+
+            ctx.beginPath();
+            ctx.moveTo(controlPoints[0].x, controlPoints[0].y);
+            for (let i = 1; i < controlPoints.length; i++) {
+                ctx.lineTo(controlPoints[i].x, controlPoints[i].y);
+            }
+            ctx.strokeStyle = colors.controlPolygon;
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        // Draw control points
+        function drawControlPoints() {
+            controlPoints.forEach((point, index) => {
+                // Outer ring
+                ctx.beginPath();
+                ctx.arc(point.x, point.y, 12, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255, 107, 107, 0.3)';
+                ctx.fill();
+
+                // Inner circle
+                ctx.beginPath();
+                ctx.arc(point.x, point.y, 8, 0, Math.PI * 2);
+                ctx.fillStyle = colors.controlPoint;
+                ctx.fill();
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Label
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 12px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(`P${index}`, point.x, point.y - 18);
+            });
+        }
+
+        // Draw the Bezier curve
+        function drawCurve() {
+            if (controlPoints.length < 2) return;
+
+            ctx.beginPath();
+            const firstPoint = evaluateBezier(controlPoints, 0);
+            ctx.moveTo(firstPoint.x, firstPoint.y);
+
+            for (let i = 1; i <= 200; i++) {
+                const t = i / 200;
+                const point = evaluateBezier(controlPoints, t);
+                ctx.lineTo(point.x, point.y);
+            }
+
+            ctx.strokeStyle = colors.curve;
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+
+            // Glow effect
+            ctx.strokeStyle = 'rgba(102, 126, 234, 0.3)';
+            ctx.lineWidth = 8;
+            ctx.stroke();
+        }
+
+        // Draw de Casteljau construction
+        function drawConstruction() {
+            if (controlPoints.length < 2) return;
+
+            const levels = deCasteljau(controlPoints, t);
+
+            // Draw construction lines and points for each level
+            for (let level = 1; level < levels.length; level++) {
+                const points = levels[level];
+                const color = colors.constructionLines[(level - 1) % colors.constructionLines.length];
+
+                // Draw lines
+                if (points.length > 1) {
+                    ctx.beginPath();
+                    ctx.moveTo(points[0].x, points[0].y);
+                    for (let i = 1; i < points.length; i++) {
+                        ctx.lineTo(points[i].x, points[i].y);
+                    }
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([3, 3]);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+
+                // Draw points
+                points.forEach(point => {
+                    ctx.beginPath();
+                    ctx.arc(point.x, point.y, 5, 0, Math.PI * 2);
+                    ctx.fillStyle = color;
+                    ctx.fill();
+                });
+            }
+
+            // Draw final point
+            const finalPoint = levels[levels.length - 1][0];
+            ctx.beginPath();
+            ctx.arc(finalPoint.x, finalPoint.y, 10, 0, Math.PI * 2);
+            ctx.fillStyle = colors.constructionPoint;
+            ctx.fill();
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+
+        // Draw tangent vector
+        function drawTangent() {
+            if (controlPoints.length < 2) return;
+
+            const point = evaluateBezier(controlPoints, t);
+            const derivative = bezierDerivative(controlPoints, t);
+            const length = Math.sqrt(derivative.x * derivative.x + derivative.y * derivative.y);
+
+            if (length < 0.01) return;
+
+            // Normalize and scale
+            const scale = 80;
+            const nx = derivative.x / length * scale;
+            const ny = derivative.y / length * scale;
+
+            ctx.beginPath();
+            ctx.moveTo(point.x, point.y);
+            ctx.lineTo(point.x + nx, point.y + ny);
+            ctx.strokeStyle = colors.tangent;
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Arrow head
+            const angle = Math.atan2(ny, nx);
+            ctx.beginPath();
+            ctx.moveTo(point.x + nx, point.y + ny);
+            ctx.lineTo(
+                point.x + nx - 10 * Math.cos(angle - 0.5),
+                point.y + ny - 10 * Math.sin(angle - 0.5)
+            );
+            ctx.moveTo(point.x + nx, point.y + ny);
+            ctx.lineTo(
+                point.x + nx - 10 * Math.cos(angle + 0.5),
+                point.y + ny - 10 * Math.sin(angle + 0.5)
+            );
+            ctx.stroke();
+        }
+
+        // Draw normal vector
+        function drawNormal() {
+            if (controlPoints.length < 2) return;
+
+            const point = evaluateBezier(controlPoints, t);
+            const derivative = bezierDerivative(controlPoints, t);
+            const length = Math.sqrt(derivative.x * derivative.x + derivative.y * derivative.y);
+
+            if (length < 0.01) return;
+
+            // Normal is perpendicular to tangent
+            const scale = 50;
+            const nx = -derivative.y / length * scale;
+            const ny = derivative.x / length * scale;
+
+            ctx.beginPath();
+            ctx.moveTo(point.x, point.y);
+            ctx.lineTo(point.x + nx, point.y + ny);
+            ctx.strokeStyle = colors.normal;
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Arrow head
+            const angle = Math.atan2(ny, nx);
+            ctx.beginPath();
+            ctx.moveTo(point.x + nx, point.y + ny);
+            ctx.lineTo(
+                point.x + nx - 10 * Math.cos(angle - 0.5),
+                point.y + ny - 10 * Math.sin(angle - 0.5)
+            );
+            ctx.moveTo(point.x + nx, point.y + ny);
+            ctx.lineTo(
+                point.x + nx - 10 * Math.cos(angle + 0.5),
+                point.y + ny - 10 * Math.sin(angle + 0.5)
+            );
+            ctx.stroke();
+        }
+
+        // Draw curvature comb
+        function drawCurvatureComb() {
+            if (controlPoints.length < 3) return;
+
+            const segments = 50;
+            const scale = 5000;
+
+            ctx.beginPath();
+
+            for (let i = 0; i <= segments; i++) {
+                const tVal = i / segments;
+                const point = evaluateBezier(controlPoints, tVal);
+                const derivative = bezierDerivative(controlPoints, tVal);
+                const curvature = calculateCurvature(controlPoints, tVal);
+
+                const length = Math.sqrt(derivative.x * derivative.x + derivative.y * derivative.y);
+                if (length < 0.01) continue;
+
+                // Normal direction
+                const nx = -derivative.y / length;
+                const ny = derivative.x / length;
+
+                // Scale curvature for visualization
+                const combLength = curvature * scale;
+
+                if (i === 0) {
+                    ctx.moveTo(point.x + nx * combLength, point.y + ny * combLength);
+                } else {
+                    ctx.lineTo(point.x + nx * combLength, point.y + ny * combLength);
+                }
+            }
+
+            ctx.strokeStyle = colors.curvature;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Draw comb teeth
+            for (let i = 0; i <= segments; i += 2) {
+                const tVal = i / segments;
+                const point = evaluateBezier(controlPoints, tVal);
+                const derivative = bezierDerivative(controlPoints, tVal);
+                const curvature = calculateCurvature(controlPoints, tVal);
+
+                const length = Math.sqrt(derivative.x * derivative.x + derivative.y * derivative.y);
+                if (length < 0.01) continue;
+
+                const nx = -derivative.y / length;
+                const ny = derivative.x / length;
+                const combLength = curvature * scale;
+
+                ctx.beginPath();
+                ctx.moveTo(point.x, point.y);
+                ctx.lineTo(point.x + nx * combLength, point.y + ny * combLength);
+                ctx.strokeStyle = 'rgba(255, 152, 0, 0.3)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+        }
+
+        // Draw bounding box
+        function drawBoundingBox() {
+            if (controlPoints.length < 2) return;
+
+            const bbox = calculateBoundingBox(controlPoints);
+            if (!bbox) return;
+
+            ctx.strokeStyle = colors.boundingBox;
+            ctx.lineWidth = 1;
+            ctx.setLineDash([5, 5]);
+            ctx.strokeRect(bbox.minX, bbox.minY, bbox.maxX - bbox.minX, bbox.maxY - bbox.minY);
+            ctx.setLineDash([]);
+        }
+
+        // Main draw function
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            drawGrid();
+
+            if (showBoundingBox) drawBoundingBox();
+            if (showControlPolygon) drawControlPolygon();
+            if (showCurve) drawCurve();
+            if (showConstruction) drawConstruction();
+            if (showCurvature) drawCurvatureComb();
+            if (showTangent) drawTangent();
+            if (showNormal) drawNormal();
+
+            drawControlPoints();
+            updateInfo();
+        }
+
+        // Update information panel
+        function updateInfo() {
+            // Degree
+            const degree = Math.max(0, controlPoints.length - 1);
+            document.getElementById('degree-value').textContent = degree;
+
+            // Arc length
+            if (controlPoints.length >= 2) {
+                const arcLength = calculateArcLength(controlPoints);
+                document.getElementById('length-value').textContent = arcLength.toFixed(1) + 'px';
+            } else {
+                document.getElementById('length-value').textContent = '-';
+            }
+
+            // Point at t
+            if (controlPoints.length >= 2) {
+                const point = evaluateBezier(controlPoints, t);
+                document.getElementById('point-at-t').textContent =
+                    `(${point.x.toFixed(0)}, ${point.y.toFixed(0)})`;
+            } else {
+                document.getElementById('point-at-t').textContent = '-';
+            }
+
+            // Curvature at t
+            if (controlPoints.length >= 3) {
+                const curvature = calculateCurvature(controlPoints, t);
+                document.getElementById('curvature-at-t').textContent = curvature.toFixed(4);
+            } else {
+                document.getElementById('curvature-at-t').textContent = '-';
+            }
+
+            // Update formula
+            updateFormula();
+
+            // Update points list
+            updatePointsList();
+        }
+
+        // Update mathematical formula display
+        function updateFormula() {
+            const display = document.getElementById('math-display');
+            const n = controlPoints.length - 1;
+
+            if (n < 0) {
+                display.innerHTML = 'Click to add control points';
+                return;
+            }
+
+            let html = '<div class="math-formula">B(t) = ';
+
+            if (n === 0) {
+                html += 'P<sub>0</sub>';
+            } else {
+                const terms = [];
+                for (let i = 0; i <= n; i++) {
+                    const coeff = binomial(n, i);
+                    let term = '';
+                    if (coeff !== 1) term += coeff;
+                    if (n - i > 0) term += `(1-t)${n - i > 1 ? '<sup>' + (n - i) + '</sup>' : ''}`;
+                    if (i > 0) term += `t${i > 1 ? '<sup>' + i + '</sup>' : ''}`;
+                    term += `P<sub>${i}</sub>`;
+                    terms.push(term);
+                }
+                html += terms.join(' + ');
+            }
+
+            html += '</div>';
+
+            // Add current value
+            if (controlPoints.length >= 2) {
+                const point = evaluateBezier(controlPoints, t);
+                html += `<div class="math-value">B(${t.toFixed(2)}) = (${point.x.toFixed(1)}, ${point.y.toFixed(1)})</div>`;
+            }
+
+            display.innerHTML = html;
+        }
+
+        // Update points list
+        function updatePointsList() {
+            const list = document.getElementById('points-list');
+            list.innerHTML = controlPoints.map((p, i) => `
+                <div class="point-item">
+                    <div class="point-label">
+                        <div class="point-color" style="background: ${colors.controlPoint}"></div>
+                        <span>P${i}</span>
+                    </div>
+                    <span class="point-coords">(${p.x.toFixed(0)}, ${p.y.toFixed(0)})</span>
+                    <button class="point-delete" onclick="deletePoint(${i})">×</button>
+                </div>
+            `).join('');
+        }
+
+        // Delete point
+        function deletePoint(index) {
+            controlPoints.splice(index, 1);
+            draw();
+        }
+
+        // Get point at position
+        function getPointAtPosition(x, y, threshold = 15) {
+            for (let i = controlPoints.length - 1; i >= 0; i--) {
+                const dx = controlPoints[i].x - x;
+                const dy = controlPoints[i].y - y;
+                if (Math.sqrt(dx * dx + dy * dy) < threshold) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        // Mouse events
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            const pointIndex = getPointAtPosition(x, y);
+
+            if (e.button === 2) {
+                // Right click - delete point
+                if (pointIndex >= 0) {
+                    deletePoint(pointIndex);
+                }
+                return;
+            }
+
+            if (pointIndex >= 0) {
+                // Select existing point
+                selectedPoint = pointIndex;
+                dragOffset.x = controlPoints[pointIndex].x - x;
+                dragOffset.y = controlPoints[pointIndex].y - y;
+            } else {
+                // Add new point based on curve type
+                let maxPoints = Infinity;
+                if (curveType === 'linear') maxPoints = 2;
+                else if (curveType === 'quadratic') maxPoints = 3;
+                else if (curveType === 'cubic') maxPoints = 4;
+
+                if (controlPoints.length < maxPoints) {
+                    controlPoints.push({ x, y });
+                    draw();
+                }
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            if (selectedPoint !== null) {
+                controlPoints[selectedPoint].x = x + dragOffset.x;
+                controlPoints[selectedPoint].y = y + dragOffset.y;
+                draw();
+            }
+
+            // Update tooltip
+            const pointIndex = getPointAtPosition(x, y);
+            if (pointIndex >= 0) {
+                tooltip.style.display = 'block';
+                tooltip.style.left = (e.clientX + 15) + 'px';
+                tooltip.style.top = (e.clientY + 15) + 'px';
+                tooltip.textContent = `P${pointIndex}: (${controlPoints[pointIndex].x.toFixed(0)}, ${controlPoints[pointIndex].y.toFixed(0)})`;
+            } else {
+                tooltip.style.display = 'none';
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            selectedPoint = null;
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            selectedPoint = null;
+            tooltip.style.display = 'none';
+        });
+
+        canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+        // UI controls
+        document.getElementById('t-slider').addEventListener('input', (e) => {
+            t = parseFloat(e.target.value);
+            document.getElementById('t-value').textContent = t.toFixed(2);
+            draw();
+        });
+
+        document.getElementById('speed-slider').addEventListener('input', (e) => {
+            animationSpeed = parseFloat(e.target.value);
+            document.getElementById('speed-value').textContent = animationSpeed.toFixed(1) + 'x';
+        });
+
+        document.getElementById('animate-t').addEventListener('change', (e) => {
+            animateT = e.target.checked;
+        });
+
+        document.getElementById('show-construction').addEventListener('change', (e) => {
+            showConstruction = e.target.checked;
+            draw();
+        });
+
+        document.getElementById('show-curve').addEventListener('change', (e) => {
+            showCurve = e.target.checked;
+            draw();
+        });
+
+        document.getElementById('show-control-polygon').addEventListener('change', (e) => {
+            showControlPolygon = e.target.checked;
+            draw();
+        });
+
+        document.getElementById('show-tangent').addEventListener('change', (e) => {
+            showTangent = e.target.checked;
+            draw();
+        });
+
+        document.getElementById('show-normal').addEventListener('change', (e) => {
+            showNormal = e.target.checked;
+            draw();
+        });
+
+        document.getElementById('show-curvature').addEventListener('change', (e) => {
+            showCurvature = e.target.checked;
+            draw();
+        });
+
+        document.getElementById('show-bounding-box').addEventListener('change', (e) => {
+            showBoundingBox = e.target.checked;
+            draw();
+        });
+
+        // Curve type buttons
+        document.querySelectorAll('.curve-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.curve-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                curveType = btn.dataset.type;
+            });
+        });
+
+        document.getElementById('clear-btn').addEventListener('click', () => {
+            controlPoints = [];
+            draw();
+        });
+
+        let presetIndex = 0;
+        const presets = [
+            // S-curve
+            [
+                { x: 150, y: 400 },
+                { x: 150, y: 200 },
+                { x: 450, y: 400 },
+                { x: 450, y: 200 }
+            ],
+            // Heart shape approximation
+            [
+                { x: 300, y: 450 },
+                { x: 100, y: 250 },
+                { x: 300, y: 100 },
+                { x: 500, y: 250 }
+            ],
+            // Wave
+            [
+                { x: 100, y: 300 },
+                { x: 200, y: 150 },
+                { x: 350, y: 450 },
+                { x: 500, y: 300 }
+            ],
+            // Loop
+            [
+                { x: 200, y: 300 },
+                { x: 500, y: 100 },
+                { x: 100, y: 100 },
+                { x: 400, y: 300 }
+            ]
+        ];
+
+        document.getElementById('preset-btn').addEventListener('click', () => {
+            controlPoints = presets[presetIndex].map(p => ({
+                x: p.x + (canvas.width - 600) / 2,
+                y: p.y + (canvas.height - 500) / 2
+            }));
+            presetIndex = (presetIndex + 1) % presets.length;
+            curveType = 'cubic';
+            document.querySelectorAll('.curve-btn').forEach(b => b.classList.remove('active'));
+            document.querySelector('[data-type="cubic"]').classList.add('active');
+            draw();
+        });
+
+        // Animation loop
+        function animate() {
+            if (animateT) {
+                t += 0.005 * animationSpeed;
+                if (t > 1) t = 0;
+                document.getElementById('t-slider').value = t;
+                document.getElementById('t-value').textContent = t.toFixed(2);
+                draw();
+            }
+            requestAnimationFrame(animate);
+        }
+
+        // Initialize
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        animate();
+
+        // Load initial preset
+        setTimeout(() => {
+            document.getElementById('preset-btn').click();
+        }, 100);
+    </script>
+</body>
+</html>

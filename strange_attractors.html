@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strange Attractor Gallery</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .sidebar {
+            width: 320px;
+            background: rgba(15, 15, 25, 0.95);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            overflow-y: auto;
+            z-index: 10;
+        }
+
+        header {
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        h1 {
+            font-size: 1.6em;
+            font-weight: 300;
+            background: linear-gradient(135deg, #ff6b6b 0%, #feca57 50%, #48dbfb 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.85em;
+        }
+
+        .section {
+            margin-bottom: 25px;
+        }
+
+        .section h3 {
+            font-size: 0.75em;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 12px;
+        }
+
+        .attractor-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .attractor-btn {
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: left;
+        }
+
+        .attractor-btn:hover {
+            background: rgba(255, 107, 107, 0.1);
+            border-color: rgba(255, 107, 107, 0.3);
+        }
+
+        .attractor-btn.active {
+            background: linear-gradient(135deg, rgba(255, 107, 107, 0.2), rgba(254, 202, 87, 0.2));
+            border-color: rgba(255, 107, 107, 0.5);
+            color: #fff;
+        }
+
+        .attractor-btn small {
+            display: block;
+            font-size: 0.75em;
+            color: rgba(255, 255, 255, 0.4);
+            margin-top: 3px;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group label {
+            display: block;
+            font-size: 0.8em;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 6px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            -webkit-appearance: none;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ff6b6b, #feca57);
+            cursor: pointer;
+        }
+
+        .value-display {
+            text-align: right;
+            font-size: 0.75em;
+            color: #ff6b6b;
+            margin-top: 3px;
+            font-family: monospace;
+        }
+
+        .color-presets {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .color-preset {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: transform 0.2s;
+        }
+
+        .color-preset:hover {
+            transform: scale(1.15);
+        }
+
+        .color-preset.active {
+            border-color: #fff;
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 10px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 0.85em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+
+        .info-box {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .info-box h4 {
+            font-size: 0.9em;
+            color: #feca57;
+            margin-bottom: 8px;
+        }
+
+        .info-box p {
+            font-size: 0.8em;
+            color: rgba(255, 255, 255, 0.6);
+            line-height: 1.5;
+        }
+
+        .equation {
+            font-family: 'Times New Roman', serif;
+            font-style: italic;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-size: 0.85em;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .canvas-container {
+            flex: 1;
+            position: relative;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .stats {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 12px 18px;
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 0.8em;
+        }
+
+        .stats div {
+            margin-bottom: 4px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .stats span {
+            color: #48dbfb;
+        }
+
+        .instructions {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.6);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 0.75em;
+            color: rgba(255, 255, 255, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <header>
+                <h1>Strange Attractors</h1>
+                <p class="subtitle">Chaos and beauty in dynamical systems</p>
+            </header>
+
+            <div class="section">
+                <h3>Select Attractor</h3>
+                <div class="attractor-list">
+                    <div class="attractor-btn active" data-attractor="lorenz">
+                        Lorenz Attractor
+                        <small>The butterfly effect (1963)</small>
+                    </div>
+                    <div class="attractor-btn" data-attractor="rossler">
+                        Rossler Attractor
+                        <small>Spiral chaos (1976)</small>
+                    </div>
+                    <div class="attractor-btn" data-attractor="aizawa">
+                        Aizawa Attractor
+                        <small>Japanese strange attractor</small>
+                    </div>
+                    <div class="attractor-btn" data-attractor="thomas">
+                        Thomas Attractor
+                        <small>Cyclically symmetric chaos</small>
+                    </div>
+                    <div class="attractor-btn" data-attractor="halvorsen">
+                        Halvorsen Attractor
+                        <small>Triple spiral structure</small>
+                    </div>
+                    <div class="attractor-btn" data-attractor="chen">
+                        Chen Attractor
+                        <small>Double scroll variant</small>
+                    </div>
+                    <div class="attractor-btn" data-attractor="dadras">
+                        Dadras Attractor
+                        <small>Multi-wing chaotic system</small>
+                    </div>
+                    <div class="attractor-btn" data-attractor="sprott">
+                        Sprott Attractor
+                        <small>Minimal chaotic flow</small>
+                    </div>
+                    <div class="attractor-btn" data-attractor="fourwing">
+                        Four-Wing Attractor
+                        <small>Hyperchaotic system</small>
+                    </div>
+                    <div class="attractor-btn" data-attractor="rabinovich">
+                        Rabinovich-Fabrikant
+                        <small>Plasma physics model</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>Rendering</h3>
+                <div class="control-group">
+                    <label>Trail Length</label>
+                    <input type="range" id="trailLength" min="1000" max="100000" value="30000">
+                    <div class="value-display" id="trailVal">30,000 points</div>
+                </div>
+                <div class="control-group">
+                    <label>Point Size</label>
+                    <input type="range" id="pointSize" min="1" max="5" value="1" step="0.5">
+                    <div class="value-display" id="sizeVal">1 px</div>
+                </div>
+                <div class="control-group">
+                    <label>Rotation Speed</label>
+                    <input type="range" id="rotSpeed" min="0" max="100" value="20">
+                    <div class="value-display" id="rotVal">20%</div>
+                </div>
+                <div class="control-group">
+                    <label>Zoom</label>
+                    <input type="range" id="zoom" min="10" max="200" value="50">
+                    <div class="value-display" id="zoomVal">50%</div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>Color Scheme</h3>
+                <div class="color-presets">
+                    <div class="color-preset active" data-scheme="rainbow" style="background: linear-gradient(135deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3);"></div>
+                    <div class="color-preset" data-scheme="fire" style="background: linear-gradient(135deg, #ff0000, #ff8800, #ffff00);"></div>
+                    <div class="color-preset" data-scheme="ice" style="background: linear-gradient(135deg, #0066ff, #00ffff, #ffffff);"></div>
+                    <div class="color-preset" data-scheme="neon" style="background: linear-gradient(135deg, #ff00ff, #00ff00);"></div>
+                    <div class="color-preset" data-scheme="ocean" style="background: linear-gradient(135deg, #001133, #0077be, #00d4ff);"></div>
+                    <div class="color-preset" data-scheme="sunset" style="background: linear-gradient(135deg, #ff4e50, #fc913a, #f9d62e);"></div>
+                    <div class="color-preset" data-scheme="forest" style="background: linear-gradient(135deg, #134e5e, #71b280);"></div>
+                    <div class="color-preset" data-scheme="mono" style="background: linear-gradient(135deg, #ffffff, #888888);"></div>
+                </div>
+            </div>
+
+            <div class="buttons">
+                <button id="resetBtn">Reset View</button>
+                <button id="pauseBtn">Pause</button>
+            </div>
+
+            <div class="info-box" id="infoBox">
+                <h4>Lorenz Attractor</h4>
+                <p>Discovered by Edward Lorenz in 1963 while studying atmospheric convection. Its sensitivity to initial conditions became known as the "butterfly effect."</p>
+                <div class="equation">
+                    dx/dt = σ(y - x)<br>
+                    dy/dt = x(ρ - z) - y<br>
+                    dz/dt = xy - βz
+                </div>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="canvas"></canvas>
+            <div class="stats">
+                <div>Points: <span id="pointCount">0</span></div>
+                <div>FPS: <span id="fps">0</span></div>
+                <div>Lyapunov: <span id="lyapunov">~0.9</span></div>
+            </div>
+            <div class="instructions">Drag to rotate | Scroll to zoom | Double-click to reset</div>
+        </div>
+    </div>
+
+    <script>
+        // Canvas and WebGL setup
+        const canvas = document.getElementById('canvas');
+        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+
+        // State
+        let currentAttractor = 'lorenz';
+        let colorScheme = 'rainbow';
+        let trailLength = 30000;
+        let pointSize = 1;
+        let rotationSpeed = 0.2;
+        let zoom = 50;
+        let isPaused = false;
+
+        let rotationX = 0.3;
+        let rotationY = 0;
+        let isDragging = false;
+        let lastMouseX = 0, lastMouseY = 0;
+
+        let points = [];
+        let colors = [];
+        let lastTime = 0;
+        let frameCount = 0;
+        let fpsTime = 0;
+
+        // Attractor definitions
+        const attractors = {
+            lorenz: {
+                name: 'Lorenz Attractor',
+                description: 'Discovered by Edward Lorenz in 1963 while studying atmospheric convection. Its sensitivity to initial conditions became known as the "butterfly effect."',
+                equation: 'dx/dt = σ(y - x)<br>dy/dt = x(ρ - z) - y<br>dz/dt = xy - βz',
+                params: { sigma: 10, rho: 28, beta: 8/3 },
+                lyapunov: '~0.91',
+                fn: (x, y, z, p) => [
+                    p.sigma * (y - x),
+                    x * (p.rho - z) - y,
+                    x * y - p.beta * z
+                ],
+                scale: 0.05,
+                init: () => [0.1, 0, 0]
+            },
+            rossler: {
+                name: 'Rossler Attractor',
+                description: 'Designed by Otto Rossler in 1976 as a simpler chaotic system. It demonstrates spiral chaos with a distinctive folded band structure.',
+                equation: 'dx/dt = -y - z<br>dy/dt = x + ay<br>dz/dt = b + z(x - c)',
+                params: { a: 0.2, b: 0.2, c: 5.7 },
+                lyapunov: '~0.07',
+                fn: (x, y, z, p) => [
+                    -y - z,
+                    x + p.a * y,
+                    p.b + z * (x - p.c)
+                ],
+                scale: 0.08,
+                init: () => [0.1, 0, 0]
+            },
+            aizawa: {
+                name: 'Aizawa Attractor',
+                description: 'A complex three-dimensional chaotic system with beautiful spiraling behavior and multiple lobes.',
+                equation: 'dx/dt = (z-b)x - dy<br>dy/dt = dx + (z-b)y<br>dz/dt = c + az - z³/3 - (x²+y²)(1+ez) + fzx³',
+                params: { a: 0.95, b: 0.7, c: 0.6, d: 3.5, e: 0.25, f: 0.1 },
+                lyapunov: '~0.10',
+                fn: (x, y, z, p) => [
+                    (z - p.b) * x - p.d * y,
+                    p.d * x + (z - p.b) * y,
+                    p.c + p.a * z - z*z*z/3 - (x*x + y*y) * (1 + p.e * z) + p.f * z * x*x*x
+                ],
+                scale: 0.4,
+                init: () => [0.1, 0, 0]
+            },
+            thomas: {
+                name: 'Thomas Attractor',
+                description: 'A cyclically symmetric attractor discovered by René Thomas. Features beautiful intertwined loops.',
+                equation: 'dx/dt = sin(y) - bx<br>dy/dt = sin(z) - by<br>dz/dt = sin(x) - bz',
+                params: { b: 0.208186 },
+                lyapunov: '~0.03',
+                fn: (x, y, z, p) => [
+                    Math.sin(y) - p.b * x,
+                    Math.sin(z) - p.b * y,
+                    Math.sin(x) - p.b * z
+                ],
+                scale: 0.15,
+                init: () => [0.1, 0, 0]
+            },
+            halvorsen: {
+                name: 'Halvorsen Attractor',
+                description: 'Features a distinctive triple-spiral structure with three symmetric wings rotating around a central axis.',
+                equation: 'dx/dt = -ax - 4y - 4z - y²<br>dy/dt = -ay - 4z - 4x - z²<br>dz/dt = -az - 4x - 4y - x²',
+                params: { a: 1.89 },
+                lyapunov: '~0.80',
+                fn: (x, y, z, p) => [
+                    -p.a * x - 4 * y - 4 * z - y * y,
+                    -p.a * y - 4 * z - 4 * x - z * z,
+                    -p.a * z - 4 * x - 4 * y - x * x
+                ],
+                scale: 0.04,
+                init: () => [-5, 0, 0]
+            },
+            chen: {
+                name: 'Chen Attractor',
+                description: 'Discovered by Guanrong Chen in 1999. A variant of the Lorenz system with different chaotic properties.',
+                equation: 'dx/dt = a(y - x)<br>dy/dt = (c - a)x - xz + cy<br>dz/dt = xy - bz',
+                params: { a: 40, b: 3, c: 28 },
+                lyapunov: '~2.03',
+                fn: (x, y, z, p) => [
+                    p.a * (y - x),
+                    (p.c - p.a) * x - x * z + p.c * y,
+                    x * y - p.b * z
+                ],
+                scale: 0.025,
+                init: () => [-0.1, 0.5, -0.6]
+            },
+            dadras: {
+                name: 'Dadras Attractor',
+                description: 'A multi-wing chaotic system with complex folding structure and high dimensionality.',
+                equation: 'dx/dt = y - ax + byz<br>dy/dt = cy - xz + z<br>dz/dt = dxy - ez',
+                params: { a: 3, b: 2.7, c: 1.7, d: 2, e: 9 },
+                lyapunov: '~0.21',
+                fn: (x, y, z, p) => [
+                    y - p.a * x + p.b * y * z,
+                    p.c * y - x * z + z,
+                    p.d * x * y - p.e * z
+                ],
+                scale: 0.08,
+                init: () => [0.1, 0.03, 0]
+            },
+            sprott: {
+                name: 'Sprott Attractor',
+                description: 'One of the simplest chaotic flows, discovered by Julien Clinton Sprott through computer search.',
+                equation: 'dx/dt = y + axy + xz<br>dy/dt = 1 - bx² + yz<br>dz/dt = x - x² - y²',
+                params: { a: 2.07, b: 1.79 },
+                lyapunov: '~0.06',
+                fn: (x, y, z, p) => [
+                    y + p.a * x * y + x * z,
+                    1 - p.b * x * x + y * z,
+                    x - x * x - y * y
+                ],
+                scale: 0.25,
+                init: () => [0.63, 0.47, -0.54]
+            },
+            fourwing: {
+                name: 'Four-Wing Attractor',
+                description: 'A hyperchaotic system exhibiting four distinct wing-like structures in phase space.',
+                equation: 'dx/dt = ax + yz<br>dy/dt = bx + cy - xz<br>dz/dt = -z - xy',
+                params: { a: 0.2, b: 0.01, c: -0.4 },
+                lyapunov: '~0.15',
+                fn: (x, y, z, p) => [
+                    p.a * x + y * z,
+                    p.b * x + p.c * y - x * z,
+                    -z - x * y
+                ],
+                scale: 0.15,
+                init: () => [1, 1, 1]
+            },
+            rabinovich: {
+                name: 'Rabinovich-Fabrikant',
+                description: 'Originally derived from plasma physics, this attractor shows complex multi-scroll behavior.',
+                equation: 'dx/dt = y(z - 1 + x²) + γx<br>dy/dt = x(3z + 1 - x²) + γy<br>dz/dt = -2z(α + xy)',
+                params: { gamma: 0.87, alpha: 1.1 },
+                lyapunov: '~0.19',
+                fn: (x, y, z, p) => [
+                    y * (z - 1 + x * x) + p.gamma * x,
+                    x * (3 * z + 1 - x * x) + p.gamma * y,
+                    -2 * z * (p.alpha + x * y)
+                ],
+                scale: 0.3,
+                init: () => [-1, 0, 0.5]
+            }
+        };
+
+        // Color schemes
+        const colorSchemes = {
+            rainbow: (t) => {
+                const h = t * 360;
+                return hslToRgb(h, 100, 50);
+            },
+            fire: (t) => {
+                const r = Math.min(255, t * 2 * 255);
+                const g = Math.max(0, Math.min(255, (t - 0.3) * 2 * 255));
+                const b = 0;
+                return [r, g, b];
+            },
+            ice: (t) => {
+                const r = t * 100;
+                const g = t * 200 + 50;
+                const b = 200 + t * 55;
+                return [r, g, b];
+            },
+            neon: (t) => {
+                const r = Math.sin(t * Math.PI) * 255;
+                const g = Math.sin(t * Math.PI + 2) * 127 + 128;
+                const b = Math.cos(t * Math.PI) * 127 + 128;
+                return [r, g, b];
+            },
+            ocean: (t) => {
+                const r = t * 30;
+                const g = 50 + t * 150;
+                const b = 100 + t * 155;
+                return [r, g, b];
+            },
+            sunset: (t) => {
+                const r = 255;
+                const g = 50 + t * 150;
+                const b = 50 + t * 50;
+                return [r, g, b];
+            },
+            forest: (t) => {
+                const r = 20 + t * 80;
+                const g = 80 + t * 100;
+                const b = 50 + t * 50;
+                return [r, g, b];
+            },
+            mono: (t) => {
+                const v = 100 + t * 155;
+                return [v, v, v];
+            }
+        };
+
+        function hslToRgb(h, s, l) {
+            h /= 360; s /= 100; l /= 100;
+            let r, g, b;
+            if (s === 0) {
+                r = g = b = l;
+            } else {
+                const hue2rgb = (p, q, t) => {
+                    if (t < 0) t += 1;
+                    if (t > 1) t -= 1;
+                    if (t < 1/6) return p + (q - p) * 6 * t;
+                    if (t < 1/2) return q;
+                    if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+                    return p;
+                };
+                const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                const p = 2 * l - q;
+                r = hue2rgb(p, q, h + 1/3);
+                g = hue2rgb(p, q, h);
+                b = hue2rgb(p, q, h - 1/3);
+            }
+            return [r * 255, g * 255, b * 255];
+        }
+
+        // WebGL shaders
+        const vertexShaderSource = `
+            attribute vec3 aPosition;
+            attribute vec3 aColor;
+            uniform mat4 uProjection;
+            uniform mat4 uModelView;
+            uniform float uPointSize;
+            varying vec3 vColor;
+            void main() {
+                gl_Position = uProjection * uModelView * vec4(aPosition, 1.0);
+                gl_PointSize = uPointSize;
+                vColor = aColor;
+            }
+        `;
+
+        const fragmentShaderSource = `
+            precision mediump float;
+            varying vec3 vColor;
+            void main() {
+                float dist = length(gl_PointCoord - vec2(0.5));
+                if (dist > 0.5) discard;
+                float alpha = 1.0 - dist * 2.0;
+                gl_FragColor = vec4(vColor, alpha * 0.8);
+            }
+        `;
+
+        // Initialize WebGL
+        let program, positionBuffer, colorBuffer;
+        let uProjection, uModelView, uPointSize;
+
+        function initWebGL() {
+            // Compile shaders
+            const vertexShader = gl.createShader(gl.VERTEX_SHADER);
+            gl.shaderSource(vertexShader, vertexShaderSource);
+            gl.compileShader(vertexShader);
+
+            const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+            gl.shaderSource(fragmentShader, fragmentShaderSource);
+            gl.compileShader(fragmentShader);
+
+            program = gl.createProgram();
+            gl.attachShader(program, vertexShader);
+            gl.attachShader(program, fragmentShader);
+            gl.linkProgram(program);
+            gl.useProgram(program);
+
+            // Get attribute/uniform locations
+            const aPosition = gl.getAttribLocation(program, 'aPosition');
+            const aColor = gl.getAttribLocation(program, 'aColor');
+            uProjection = gl.getUniformLocation(program, 'uProjection');
+            uModelView = gl.getUniformLocation(program, 'uModelView');
+            uPointSize = gl.getUniformLocation(program, 'uPointSize');
+
+            // Create buffers
+            positionBuffer = gl.createBuffer();
+            colorBuffer = gl.createBuffer();
+
+            gl.enableVertexAttribArray(aPosition);
+            gl.enableVertexAttribArray(aColor);
+
+            // Bind position buffer
+            gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+            gl.vertexAttribPointer(aPosition, 3, gl.FLOAT, false, 0, 0);
+
+            // Enable blending
+            gl.enable(gl.BLEND);
+            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+        }
+
+        // Generate attractor points
+        function generatePoints() {
+            const attractor = attractors[currentAttractor];
+            const dt = 0.005;
+            let [x, y, z] = attractor.init();
+
+            points = [];
+            colors = [];
+
+            // Warm up
+            for (let i = 0; i < 1000; i++) {
+                const [dx, dy, dz] = attractor.fn(x, y, z, attractor.params);
+                x += dx * dt;
+                y += dy * dt;
+                z += dz * dt;
+            }
+
+            // Generate trail
+            for (let i = 0; i < trailLength; i++) {
+                const [dx, dy, dz] = attractor.fn(x, y, z, attractor.params);
+                x += dx * dt;
+                y += dy * dt;
+                z += dz * dt;
+
+                points.push(x * attractor.scale, y * attractor.scale, z * attractor.scale);
+
+                const t = i / trailLength;
+                const [r, g, b] = colorSchemes[colorScheme](t);
+                colors.push(r / 255, g / 255, b / 255);
+            }
+
+            // Update buffers
+            gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(points), gl.STATIC_DRAW);
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+
+            // Rebind for drawing
+            const aColor = gl.getAttribLocation(program, 'aColor');
+            gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+            gl.vertexAttribPointer(aColor, 3, gl.FLOAT, false, 0, 0);
+
+            document.getElementById('pointCount').textContent = trailLength.toLocaleString();
+        }
+
+        // Matrix utilities
+        function perspective(fov, aspect, near, far) {
+            const f = 1 / Math.tan(fov / 2);
+            return new Float32Array([
+                f / aspect, 0, 0, 0,
+                0, f, 0, 0,
+                0, 0, (far + near) / (near - far), -1,
+                0, 0, (2 * far * near) / (near - far), 0
+            ]);
+        }
+
+        function multiply(a, b) {
+            const result = new Float32Array(16);
+            for (let i = 0; i < 4; i++) {
+                for (let j = 0; j < 4; j++) {
+                    result[i * 4 + j] = 0;
+                    for (let k = 0; k < 4; k++) {
+                        result[i * 4 + j] += a[i * 4 + k] * b[k * 4 + j];
+                    }
+                }
+            }
+            return result;
+        }
+
+        function rotateX(angle) {
+            const c = Math.cos(angle), s = Math.sin(angle);
+            return new Float32Array([
+                1, 0, 0, 0,
+                0, c, s, 0,
+                0, -s, c, 0,
+                0, 0, 0, 1
+            ]);
+        }
+
+        function rotateY(angle) {
+            const c = Math.cos(angle), s = Math.sin(angle);
+            return new Float32Array([
+                c, 0, -s, 0,
+                0, 1, 0, 0,
+                s, 0, c, 0,
+                0, 0, 0, 1
+            ]);
+        }
+
+        function translate(x, y, z) {
+            return new Float32Array([
+                1, 0, 0, 0,
+                0, 1, 0, 0,
+                0, 0, 1, 0,
+                x, y, z, 1
+            ]);
+        }
+
+        // Render loop
+        function render(time) {
+            frameCount++;
+            if (time - fpsTime > 1000) {
+                document.getElementById('fps').textContent = frameCount;
+                frameCount = 0;
+                fpsTime = time;
+            }
+
+            if (!isPaused) {
+                rotationY += rotationSpeed * 0.01;
+            }
+
+            const width = canvas.width;
+            const height = canvas.height;
+
+            gl.viewport(0, 0, width, height);
+            gl.clearColor(0, 0, 0, 1);
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+            // Set matrices
+            const projection = perspective(Math.PI / 4, width / height, 0.1, 100);
+            const zoomFactor = zoom / 50;
+            let modelView = translate(0, 0, -5 / zoomFactor);
+            modelView = multiply(modelView, rotateX(rotationX));
+            modelView = multiply(modelView, rotateY(rotationY));
+
+            gl.uniformMatrix4fv(uProjection, false, projection);
+            gl.uniformMatrix4fv(uModelView, false, modelView);
+            gl.uniform1f(uPointSize, pointSize * window.devicePixelRatio);
+
+            // Draw points
+            gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+            gl.drawArrays(gl.POINTS, 0, trailLength);
+
+            requestAnimationFrame(render);
+        }
+
+        // Resize handler
+        function resize() {
+            canvas.width = canvas.clientWidth * window.devicePixelRatio;
+            canvas.height = canvas.clientHeight * window.devicePixelRatio;
+        }
+
+        // Event listeners
+        document.querySelectorAll('.attractor-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.attractor-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentAttractor = btn.dataset.attractor;
+
+                const attractor = attractors[currentAttractor];
+                document.getElementById('infoBox').innerHTML = `
+                    <h4>${attractor.name}</h4>
+                    <p>${attractor.description}</p>
+                    <div class="equation">${attractor.equation}</div>
+                `;
+                document.getElementById('lyapunov').textContent = attractor.lyapunov;
+
+                generatePoints();
+            });
+        });
+
+        document.querySelectorAll('.color-preset').forEach(preset => {
+            preset.addEventListener('click', () => {
+                document.querySelectorAll('.color-preset').forEach(p => p.classList.remove('active'));
+                preset.classList.add('active');
+                colorScheme = preset.dataset.scheme;
+                generatePoints();
+            });
+        });
+
+        document.getElementById('trailLength').addEventListener('input', e => {
+            trailLength = parseInt(e.target.value);
+            document.getElementById('trailVal').textContent = trailLength.toLocaleString() + ' points';
+            generatePoints();
+        });
+
+        document.getElementById('pointSize').addEventListener('input', e => {
+            pointSize = parseFloat(e.target.value);
+            document.getElementById('sizeVal').textContent = pointSize + ' px';
+        });
+
+        document.getElementById('rotSpeed').addEventListener('input', e => {
+            rotationSpeed = parseInt(e.target.value) / 100;
+            document.getElementById('rotVal').textContent = e.target.value + '%';
+        });
+
+        document.getElementById('zoom').addEventListener('input', e => {
+            zoom = parseInt(e.target.value);
+            document.getElementById('zoomVal').textContent = e.target.value + '%';
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            rotationX = 0.3;
+            rotationY = 0;
+            zoom = 50;
+            document.getElementById('zoom').value = 50;
+            document.getElementById('zoomVal').textContent = '50%';
+        });
+
+        document.getElementById('pauseBtn').addEventListener('click', () => {
+            isPaused = !isPaused;
+            document.getElementById('pauseBtn').textContent = isPaused ? 'Resume' : 'Pause';
+        });
+
+        // Mouse controls
+        canvas.addEventListener('mousedown', e => {
+            isDragging = true;
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+        });
+
+        canvas.addEventListener('mousemove', e => {
+            if (isDragging) {
+                const dx = e.clientX - lastMouseX;
+                const dy = e.clientY - lastMouseY;
+                rotationY += dx * 0.01;
+                rotationX += dy * 0.01;
+                lastMouseX = e.clientX;
+                lastMouseY = e.clientY;
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => isDragging = false);
+        canvas.addEventListener('mouseleave', () => isDragging = false);
+
+        canvas.addEventListener('wheel', e => {
+            e.preventDefault();
+            zoom = Math.max(10, Math.min(200, zoom - e.deltaY * 0.1));
+            document.getElementById('zoom').value = zoom;
+            document.getElementById('zoomVal').textContent = Math.round(zoom) + '%';
+        });
+
+        canvas.addEventListener('dblclick', () => {
+            rotationX = 0.3;
+            rotationY = 0;
+            zoom = 50;
+            document.getElementById('zoom').value = 50;
+            document.getElementById('zoomVal').textContent = '50%';
+        });
+
+        // Initialize
+        window.addEventListener('resize', resize);
+        resize();
+        initWebGL();
+        generatePoints();
+        requestAnimationFrame(render);
+    </script>
+</body>
+</html>

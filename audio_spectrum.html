@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Spectrum Analyzer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #0a0a15 0%, #1a1a2e 50%, #0f0f1a 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        header {
+            padding: 15px 25px;
+            background: linear-gradient(90deg, rgba(102, 126, 234, 0.8), rgba(118, 75, 162, 0.8));
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        h1 {
+            font-size: 1.5em;
+            font-weight: 500;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .control-btn {
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .control-btn.active {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: white;
+        }
+
+        .control-btn.primary {
+            background: linear-gradient(135deg, #00c853 0%, #00e676 100%);
+            border-color: transparent;
+        }
+
+        .control-btn.primary:hover {
+            filter: brightness(1.1);
+        }
+
+        select {
+            padding: 10px 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+
+        select option {
+            background: #1a1a2e;
+            color: white;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            gap: 20px;
+        }
+
+        .visualization-container {
+            flex: 1;
+            position: relative;
+            background: rgba(20, 20, 35, 0.8);
+            border-radius: 12px;
+            overflow: hidden;
+            min-height: 300px;
+        }
+
+        #spectrum-canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .secondary-row {
+            display: flex;
+            gap: 20px;
+            height: 200px;
+        }
+
+        .waveform-container, .stats-container {
+            flex: 1;
+            background: rgba(20, 20, 35, 0.8);
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .panel-title {
+            position: absolute;
+            top: 10px;
+            left: 15px;
+            font-size: 0.85em;
+            color: #667eea;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            z-index: 10;
+        }
+
+        #waveform-canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            padding: 40px 20px 20px;
+            height: 100%;
+        }
+
+        .stat-item {
+            background: rgba(40, 40, 60, 0.5);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .stat-label {
+            font-size: 0.75em;
+            color: #888;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .stat-value {
+            font-size: 1.4em;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .stat-unit {
+            font-size: 0.7em;
+            color: #888;
+            margin-left: 3px;
+        }
+
+        .frequency-labels {
+            position: absolute;
+            bottom: 5px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 20px;
+            font-size: 0.7em;
+            color: #666;
+        }
+
+        .no-audio {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #666;
+        }
+
+        .no-audio h2 {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+            color: #888;
+        }
+
+        .no-audio p {
+            font-size: 0.9em;
+        }
+
+        .settings-panel {
+            position: absolute;
+            top: 50px;
+            right: 20px;
+            background: rgba(20, 20, 35, 0.95);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #333;
+            display: none;
+            z-index: 100;
+            min-width: 280px;
+        }
+
+        .settings-panel.visible {
+            display: block;
+        }
+
+        .settings-title {
+            font-size: 1.1em;
+            color: #667eea;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #333;
+        }
+
+        .setting-group {
+            margin-bottom: 15px;
+        }
+
+        .setting-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85em;
+            color: #aaa;
+            margin-bottom: 6px;
+        }
+
+        .setting-value {
+            color: #667eea;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            background: #333;
+            border-radius: 3px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .color-scheme-btns {
+            display: flex;
+            gap: 8px;
+        }
+
+        .color-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .color-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .color-btn.active {
+            border-color: white;
+        }
+
+        .oscillator-panel {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(20, 20, 35, 0.95);
+            padding: 15px 25px;
+            border-radius: 12px;
+            border: 1px solid #333;
+            display: none;
+            z-index: 100;
+        }
+
+        .oscillator-panel.visible {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .osc-control {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .osc-label {
+            font-size: 0.75em;
+            color: #888;
+            text-transform: uppercase;
+        }
+
+        .osc-value {
+            font-size: 1.1em;
+            color: #667eea;
+            font-weight: 500;
+        }
+
+        .osc-slider {
+            width: 120px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Audio Spectrum Analyzer</h1>
+            <div class="controls">
+                <button class="control-btn primary" id="mic-btn">
+                    <span>🎤</span> Use Microphone
+                </button>
+                <button class="control-btn" id="osc-btn">
+                    <span>🎵</span> Test Oscillator
+                </button>
+                <select id="vis-mode">
+                    <option value="bars">Bar Graph</option>
+                    <option value="line">Line Graph</option>
+                    <option value="circular">Circular</option>
+                    <option value="mirror">Mirror</option>
+                    <option value="particles">Particles</option>
+                    <option value="waterfall">Waterfall</option>
+                </select>
+                <button class="control-btn" id="settings-btn">⚙ Settings</button>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <div class="visualization-container">
+                <canvas id="spectrum-canvas"></canvas>
+                <div class="frequency-labels">
+                    <span>20 Hz</span>
+                    <span>100 Hz</span>
+                    <span>1 kHz</span>
+                    <span>10 kHz</span>
+                    <span>20 kHz</span>
+                </div>
+                <div class="no-audio" id="no-audio">
+                    <h2>No Audio Input</h2>
+                    <p>Click "Use Microphone" or "Test Oscillator" to start</p>
+                </div>
+            </div>
+
+            <div class="secondary-row">
+                <div class="waveform-container">
+                    <div class="panel-title">Waveform</div>
+                    <canvas id="waveform-canvas"></canvas>
+                </div>
+                <div class="stats-container">
+                    <div class="panel-title">Analysis</div>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-label">Peak Frequency</div>
+                            <div class="stat-value"><span id="peak-freq">--</span><span class="stat-unit">Hz</span></div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Peak Amplitude</div>
+                            <div class="stat-value"><span id="peak-amp">--</span><span class="stat-unit">dB</span></div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">RMS Level</div>
+                            <div class="stat-value"><span id="rms-level">--</span><span class="stat-unit">dB</span></div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Note</div>
+                            <div class="stat-value"><span id="detected-note">--</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-panel" id="settings-panel">
+            <div class="settings-title">Visualization Settings</div>
+
+            <div class="setting-group">
+                <div class="setting-label">
+                    <span>FFT Size</span>
+                    <span class="setting-value" id="fft-value">2048</span>
+                </div>
+                <input type="range" id="fft-size" min="8" max="13" value="11" step="1">
+            </div>
+
+            <div class="setting-group">
+                <div class="setting-label">
+                    <span>Smoothing</span>
+                    <span class="setting-value" id="smooth-value">0.8</span>
+                </div>
+                <input type="range" id="smoothing" min="0" max="0.99" value="0.8" step="0.01">
+            </div>
+
+            <div class="setting-group">
+                <div class="setting-label">
+                    <span>Min Decibels</span>
+                    <span class="setting-value" id="min-db-value">-90</span>
+                </div>
+                <input type="range" id="min-db" min="-120" max="-60" value="-90" step="5">
+            </div>
+
+            <div class="setting-group">
+                <div class="setting-label">
+                    <span>Max Decibels</span>
+                    <span class="setting-value" id="max-db-value">-10</span>
+                </div>
+                <input type="range" id="max-db" min="-40" max="0" value="-10" step="5">
+            </div>
+
+            <div class="setting-group">
+                <div class="setting-label">
+                    <span>Color Scheme</span>
+                </div>
+                <div class="color-scheme-btns">
+                    <button class="color-btn active" data-scheme="spectrum" style="background: linear-gradient(135deg, #667eea, #764ba2)"></button>
+                    <button class="color-btn" data-scheme="fire" style="background: linear-gradient(135deg, #ff0000, #ff9900)"></button>
+                    <button class="color-btn" data-scheme="ocean" style="background: linear-gradient(135deg, #00c6ff, #0072ff)"></button>
+                    <button class="color-btn" data-scheme="matrix" style="background: linear-gradient(135deg, #00ff00, #003300)"></button>
+                    <button class="color-btn" data-scheme="rainbow" style="background: linear-gradient(to right, red, orange, yellow, green, blue, purple)"></button>
+                </div>
+            </div>
+        </div>
+
+        <div class="oscillator-panel" id="oscillator-panel">
+            <div class="osc-control">
+                <span class="osc-label">Frequency</span>
+                <span class="osc-value"><span id="osc-freq-value">440</span> Hz</span>
+                <input type="range" class="osc-slider" id="osc-freq" min="20" max="2000" value="440">
+            </div>
+            <div class="osc-control">
+                <span class="osc-label">Waveform</span>
+                <select id="osc-wave">
+                    <option value="sine">Sine</option>
+                    <option value="square">Square</option>
+                    <option value="sawtooth">Sawtooth</option>
+                    <option value="triangle">Triangle</option>
+                </select>
+            </div>
+            <div class="osc-control">
+                <span class="osc-label">Volume</span>
+                <span class="osc-value"><span id="osc-vol-value">50</span>%</span>
+                <input type="range" class="osc-slider" id="osc-vol" min="0" max="100" value="50">
+            </div>
+            <button class="control-btn" id="osc-stop">Stop</button>
+        </div>
+    </div>
+
+    <script>
+        // Audio context and nodes
+        let audioContext = null;
+        let analyser = null;
+        let source = null;
+        let oscillator = null;
+        let gainNode = null;
+
+        // Canvases
+        const spectrumCanvas = document.getElementById('spectrum-canvas');
+        const spectrumCtx = spectrumCanvas.getContext('2d');
+        const waveformCanvas = document.getElementById('waveform-canvas');
+        const waveformCtx = waveformCanvas.getContext('2d');
+
+        // Data arrays
+        let frequencyData = null;
+        let timeData = null;
+
+        // Visualization state
+        let visMode = 'bars';
+        let colorScheme = 'spectrum';
+        let isActive = false;
+        let particles = [];
+        let waterfallData = [];
+
+        // Settings
+        let fftSize = 2048;
+        let smoothing = 0.8;
+        let minDb = -90;
+        let maxDb = -10;
+
+        // Note frequencies for detection
+        const noteFrequencies = {
+            'C': [16.35, 32.70, 65.41, 130.81, 261.63, 523.25, 1046.50, 2093.00, 4186.01],
+            'C#': [17.32, 34.65, 69.30, 138.59, 277.18, 554.37, 1108.73, 2217.46, 4434.92],
+            'D': [18.35, 36.71, 73.42, 146.83, 293.66, 587.33, 1174.66, 2349.32, 4698.63],
+            'D#': [19.45, 38.89, 77.78, 155.56, 311.13, 622.25, 1244.51, 2489.02, 4978.03],
+            'E': [20.60, 41.20, 82.41, 164.81, 329.63, 659.25, 1318.51, 2637.02, 5274.04],
+            'F': [21.83, 43.65, 87.31, 174.61, 349.23, 698.46, 1396.91, 2793.83, 5587.65],
+            'F#': [23.12, 46.25, 92.50, 185.00, 369.99, 739.99, 1479.98, 2959.96, 5919.91],
+            'G': [24.50, 49.00, 98.00, 196.00, 392.00, 783.99, 1567.98, 3135.96, 6271.93],
+            'G#': [25.96, 51.91, 103.83, 207.65, 415.30, 830.61, 1661.22, 3322.44, 6644.88],
+            'A': [27.50, 55.00, 110.00, 220.00, 440.00, 880.00, 1760.00, 3520.00, 7040.00],
+            'A#': [29.14, 58.27, 116.54, 233.08, 466.16, 932.33, 1864.66, 3729.31, 7458.62],
+            'B': [30.87, 61.74, 123.47, 246.94, 493.88, 987.77, 1975.53, 3951.07, 7902.13]
+        };
+
+        // Initialize audio context
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = fftSize;
+            analyser.smoothingTimeConstant = smoothing;
+            analyser.minDecibels = minDb;
+            analyser.maxDecibels = maxDb;
+
+            frequencyData = new Uint8Array(analyser.frequencyBinCount);
+            timeData = new Uint8Array(analyser.fftSize);
+        }
+
+        // Start microphone input
+        async function startMicrophone() {
+            try {
+                initAudio();
+
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                source = audioContext.createMediaStreamSource(stream);
+                source.connect(analyser);
+
+                isActive = true;
+                document.getElementById('no-audio').style.display = 'none';
+                document.getElementById('mic-btn').classList.add('active');
+
+                draw();
+            } catch (err) {
+                console.error('Microphone access denied:', err);
+                alert('Could not access microphone. Please grant permission.');
+            }
+        }
+
+        // Start test oscillator
+        function startOscillator() {
+            initAudio();
+
+            if (oscillator) {
+                oscillator.stop();
+            }
+
+            oscillator = audioContext.createOscillator();
+            gainNode = audioContext.createGain();
+
+            oscillator.type = document.getElementById('osc-wave').value;
+            oscillator.frequency.value = parseFloat(document.getElementById('osc-freq').value);
+            gainNode.gain.value = parseFloat(document.getElementById('osc-vol').value) / 100 * 0.5;
+
+            oscillator.connect(gainNode);
+            gainNode.connect(analyser);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.start();
+
+            isActive = true;
+            document.getElementById('no-audio').style.display = 'none';
+            document.getElementById('oscillator-panel').classList.add('visible');
+            document.getElementById('osc-btn').classList.add('active');
+
+            draw();
+        }
+
+        // Stop oscillator
+        function stopOscillator() {
+            if (oscillator) {
+                oscillator.stop();
+                oscillator = null;
+            }
+            document.getElementById('oscillator-panel').classList.remove('visible');
+            document.getElementById('osc-btn').classList.remove('active');
+
+            if (!source) {
+                isActive = false;
+                document.getElementById('no-audio').style.display = 'block';
+            }
+        }
+
+        // Color schemes
+        function getColor(value, index, total) {
+            const t = value / 255;
+            const i = index / total;
+
+            switch (colorScheme) {
+                case 'spectrum':
+                    const r = Math.floor(102 + t * 153);
+                    const g = Math.floor(126 - t * 51);
+                    const b = Math.floor(234 - t * 72);
+                    return `rgb(${r}, ${g}, ${b})`;
+
+                case 'fire':
+                    return `rgb(${Math.floor(255 * t)}, ${Math.floor(150 * t)}, 0)`;
+
+                case 'ocean':
+                    return `rgb(0, ${Math.floor(198 * t)}, ${Math.floor(255 * t)})`;
+
+                case 'matrix':
+                    return `rgb(0, ${Math.floor(255 * t)}, 0)`;
+
+                case 'rainbow':
+                    const hue = (i * 360) % 360;
+                    return `hsl(${hue}, 100%, ${30 + t * 40}%)`;
+
+                default:
+                    return `rgb(${Math.floor(255 * t)}, ${Math.floor(255 * t)}, ${Math.floor(255 * t)})`;
+            }
+        }
+
+        // Get gradient for bars
+        function getBarGradient(ctx, height, value) {
+            const gradient = ctx.createLinearGradient(0, height, 0, 0);
+
+            switch (colorScheme) {
+                case 'spectrum':
+                    gradient.addColorStop(0, '#667eea');
+                    gradient.addColorStop(0.5, '#764ba2');
+                    gradient.addColorStop(1, '#f093fb');
+                    break;
+                case 'fire':
+                    gradient.addColorStop(0, '#ff0000');
+                    gradient.addColorStop(0.5, '#ff6600');
+                    gradient.addColorStop(1, '#ffff00');
+                    break;
+                case 'ocean':
+                    gradient.addColorStop(0, '#0072ff');
+                    gradient.addColorStop(0.5, '#00c6ff');
+                    gradient.addColorStop(1, '#00ffff');
+                    break;
+                case 'matrix':
+                    gradient.addColorStop(0, '#003300');
+                    gradient.addColorStop(0.5, '#00ff00');
+                    gradient.addColorStop(1, '#ccffcc');
+                    break;
+                case 'rainbow':
+                    gradient.addColorStop(0, 'red');
+                    gradient.addColorStop(0.17, 'orange');
+                    gradient.addColorStop(0.33, 'yellow');
+                    gradient.addColorStop(0.5, 'green');
+                    gradient.addColorStop(0.67, 'blue');
+                    gradient.addColorStop(0.83, 'indigo');
+                    gradient.addColorStop(1, 'violet');
+                    break;
+            }
+
+            return gradient;
+        }
+
+        // Draw bar visualization
+        function drawBars() {
+            const width = spectrumCanvas.width;
+            const height = spectrumCanvas.height;
+            const barCount = Math.min(frequencyData.length, 256);
+            const barWidth = width / barCount;
+            const gradient = getBarGradient(spectrumCtx, height, 1);
+
+            spectrumCtx.fillStyle = gradient;
+
+            for (let i = 0; i < barCount; i++) {
+                const value = frequencyData[i];
+                const barHeight = (value / 255) * height * 0.9;
+
+                spectrumCtx.fillRect(
+                    i * barWidth,
+                    height - barHeight,
+                    barWidth - 1,
+                    barHeight
+                );
+            }
+        }
+
+        // Draw line visualization
+        function drawLine() {
+            const width = spectrumCanvas.width;
+            const height = spectrumCanvas.height;
+            const barCount = Math.min(frequencyData.length, 512);
+
+            spectrumCtx.beginPath();
+            spectrumCtx.moveTo(0, height);
+
+            for (let i = 0; i < barCount; i++) {
+                const x = (i / barCount) * width;
+                const y = height - (frequencyData[i] / 255) * height * 0.9;
+                spectrumCtx.lineTo(x, y);
+            }
+
+            spectrumCtx.lineTo(width, height);
+            spectrumCtx.closePath();
+
+            const gradient = getBarGradient(spectrumCtx, height, 1);
+            spectrumCtx.fillStyle = gradient;
+            spectrumCtx.globalAlpha = 0.5;
+            spectrumCtx.fill();
+            spectrumCtx.globalAlpha = 1;
+
+            // Draw line
+            spectrumCtx.beginPath();
+            for (let i = 0; i < barCount; i++) {
+                const x = (i / barCount) * width;
+                const y = height - (frequencyData[i] / 255) * height * 0.9;
+                if (i === 0) spectrumCtx.moveTo(x, y);
+                else spectrumCtx.lineTo(x, y);
+            }
+            spectrumCtx.strokeStyle = '#fff';
+            spectrumCtx.lineWidth = 2;
+            spectrumCtx.stroke();
+        }
+
+        // Draw circular visualization
+        function drawCircular() {
+            const width = spectrumCanvas.width;
+            const height = spectrumCanvas.height;
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const radius = Math.min(width, height) * 0.3;
+            const barCount = Math.min(frequencyData.length, 180);
+
+            for (let i = 0; i < barCount; i++) {
+                const angle = (i / barCount) * Math.PI * 2 - Math.PI / 2;
+                const value = frequencyData[i] / 255;
+                const barLength = value * radius;
+
+                const x1 = centerX + Math.cos(angle) * radius;
+                const y1 = centerY + Math.sin(angle) * radius;
+                const x2 = centerX + Math.cos(angle) * (radius + barLength);
+                const y2 = centerY + Math.sin(angle) * (radius + barLength);
+
+                spectrumCtx.beginPath();
+                spectrumCtx.moveTo(x1, y1);
+                spectrumCtx.lineTo(x2, y2);
+                spectrumCtx.strokeStyle = getColor(frequencyData[i], i, barCount);
+                spectrumCtx.lineWidth = 3;
+                spectrumCtx.stroke();
+            }
+
+            // Inner circle
+            spectrumCtx.beginPath();
+            spectrumCtx.arc(centerX, centerY, radius - 5, 0, Math.PI * 2);
+            spectrumCtx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            spectrumCtx.lineWidth = 2;
+            spectrumCtx.stroke();
+        }
+
+        // Draw mirror visualization
+        function drawMirror() {
+            const width = spectrumCanvas.width;
+            const height = spectrumCanvas.height;
+            const barCount = Math.min(frequencyData.length, 128);
+            const barWidth = width / barCount;
+            const gradient = getBarGradient(spectrumCtx, height / 2, 1);
+
+            spectrumCtx.fillStyle = gradient;
+
+            for (let i = 0; i < barCount; i++) {
+                const value = frequencyData[i];
+                const barHeight = (value / 255) * height * 0.45;
+
+                // Top half
+                spectrumCtx.fillRect(
+                    i * barWidth,
+                    height / 2 - barHeight,
+                    barWidth - 1,
+                    barHeight
+                );
+
+                // Bottom half (mirrored)
+                spectrumCtx.fillRect(
+                    i * barWidth,
+                    height / 2,
+                    barWidth - 1,
+                    barHeight
+                );
+            }
+
+            // Center line
+            spectrumCtx.beginPath();
+            spectrumCtx.moveTo(0, height / 2);
+            spectrumCtx.lineTo(width, height / 2);
+            spectrumCtx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            spectrumCtx.lineWidth = 1;
+            spectrumCtx.stroke();
+        }
+
+        // Draw particles visualization
+        function drawParticles() {
+            const width = spectrumCanvas.width;
+            const height = spectrumCanvas.height;
+
+            // Calculate average amplitude
+            let avg = 0;
+            for (let i = 0; i < frequencyData.length; i++) {
+                avg += frequencyData[i];
+            }
+            avg /= frequencyData.length;
+
+            // Spawn new particles based on amplitude
+            if (avg > 50 && Math.random() < avg / 255) {
+                const freqIndex = Math.floor(Math.random() * frequencyData.length);
+                particles.push({
+                    x: (freqIndex / frequencyData.length) * width,
+                    y: height,
+                    vx: (Math.random() - 0.5) * 4,
+                    vy: -2 - Math.random() * 4 * (frequencyData[freqIndex] / 255),
+                    size: 2 + Math.random() * 6 * (frequencyData[freqIndex] / 255),
+                    color: getColor(frequencyData[freqIndex], freqIndex, frequencyData.length),
+                    life: 1
+                });
+            }
+
+            // Update and draw particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.05; // gravity
+                p.life -= 0.01;
+
+                if (p.life <= 0 || p.y > height) {
+                    particles.splice(i, 1);
+                    continue;
+                }
+
+                spectrumCtx.beginPath();
+                spectrumCtx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+                spectrumCtx.fillStyle = p.color;
+                spectrumCtx.globalAlpha = p.life;
+                spectrumCtx.fill();
+                spectrumCtx.globalAlpha = 1;
+            }
+
+            // Limit particles
+            if (particles.length > 500) {
+                particles = particles.slice(-500);
+            }
+        }
+
+        // Draw waterfall visualization
+        function drawWaterfall() {
+            const width = spectrumCanvas.width;
+            const height = spectrumCanvas.height;
+            const barCount = Math.min(frequencyData.length, 256);
+
+            // Add new row
+            waterfallData.unshift(Array.from(frequencyData).slice(0, barCount));
+
+            // Limit history
+            const maxRows = Math.ceil(height / 2);
+            if (waterfallData.length > maxRows) {
+                waterfallData = waterfallData.slice(0, maxRows);
+            }
+
+            // Draw waterfall
+            const rowHeight = 2;
+            const colWidth = width / barCount;
+
+            for (let row = 0; row < waterfallData.length; row++) {
+                const data = waterfallData[row];
+                for (let col = 0; col < data.length; col++) {
+                    spectrumCtx.fillStyle = getColor(data[col], col, data.length);
+                    spectrumCtx.fillRect(
+                        col * colWidth,
+                        row * rowHeight,
+                        colWidth,
+                        rowHeight
+                    );
+                }
+            }
+        }
+
+        // Draw waveform
+        function drawWaveform() {
+            const width = waveformCanvas.width;
+            const height = waveformCanvas.height;
+
+            waveformCtx.clearRect(0, 0, width, height);
+
+            waveformCtx.beginPath();
+            const sliceWidth = width / timeData.length;
+
+            for (let i = 0; i < timeData.length; i++) {
+                const v = timeData[i] / 128.0;
+                const y = (v * height) / 2;
+
+                if (i === 0) {
+                    waveformCtx.moveTo(0, y);
+                } else {
+                    waveformCtx.lineTo(i * sliceWidth, y);
+                }
+            }
+
+            waveformCtx.strokeStyle = '#667eea';
+            waveformCtx.lineWidth = 2;
+            waveformCtx.stroke();
+
+            // Center line
+            waveformCtx.beginPath();
+            waveformCtx.moveTo(0, height / 2);
+            waveformCtx.lineTo(width, height / 2);
+            waveformCtx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            waveformCtx.lineWidth = 1;
+            waveformCtx.stroke();
+        }
+
+        // Detect note from frequency
+        function detectNote(frequency) {
+            if (frequency < 20) return '--';
+
+            let closestNote = '--';
+            let closestDist = Infinity;
+
+            for (const [note, freqs] of Object.entries(noteFrequencies)) {
+                for (let octave = 0; octave < freqs.length; octave++) {
+                    const dist = Math.abs(frequency - freqs[octave]);
+                    if (dist < closestDist) {
+                        closestDist = dist;
+                        closestNote = note + (octave + 1);
+                    }
+                }
+            }
+
+            // Only return note if within 5% of the frequency
+            const noteFreq = noteFrequencies[closestNote.slice(0, -1)][parseInt(closestNote.slice(-1)) - 1];
+            if (Math.abs(frequency - noteFreq) / noteFreq > 0.05) {
+                return '--';
+            }
+
+            return closestNote;
+        }
+
+        // Update statistics
+        function updateStats() {
+            if (!isActive) return;
+
+            // Find peak frequency
+            let peakIndex = 0;
+            let peakValue = 0;
+
+            for (let i = 0; i < frequencyData.length; i++) {
+                if (frequencyData[i] > peakValue) {
+                    peakValue = frequencyData[i];
+                    peakIndex = i;
+                }
+            }
+
+            const nyquist = audioContext.sampleRate / 2;
+            const peakFreq = (peakIndex / frequencyData.length) * nyquist;
+
+            document.getElementById('peak-freq').textContent =
+                peakFreq > 0 ? Math.round(peakFreq) : '--';
+
+            // Peak amplitude in dB
+            const peakDb = peakValue > 0 ?
+                (peakValue / 255 * (maxDb - minDb) + minDb).toFixed(1) : '--';
+            document.getElementById('peak-amp').textContent = peakDb;
+
+            // RMS level
+            let rms = 0;
+            for (let i = 0; i < timeData.length; i++) {
+                const v = (timeData[i] - 128) / 128;
+                rms += v * v;
+            }
+            rms = Math.sqrt(rms / timeData.length);
+            const rmsDb = rms > 0 ? (20 * Math.log10(rms)).toFixed(1) : '-Inf';
+            document.getElementById('rms-level').textContent = rmsDb;
+
+            // Note detection
+            const note = peakValue > 30 ? detectNote(peakFreq) : '--';
+            document.getElementById('detected-note').textContent = note;
+        }
+
+        // Main draw loop
+        function draw() {
+            if (!isActive) return;
+
+            requestAnimationFrame(draw);
+
+            // Get data
+            analyser.getByteFrequencyData(frequencyData);
+            analyser.getByteTimeDomainData(timeData);
+
+            // Clear spectrum canvas
+            spectrumCtx.fillStyle = 'rgba(10, 10, 20, 0.3)';
+            spectrumCtx.fillRect(0, 0, spectrumCanvas.width, spectrumCanvas.height);
+
+            // Draw visualization based on mode
+            switch (visMode) {
+                case 'bars': drawBars(); break;
+                case 'line': drawLine(); break;
+                case 'circular': drawCircular(); break;
+                case 'mirror': drawMirror(); break;
+                case 'particles': drawParticles(); break;
+                case 'waterfall': drawWaterfall(); break;
+            }
+
+            // Draw waveform
+            drawWaveform();
+
+            // Update stats
+            updateStats();
+        }
+
+        // Resize canvases
+        function resizeCanvases() {
+            const spectrumContainer = spectrumCanvas.parentElement;
+            spectrumCanvas.width = spectrumContainer.clientWidth;
+            spectrumCanvas.height = spectrumContainer.clientHeight;
+
+            const waveformContainer = waveformCanvas.parentElement;
+            waveformCanvas.width = waveformContainer.clientWidth;
+            waveformCanvas.height = waveformContainer.clientHeight;
+        }
+
+        // Event listeners
+        document.getElementById('mic-btn').addEventListener('click', () => {
+            if (source) {
+                // Stop microphone
+                source.disconnect();
+                source = null;
+                document.getElementById('mic-btn').classList.remove('active');
+                if (!oscillator) {
+                    isActive = false;
+                    document.getElementById('no-audio').style.display = 'block';
+                }
+            } else {
+                startMicrophone();
+            }
+        });
+
+        document.getElementById('osc-btn').addEventListener('click', () => {
+            if (oscillator) {
+                stopOscillator();
+            } else {
+                startOscillator();
+            }
+        });
+
+        document.getElementById('osc-stop').addEventListener('click', stopOscillator);
+
+        document.getElementById('osc-freq').addEventListener('input', (e) => {
+            const freq = parseFloat(e.target.value);
+            document.getElementById('osc-freq-value').textContent = freq;
+            if (oscillator) {
+                oscillator.frequency.value = freq;
+            }
+        });
+
+        document.getElementById('osc-wave').addEventListener('change', (e) => {
+            if (oscillator) {
+                oscillator.type = e.target.value;
+            }
+        });
+
+        document.getElementById('osc-vol').addEventListener('input', (e) => {
+            const vol = parseFloat(e.target.value);
+            document.getElementById('osc-vol-value').textContent = vol;
+            if (gainNode) {
+                gainNode.gain.value = vol / 100 * 0.5;
+            }
+        });
+
+        document.getElementById('vis-mode').addEventListener('change', (e) => {
+            visMode = e.target.value;
+            waterfallData = [];
+            particles = [];
+        });
+
+        document.getElementById('settings-btn').addEventListener('click', () => {
+            document.getElementById('settings-panel').classList.toggle('visible');
+        });
+
+        document.getElementById('fft-size').addEventListener('input', (e) => {
+            fftSize = Math.pow(2, parseInt(e.target.value));
+            document.getElementById('fft-value').textContent = fftSize;
+            if (analyser) {
+                analyser.fftSize = fftSize;
+                frequencyData = new Uint8Array(analyser.frequencyBinCount);
+                timeData = new Uint8Array(analyser.fftSize);
+            }
+        });
+
+        document.getElementById('smoothing').addEventListener('input', (e) => {
+            smoothing = parseFloat(e.target.value);
+            document.getElementById('smooth-value').textContent = smoothing.toFixed(2);
+            if (analyser) {
+                analyser.smoothingTimeConstant = smoothing;
+            }
+        });
+
+        document.getElementById('min-db').addEventListener('input', (e) => {
+            minDb = parseInt(e.target.value);
+            document.getElementById('min-db-value').textContent = minDb;
+            if (analyser) {
+                analyser.minDecibels = minDb;
+            }
+        });
+
+        document.getElementById('max-db').addEventListener('input', (e) => {
+            maxDb = parseInt(e.target.value);
+            document.getElementById('max-db-value').textContent = maxDb;
+            if (analyser) {
+                analyser.maxDecibels = maxDb;
+            }
+        });
+
+        document.querySelectorAll('.color-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                colorScheme = btn.dataset.scheme;
+            });
+        });
+
+        // Close settings when clicking outside
+        document.addEventListener('click', (e) => {
+            const panel = document.getElementById('settings-panel');
+            const btn = document.getElementById('settings-btn');
+            if (!panel.contains(e.target) && e.target !== btn) {
+                panel.classList.remove('visible');
+            }
+        });
+
+        // Initialize
+        window.addEventListener('resize', resizeCanvases);
+        resizeCanvases();
+    </script>
+</body>
+</html>
