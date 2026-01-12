@@ -2296,41 +2296,25 @@
 
         createStars();
 
-        // Vote management
-        const VOTES_KEY = 'claude-demos-votes';
+        // Vote management - localStorage tracks user's own votes, API stores global counts
+        const USER_VOTES_KEY = 'claude-demos-user-votes';
         const SORT_KEY = 'claude-demos-sort';
+        let globalVotes = {};
 
-        function getVotes() {
+        function getUserVotes() {
             try {
-                return JSON.parse(localStorage.getItem(VOTES_KEY)) || {};
+                return JSON.parse(localStorage.getItem(USER_VOTES_KEY)) || {};
             } catch {
                 return {};
             }
         }
 
-        function saveVotes(votes) {
-            localStorage.setItem(VOTES_KEY, JSON.stringify(votes));
+        function saveUserVotes(votes) {
+            localStorage.setItem(USER_VOTES_KEY, JSON.stringify(votes));
         }
 
-        function getVoteCount(projectId) {
-            const votes = getVotes();
-            return votes[projectId] || 0;
-        }
-
-        function hasVoted(projectId) {
-            const votes = getVotes();
-            return votes[projectId] !== undefined && votes[projectId] > 0;
-        }
-
-        function toggleVote(projectId) {
-            const votes = getVotes();
-            if (votes[projectId]) {
-                votes[projectId] = 0;
-            } else {
-                votes[projectId] = 1;
-            }
-            saveVotes(votes);
-            return votes[projectId];
+        function hasUserVoted(projectId) {
+            return getUserVotes()[projectId] === true;
         }
 
         function getCurrentSort() {
@@ -2341,6 +2325,48 @@
             localStorage.setItem(SORT_KEY, sortType);
         }
 
+        // API functions
+        async function fetchGlobalVotes() {
+            try {
+                const res = await fetch('/api/votes');
+                if (res.ok) {
+                    globalVotes = await res.json();
+                    return globalVotes;
+                }
+            } catch (e) {
+                console.log('Could not fetch votes, using local fallback');
+            }
+            return {};
+        }
+
+        async function submitVote(projectId, action) {
+            try {
+                const res = await fetch('/api/vote', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ projectId, action })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    globalVotes[projectId] = data.votes;
+                    return data.votes;
+                }
+            } catch (e) {
+                console.log('Could not submit vote');
+            }
+            return null;
+        }
+
+        function updateVoteDisplay(projectId, count) {
+            const card = document.querySelector(`[href="${projectId}"]`);
+            if (card) {
+                const countEl = card.querySelector('.vote-count');
+                if (countEl) {
+                    countEl.textContent = `${count} vote${count !== 1 ? 's' : ''}`;
+                }
+            }
+        }
+
         // Store original order
         const grid = document.getElementById('projects-grid');
         const cards = Array.from(grid.querySelectorAll('.project-card'));
@@ -2349,8 +2375,7 @@
         // Add upvote buttons to all cards
         cards.forEach(card => {
             const projectId = card.getAttribute('href');
-            const voteCount = getVoteCount(projectId);
-            const voted = hasVoted(projectId);
+            const voted = hasUserVoted(projectId);
 
             const upvoteContainer = document.createElement('div');
             upvoteContainer.className = 'upvote-container';
@@ -2359,38 +2384,45 @@
                     <span class="arrow">▲</span>
                     <span>Upvote</span>
                 </button>
-                <span class="vote-count">${voteCount} vote${voteCount !== 1 ? 's' : ''}</span>
+                <span class="vote-count">-- votes</span>
             `;
 
             card.appendChild(upvoteContainer);
 
             // Handle upvote click
             const btn = upvoteContainer.querySelector('.upvote-btn');
-            btn.addEventListener('click', (e) => {
+            btn.addEventListener('click', async (e) => {
                 e.preventDefault();
                 e.stopPropagation();
 
-                const newCount = toggleVote(projectId);
-                btn.classList.toggle('upvoted', newCount > 0);
-                upvoteContainer.querySelector('.vote-count').textContent =
-                    `${newCount} vote${newCount !== 1 ? 's' : ''}`;
+                const userVotes = getUserVotes();
+                const hasVoted = userVotes[projectId] === true;
+                const action = hasVoted ? 'downvote' : 'upvote';
 
-                // Re-sort if currently sorted by votes
-                if (getCurrentSort() === 'votes') {
-                    sortCards('votes');
+                // Update local state immediately for responsiveness
+                userVotes[projectId] = !hasVoted;
+                saveUserVotes(userVotes);
+                btn.classList.toggle('upvoted', !hasVoted);
+
+                // Submit to API
+                const newCount = await submitVote(projectId, action);
+                if (newCount !== null) {
+                    updateVoteDisplay(projectId, newCount);
+                    // Re-sort if currently sorted by votes
+                    if (getCurrentSort() === 'votes') {
+                        sortCards('votes');
+                    }
                 }
             });
         });
 
         // Sorting functionality
         function sortCards(sortType) {
-            const votes = getVotes();
-
             let sortedCards;
             if (sortType === 'votes') {
                 sortedCards = [...cards].sort((a, b) => {
-                    const aVotes = votes[a.getAttribute('href')] || 0;
-                    const bVotes = votes[b.getAttribute('href')] || 0;
+                    const aVotes = globalVotes[a.getAttribute('href')] || 0;
+                    const bVotes = globalVotes[b.getAttribute('href')] || 0;
                     return bVotes - aVotes;
                 });
             } else {
@@ -2418,13 +2450,23 @@
             });
         });
 
-        // Apply initial sort from localStorage
-        const initialSort = getCurrentSort();
-        if (initialSort !== 'default') {
-            sortCards(initialSort);
-            document.querySelector(`[data-sort="${initialSort}"]`)?.classList.add('active');
-            document.querySelector('[data-sort="default"]')?.classList.remove('active');
-        }
+        // Initialize: fetch global votes and update display
+        (async function init() {
+            await fetchGlobalVotes();
+
+            // Update all vote counts
+            cards.forEach(card => {
+                const projectId = card.getAttribute('href');
+                const count = globalVotes[projectId] || 0;
+                updateVoteDisplay(projectId, count);
+            });
+
+            // Apply initial sort from localStorage
+            const initialSort = getCurrentSort();
+            if (initialSort !== 'default') {
+                sortCards(initialSort);
+            }
+        })();
 
         // Animate stats on scroll
         const observer = new IntersectionObserver((entries) => {
