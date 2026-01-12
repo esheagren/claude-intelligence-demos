@@ -423,8 +423,8 @@
         <div class="section-title">Interactive Experiences</div>
 
         <div class="sort-controls">
-            <button class="sort-btn active" data-sort="default">Default</button>
-            <button class="sort-btn" data-sort="votes">Most Upvoted</button>
+            <button class="sort-btn" data-sort="default">Default</button>
+            <button class="sort-btn active" data-sort="votes">Most Upvoted</button>
         </div>
 
         <div class="projects-grid" id="projects-grid">
@@ -2318,7 +2318,7 @@
         }
 
         function getCurrentSort() {
-            return localStorage.getItem(SORT_KEY) || 'default';
+            return localStorage.getItem(SORT_KEY) || 'votes';
         }
 
         function saveSort(sortType) {
@@ -2463,9 +2463,7 @@
 
             // Apply initial sort from localStorage
             const initialSort = getCurrentSort();
-            if (initialSort !== 'default') {
-                sortCards(initialSort);
-            }
+            sortCards(initialSort);
         })();
 
         // Animate stats on scroll
